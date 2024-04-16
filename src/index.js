@@ -55,15 +55,27 @@ function readControlVertices(ctx) {
   }
   return controlVertices;
 }
+const controlVerticesMesh = [];
+
 function drawControlVertices(controlVertices) {
-  scene.children.forEach(child => scene.remove(child));
+  controlVerticesMesh.forEach(mesh => {
+    scene.remove(mesh);
+    mesh.geometry.dispose();
+    mesh.material.dispose();
+  });
+  controlVerticesMesh.length = 0;
   controlVertices.forEach(({ x, y, z, color }) => {
     const geometry = new THREE.SphereGeometry( 0.01, 32, 32 );
     const material = new THREE.MeshBasicMaterial( { color } );
-    const sphere = new THREE.Mesh( geometry, material );
-    sphere.position.set(x, y, z);
-    scene.add( sphere );
+    const mesh = new THREE.Mesh( geometry, material );
+
+    // store for cleanup later
+    controlVerticesMesh.push(mesh);
+
+    mesh.position.set(x, y, z);
+    scene.add( mesh );
   })
+  camera.position.z = 5;
 }
 
 function animate() {

@@ -97,11 +97,7 @@ function drawControlVertices(controlVertices) {
   })
   scene.add( controlVerticesObject );
 
-  controlVerticesObject.scale.set(
-    document.getElementById('scaleX').value,
-    document.getElementById('scaleY').value,
-    document.getElementById('scaleZ').value
-    );
+  applyScale(controlVerticesObject);
   controlVerticesObject.visible = document.getElementById('show-control-vertices').checked;
 
   camera.position.z = 5;
@@ -113,21 +109,32 @@ function drawControlMesh(controlVertices) {
     scene.remove(controlMeshObject);
   }
 
-  const controlMeshGeometry = new THREE.Geometry();
-  controlMeshGeometry.vertices = controlVertices.map(({ x, y, z }) => new THREE.Vector3(x, y, z));
+  const controlMeshGeometry = new THREE.BufferGeometry();
+  const vertices = controlVertices.reduce((all, { x, y, z }, i) => {
+    const offset = i * 3;
+    all[offset] = x;
+    all[offset + 1] = y;
+    all[offset + 2] = z;
+    return all;
+  }, new Float32Array(controlVertices.length * 3));
+  controlMeshGeometry.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
+
   const controlMeshMaterial = new THREE.MeshBasicMaterial( { color: 0xcccccc, side: THREE.DoubleSide } );
   controlMeshObject = new THREE.Mesh(controlMeshGeometry, controlMeshMaterial);
   scene.add(controlMeshObject);
 
-  controlMeshObject.scale.set(
+  applyScale(controlMeshObject);
+
+  controlMeshObject.visible = document.getElementById('show-control-mesh').checked;
+}
+
+function applyScale(mesh) {
+  mesh.scale.set(
     document.getElementById('scaleX').value,
     document.getElementById('scaleY').value,
     document.getElementById('scaleZ').value
   );
-    
-  controlMeshObject.visible = document.getElementById('show-control-mesh').checked;
 }
-
 function handleScaleXChange() {
   const scaleX = document.getElementById('scaleX').value;
   controlVerticesObject.scale.x = scaleX;
@@ -146,13 +153,17 @@ function handleShowControlVerticesChange() {
 function handleShowControlMeshChange() {
   controlMeshObject.visible = document.getElementById('show-control-mesh').checked;
 }
+const rotate = (mesh) => {
+  if(!mesh) return;
+  mesh.rotation.x += 0.01;
+  mesh.rotation.y += 0.01;
+};
+
 function animate() {
 	requestAnimationFrame( animate );
-  if(controlVerticesObject) {
-    controlVerticesObject.rotation.x += 0.01;
-    controlVerticesObject.rotation.y += 0.01;
-  }
-	renderer.render( scene, camera );
+  rotate(controlVerticesObject);
+  rotate(controlMeshObject);
+  renderer.render( scene, camera );
 }
 
 window.addEventListener('load', handleWindowLoad);

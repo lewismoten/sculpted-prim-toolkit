@@ -4,6 +4,8 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 let image2D;
 let canvas2D;
 let canvas3D;
+let width;
+let height;
 
 const scene = new THREE.Scene();
 let camera;
@@ -12,7 +14,9 @@ let orbitControls;
 
 function handleWindowLoad() {
   canvas3D = document.getElementById('image-3d');
-  const { width, height } = canvas3D.getBoundingClientRect();
+  const rect = canvas3D.getBoundingClientRect();
+  width = rect.width;
+  height = rect.height;
   camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
   renderer = new THREE.WebGLRenderer({ canvas: canvas3D});
   renderer.setSize( width, height );
@@ -102,6 +106,18 @@ function drawControlVertices(controlVertices) {
 
   camera.position.z = 5;
 }
+function xyIndex(x, y) {
+  // stitch edges of x
+  if(x < 0) x = width - 1;
+  if(x >= width) x = 0;
+  // do not stitch edges of y
+  if(y < 0) y = 0;
+  if(y >= height) y = height - 1;
+  // use left corner for top/bottom edges
+  if(y === 0) x = 0;
+  if(y === height - 1) x = 0;
+  return (y * width + x);
+}
 function drawControlMesh(controlVertices) {
   if(controlMeshObject) {
     controlMeshObject.geometry.dispose();
@@ -120,6 +136,26 @@ function drawControlMesh(controlVertices) {
   controlMeshGeometry.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
 
   const controlMeshMaterial = new THREE.MeshBasicMaterial( { color: 0xcccccc, side: THREE.DoubleSide } );
+
+  
+  var indexedTriangles = [];
+  for(let x = 1; x < width - 1; x++) {
+    for(let y = 1; y < height - 1; y++) {
+      const center = xyIndex(x, y);
+      const topLeft = xyIndex(x-1, y-1);
+      const topRight = xyIndex(x, y-1);
+      const middleLeft = xyIndex(x-1, y);
+      const middleRight = xyIndex(x+1, y);
+      const bottomCenter = xyIndex(x, y+1);
+      
+      indexedTriangles.push(center, topLeft, middleLeft);
+      indexedTriangles.push(center, middleLeft, bottomCenter);
+      indexedTriangles.push(center, topRight, middleRight);
+      indexedTriangles.push(center, middleRight, bottomCenter);
+    }
+  }
+  controlMeshGeometry.setIndex(indexedTriangles);
+
   controlMeshObject = new THREE.Mesh(controlMeshGeometry, controlMeshMaterial);
   scene.add(controlMeshObject);
 

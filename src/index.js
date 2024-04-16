@@ -22,6 +22,11 @@ function handleWindowLoad() {
 
   canvas2D = document.getElementById('image-preview');
   document.getElementById('image-selector').addEventListener('change', handleImageSelectorChange);
+
+  document.getElementById('scaleX').addEventListener('input', handleScaleXChange);
+  document.getElementById('scaleY').addEventListener('input', handleScaleYChange);
+  document.getElementById('scaleZ').addEventListener('input', handleScaleZChange);
+
   handleImageSelectorChange();
   requestAnimationFrame( animate );
 }
@@ -83,7 +88,28 @@ function drawControlVertices(controlVertices) {
     controlVerticesObject.add(mesh);
   })
   scene.add( controlVerticesObject );
+
+  updateUiScaleValues(controlVerticesObject.scale);
   camera.position.z = 5;
+}
+
+function updateUiScaleValues(scale) {
+  document.getElementById('scaleX').value = scale.x;
+  document.getElementById('scaleY').value = scale.y;
+  document.getElementById('scaleZ').value = scale.z;
+}
+
+function handleScaleXChange() {
+  const scaleX = document.getElementById('scaleX').value;
+  controlVerticesObject.scale.x = scaleX;
+}
+function handleScaleYChange() {
+  const scaleY = document.getElementById('scaleY').value;
+  controlVerticesObject.scale.y = scaleY;
+}
+function handleScaleZChange() {
+  const scaleZ = document.getElementById('scaleZ').value;
+  controlVerticesObject.scale.z = scaleZ;
 }
 
 function animate() {

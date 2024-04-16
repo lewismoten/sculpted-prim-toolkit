@@ -79,6 +79,10 @@ function drawControlVertices(controlVertices) {
 
 function animate() {
 	requestAnimationFrame( animate );
+  if(controlVerticesObject) {
+    controlVerticesObject.rotation.x += 0.01;
+    controlVerticesObject.rotation.y += 0.01;
+  }
 	renderer.render( scene, camera );
 }
 

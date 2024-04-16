@@ -65,7 +65,7 @@ function drawControlVertices(controlVertices) {
   });
   controlVerticesMesh.length = 0;
   controlVertices.forEach(({ x, y, z, color }) => {
-    const geometry = new THREE.SphereGeometry( 0.01, 32, 32 );
+    const geometry = new THREE.BoxGeometry( 0.01, 0.01, 0.01 );
     const material = new THREE.MeshBasicMaterial( { color } );
     const mesh = new THREE.Mesh( geometry, material );
 

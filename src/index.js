@@ -1,20 +1,28 @@
 import * as THREE from 'three';
 
 let image2D;
-let imagePreview;
+let canvas2D;
+let canvas3D;
+
 const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
-const renderer = new THREE.WebGLRenderer();
+let camera;
+let renderer;
 
 function handleWindowLoad() {
-  renderer.setSize( window.innerWidth, window.innerHeight );
-  document.body.appendChild( renderer.domElement );
-  camera.position.z = 5;
-  animate();
+  canvas3D = document.getElementById('image-3d');
+  const { width, height } = canvas3D.getBoundingClientRect();
+  console.log(width, height)
+  camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
+  renderer = new THREE.WebGLRenderer();
+  renderer.setSize( width, height );
 
-  imagePreview = document.getElementById('image-preview');
+  canvas3D.appendChild( renderer.domElement );
+  camera.position.z = 5;
+
+  canvas2D = document.getElementById('image-preview');
   document.getElementById('image-selector').addEventListener('change', handleImageSelectorChange);
   handleImageSelectorChange();
+  requestAnimationFrame( animate );
 }
 
 function handleImageSelectorChange() {
@@ -25,9 +33,9 @@ function handleImageSelectorChange() {
   image2D.onload = handleImage2DLoad
 }
 function handleImage2DLoad() {
-  const ctx = imagePreview.getContext('2d', {willReadFrequently: true});
-  imagePreview.width = image2D.width;
-  imagePreview.height = image2D.height;
+  const ctx = canvas2D.getContext('2d', {willReadFrequently: true});
+  canvas2D.width = image2D.width;
+  canvas2D.height = image2D.height;
   ctx.drawImage(image2D, 0, 0);
   const controlVertices = readControlVertices(ctx);
   drawControlVertices(controlVertices);
@@ -39,7 +47,7 @@ function rgbLong(r, g, b) {
   return (r << 16) | (g << 8) | b;
 }
 function readControlVertices(ctx) {
-  const pixels = ctx.getImageData(0, 0, imagePreview.width, imagePreview.height).data;
+  const pixels = ctx.getImageData(0, 0, canvas2D.width, canvas2D.height).data;
   const controlVertices = [];
   for(let i = 0; i < pixels.length; i += 4) {
     const r = pixels[i];

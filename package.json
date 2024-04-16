@@ -4,6 +4,7 @@
   "description": "Convert 2D images into 3D Models",
   "main": "index.js",
   "scripts": {
+    "start": "vite --open http://localhost:5174/src/index.html --port 5174",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",

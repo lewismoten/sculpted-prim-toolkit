@@ -27,6 +27,7 @@ function handleWindowLoad() {
   document.getElementById('scaleY').addEventListener('input', handleScaleYChange);
   document.getElementById('scaleZ').addEventListener('input', handleScaleZChange);
 
+  document.getElementById('show-control-vertices').addEventListener('change', handleShowControlVerticesChange);
   handleImageSelectorChange();
   requestAnimationFrame( animate );
 }
@@ -89,6 +90,8 @@ function drawControlVertices(controlVertices) {
   })
   scene.add( controlVerticesObject );
 
+  controlVerticesObject.visible = document.getElementById('show-control-vertices').checked;
+
   updateUiScaleValues(controlVerticesObject.scale);
   camera.position.z = 5;
 }
@@ -111,7 +114,9 @@ function handleScaleZChange() {
   const scaleZ = document.getElementById('scaleZ').value;
   controlVerticesObject.scale.z = scaleZ;
 }
-
+function handleShowControlVerticesChange() {
+  controlVerticesObject.visible = document.getElementById('show-control-vertices').checked;
+}
 function animate() {
 	requestAnimationFrame( animate );
   if(controlVerticesObject) {

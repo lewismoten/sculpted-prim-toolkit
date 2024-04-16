@@ -28,6 +28,7 @@ function handleWindowLoad() {
   document.getElementById('scaleZ').addEventListener('input', handleScaleZChange);
 
   document.getElementById('show-control-vertices').addEventListener('change', handleShowControlVerticesChange);
+  document.getElementById('show-control-mesh').addEventListener('change', handleShowControlMeshChange);
   handleImageSelectorChange();
   requestAnimationFrame( animate );
 }
@@ -46,6 +47,7 @@ function handleImage2DLoad() {
   ctx.drawImage(image2D, 0, 0);
   const controlVertices = readControlVertices(ctx);
   drawControlVertices(controlVertices);
+  drawControlMesh(controlVertices);
 }
 function mapCv(value) {
   return (value - 128) / 128;
@@ -71,6 +73,7 @@ function readControlVertices(ctx) {
   return controlVertices;
 }
 let controlVerticesObject;
+let controlMeshObject;
 
 function drawControlVertices(controlVertices) {
   if(controlVerticesObject) {
@@ -99,6 +102,27 @@ function drawControlVertices(controlVertices) {
 
   camera.position.z = 5;
 }
+function drawControlMesh(controlVertices) {
+  if(controlMeshObject) {
+    controlMeshObject.geometry.dispose();
+    controlMeshObject.material.dispose();
+    scene.remove(controlMeshObject);
+  }
+
+  const controlMeshGeometry = new THREE.Geometry();
+  controlMeshGeometry.vertices = controlVertices.map(({ x, y, z }) => new THREE.Vector3(x, y, z));
+  const controlMeshMaterial = new THREE.MeshBasicMaterial( { color: 0xcccccc, side: THREE.DoubleSide } );
+  controlMeshObject = new THREE.Mesh(controlMeshGeometry, controlMeshMaterial);
+  scene.add(controlMeshObject);
+
+  controlMeshObject.scale.set(
+    document.getElementById('scaleX').value,
+    document.getElementById('scaleY').value,
+    document.getElementById('scaleZ').value
+  );
+    
+  controlMeshObject.visible = document.getElementById('show-control-mesh').checked;
+}
 
 function handleScaleXChange() {
   const scaleX = document.getElementById('scaleX').value;
@@ -114,6 +138,9 @@ function handleScaleZChange() {
 }
 function handleShowControlVerticesChange() {
   controlVerticesObject.visible = document.getElementById('show-control-vertices').checked;
+}
+function handleShowControlMeshChange() {
+  controlMeshObject.visible = document.getElementById('show-control-mesh').checked;
 }
 function animate() {
 	requestAnimationFrame( animate );

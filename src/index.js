@@ -25,7 +25,7 @@ function handleImageSelectorChange() {
   image2D.onload = handleImage2DLoad
 }
 function handleImage2DLoad() {
-  const ctx = imagePreview.getContext('2d');
+  const ctx = imagePreview.getContext('2d', {willReadFrequently: true});
   imagePreview.width = image2D.width;
   imagePreview.height = image2D.height;
   ctx.drawImage(image2D, 0, 0);

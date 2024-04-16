@@ -55,26 +55,25 @@ function readControlVertices(ctx) {
   }
   return controlVertices;
 }
-const controlVerticesMesh = [];
+let controlVerticesObject;
 
 function drawControlVertices(controlVertices) {
-  controlVerticesMesh.forEach(mesh => {
-    scene.remove(mesh);
-    mesh.geometry.dispose();
-    mesh.material.dispose();
-  });
-  controlVerticesMesh.length = 0;
+  if(controlVerticesObject) {
+    controlVerticesObject.children.forEach(mesh => {
+      mesh.geometry.dispose();
+      mesh.material.dispose();
+    });
+    scene.remove(controlVerticesObject);
+  }
+  controlVerticesObject = new THREE.Object3D();
   controlVertices.forEach(({ x, y, z, color }) => {
     const geometry = new THREE.BoxGeometry( 0.01, 0.01, 0.01 );
     const material = new THREE.MeshBasicMaterial( { color } );
     const mesh = new THREE.Mesh( geometry, material );
-
-    // store for cleanup later
-    controlVerticesMesh.push(mesh);
-
     mesh.position.set(x, y, z);
-    scene.add( mesh );
+    controlVerticesObject.add(mesh);
   })
+  scene.add( controlVerticesObject );
   camera.position.z = 5;
 }
 

@@ -11,12 +11,10 @@ let renderer;
 function handleWindowLoad() {
   canvas3D = document.getElementById('image-3d');
   const { width, height } = canvas3D.getBoundingClientRect();
-  console.log(width, height)
   camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
-  renderer = new THREE.WebGLRenderer();
+  renderer = new THREE.WebGLRenderer({ canvas: canvas3D});
   renderer.setSize( width, height );
 
-  canvas3D.appendChild( renderer.domElement );
   camera.position.z = 5;
 
   canvas2D = document.getElementById('image-preview');

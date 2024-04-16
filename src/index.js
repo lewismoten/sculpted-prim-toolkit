@@ -17,6 +17,10 @@ function handleWindowLoad() {
   renderer = new THREE.WebGLRenderer({ canvas: canvas3D});
   renderer.setSize( width, height );
 
+  const light = new THREE.DirectionalLight(0xffffff, 1);
+  light.position.set(1, 1, 1);
+  scene.add(light);
+
   orbitControls = new OrbitControls( camera, renderer.domElement );
   camera.position.z = 5;
 

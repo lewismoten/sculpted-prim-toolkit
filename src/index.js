@@ -90,16 +90,14 @@ function drawControlVertices(controlVertices) {
   })
   scene.add( controlVerticesObject );
 
+  controlVerticesObject.scale.set(
+    document.getElementById('scaleX').value,
+    document.getElementById('scaleY').value,
+    document.getElementById('scaleZ').value
+    );
   controlVerticesObject.visible = document.getElementById('show-control-vertices').checked;
 
-  updateUiScaleValues(controlVerticesObject.scale);
   camera.position.z = 5;
-}
-
-function updateUiScaleValues(scale) {
-  document.getElementById('scaleX').value = scale.x;
-  document.getElementById('scaleY').value = scale.y;
-  document.getElementById('scaleZ').value = scale.z;
 }
 
 function handleScaleXChange() {

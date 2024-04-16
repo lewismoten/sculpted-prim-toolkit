@@ -1,0 +1,11 @@
+{
+  "name": "sculpted-prim-reader",
+  "version": "1.0.0",
+  "description": "Convert 2D images into 3D Models",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "UNLICENSED"
+}

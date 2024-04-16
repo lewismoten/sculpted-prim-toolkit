@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 
 let image2D;
 let canvas2D;
@@ -7,6 +8,7 @@ let canvas3D;
 const scene = new THREE.Scene();
 let camera;
 let renderer;
+let orbitControls;
 
 function handleWindowLoad() {
   canvas3D = document.getElementById('image-3d');
@@ -15,6 +17,7 @@ function handleWindowLoad() {
   renderer = new THREE.WebGLRenderer({ canvas: canvas3D});
   renderer.setSize( width, height );
 
+  orbitControls = new OrbitControls( camera, renderer.domElement );
   camera.position.z = 5;
 
   canvas2D = document.getElementById('image-preview');

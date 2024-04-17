@@ -9,6 +9,7 @@ let height;
 let ambientLight;
 let directionaLight;
 let isRotating = false;
+let rotation = {x: 0, y: 0, z: 0};
 
 const scene = new THREE.Scene();
 let camera;
@@ -244,12 +245,18 @@ function handleShowControlMeshChange() {
 function handleShowCubeChange() {
   cubeObject.visible = document.getElementById('show-cube').checked;
 }
-const rotate = (mesh) => {
-  if(!mesh) return;
-  if(isRotating) {
-    mesh.rotation.x += 0.01;
-    mesh.rotation.y += 0.01;
-  }
+const rotate = () => {
+  if(!isRotating) return;
+  rotation.x += 0.01;
+  rotation.y += 0.01;
+  [
+    cubeObject,
+    controlVerticesObject,
+    controlMeshObject
+  ].filter(Boolean).forEach(mesh => {
+    mesh.rotation.x = rotation.x;
+    mesh.rotation.y = rotation.y;
+  });
 };
 function handleAmbientIntensityChange() {
   ambientLight.intensity = document.getElementById('ambientIntensity').value;
@@ -259,11 +266,7 @@ function handleDirectionalIntensityChange() {
 }
 function animate() {
 	requestAnimationFrame( animate );
-  [
-    cubeObject,
-    controlVerticesObject,
-    controlMeshObject
-  ].forEach(rotate);
+  rotate();
   renderer.render( scene, camera );
 }
 

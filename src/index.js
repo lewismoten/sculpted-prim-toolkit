@@ -16,6 +16,7 @@ let verticalSegments = 32;
 const scene = new THREE.Scene();
 let camera;
 let renderer;
+let skin;
 
 let cubeObject;
 
@@ -45,6 +46,7 @@ function handleWindowLoad() {
 
   canvas2D = document.getElementById('image-preview');
   document.getElementById('image-selector').addEventListener('change', handleImageSelectorChange);
+  document.getElementById('texture-selector').addEventListener('change', handleTextureSelectorChange);
 
   isRotating = document.getElementById('rotate-object').checked;
   document.getElementById('rotate-object').addEventListener('change', () => {
@@ -79,7 +81,48 @@ function handleWindowLoad() {
     handleImageSelectorChange();
   });
 }
-
+function handleTextureSelectorChange() {
+  const textureSelector = document.getElementById('texture-selector');
+  const textureUrl = textureSelector.value;
+  skin?.dispose();
+  if(textureUrl === '') {
+    removeTexture(controlMeshObject);
+  } else {
+    loadTexture(textureUrl);
+  }
+}
+function loadTexture(textureUrl) {
+  const textureImage = new Image();
+  textureImage.src = textureUrl;
+  textureImage.onload = () => {
+    drawTexturePreview(textureImage);
+    applyTextureToObject(textureImage, controlMeshObject);
+  }
+}
+function drawTexturePreview(image) {
+  const texturePreview = document.getElementById('texture-preview');
+  const ctx = texturePreview.getContext('2d');
+  ctx.clearRect(0, 0, texturePreview.width, texturePreview.height);
+  ctx.drawImage(image, 0, 0, texturePreview.width, texturePreview.height);
+}
+function applyTextureToObject(image, object) {
+  skin = new THREE.Texture(image);
+  skin.needsUpdate = true;
+  if(object) {
+    object.material.map = skin;
+    object.material.needsUpdate = true;
+  }
+}
+function removeTexture(object) {
+  const texturePreview = document.getElementById('texture-preview');
+  const ctx = texturePreview.getContext('2d');
+  ctx.clearRect(0, 0, texturePreview.width, texturePreview.height);
+  skin = null;
+  if(object) {
+    object.material.map = null;
+    object.material.needsUpdate = true;
+  }
+}
 function handleImageSelectorChange() {
   const imageSelector = document.getElementById('image-selector');
   const imageUrl = imageSelector.value;
@@ -181,6 +224,9 @@ function drawSphericalControlMesh(controlVertices) {
   cleanupControlMesh();
   const controlMeshGeometry = createSphericalControlGeometry(controlVertices, horizontalSegments, verticalSegments);
   const controlMeshMaterial = new THREE.MeshStandardMaterial( { color: 'white' } );
+  if(skin) {
+    controlMeshMaterial.map = skin;
+  }
   controlMeshObject = new THREE.Mesh(controlMeshGeometry, controlMeshMaterial);
   setPositionCentered(controlMeshObject);
   scene.add(controlMeshObject);

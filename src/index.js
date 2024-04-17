@@ -186,9 +186,9 @@ function createSphericalControlTriangles(horizontalSegments, verticalSegments) {
   for(let x = -1; x < horizontalSegments; x++) {
     for(let y = 0; y < verticalSegments; y++) {
       const centerIndex = sphericalIndex(x, y);
-      const topIndex = sphericalIndex(x, y + 1);
+      const topIndex = sphericalIndex(x, y - 1);
       const leftIndex = sphericalIndex(x + 1, y);
-      const topLeftIndex = sphericalIndex(x + 1, y + 1);
+      const topLeftIndex = sphericalIndex(x - 1, y - 1);
       if(topLeftIndex >= 0 && topIndex >= 0 && leftIndex >= 0) {
         // Add triangles in counter-clockwise order
         indexedTriangles.push(centerIndex, topIndex, leftIndex);

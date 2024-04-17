@@ -127,6 +127,10 @@ function drawControlVertices(controlVertices) {
   controlVerticesObject.visible = document.getElementById('show-control-vertices').checked;
 }
 function sphericalIndex(x, y) {
+  if(y >= height || y <= 0) {
+    // poles of top and bottom are centered
+    x = Math.floor(width / 2);
+  }
   return y * (width + 1) + x;
 }
 

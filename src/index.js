@@ -60,8 +60,17 @@ function handleWindowLoad() {
   document.getElementById('show-control-vertices').addEventListener('change', handleShowControlVerticesChange);
   document.getElementById('show-control-mesh').addEventListener('change', handleShowControlMeshChange);
   document.getElementById('show-cube').addEventListener('change', handleShowCubeChange);
-  handleImageSelectorChange();
   requestAnimationFrame( animate );
+  fetch('files.json').then(response => response.json()).then(files => {
+    const imageSelector = document.getElementById('image-selector');
+    files.sculptedPrims.forEach(file => {
+      const option = document.createElement('option');
+      option.value = `images/sculpted-prims/${file}`;
+      option.innerText = file;
+      imageSelector.appendChild(option);
+    });
+    handleImageSelectorChange();
+  });
 }
 
 function handleImageSelectorChange() {

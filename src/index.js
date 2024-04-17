@@ -8,7 +8,6 @@ let width;
 let height;
 let ambientLight;
 let directionaLight;
-let isRotating = false;
 let rotation = {x: 0, y: 0, z: 0};
 let horizontalSegments = 32;
 let verticalSegments = 32;
@@ -48,14 +47,18 @@ function handleWindowLoad() {
   document.getElementById('image-selector').addEventListener('change', handleImageSelectorChange);
   document.getElementById('texture-selector').addEventListener('change', handleTextureSelectorChange);
 
-  isRotating = document.getElementById('rotate-object').checked;
-  document.getElementById('rotate-object').addEventListener('change', () => {
-    isRotating = !isRotating;
-  });
-
   document.getElementById('scaleX').addEventListener('input', applyScaleToObjects);
   document.getElementById('scaleY').addEventListener('input', applyScaleToObjects);
   document.getElementById('scaleZ').addEventListener('input', applyScaleToObjects);
+
+  'xyz'.split('').forEach(axis => {
+    const rotationInput = document.getElementById(`rotation-${axis}`);
+    rotationInput.min = -Math.PI;
+    rotationInput.max = Math.PI;
+    rotationInput.value = 0;
+    const spinCheckbox = document.getElementById(`spin-${axis}`);
+    spinCheckbox.checked = axis !== "z";
+  });
 
   document.getElementById('ambientIntensity').addEventListener('input', handleAmbientIntensityChange);
   document.getElementById('directionalIntensity').addEventListener('input', handleDirectionalIntensityChange);
@@ -356,17 +359,32 @@ function handleShowControlMeshChange() {
 function handleShowCubeChange() {
   cubeObject.visible = document.getElementById('show-cube').checked;
 }
+
+const rotateWrap = (value, offset) => {
+  value += offset;
+  if(value < -Math.PI) {
+    value = value + Math.PI * 2;
+  } else if(value >= Math.PI) {
+    value = value - Math.PI * 2;
+  }
+  return value;
+}
 const rotate = () => {
-  if(!isRotating) return;
-  rotation.x += 0.01;
-  rotation.y += 0.01;
+  "xyz".split('').forEach(axis => {
+    rotation[axis] = parseFloat(document.getElementById(`rotation-${axis}`).value);
+    if(document.getElementById(`spin-${axis}`).checked) {
+      rotation[axis] = rotateWrap(rotation[axis], 0.02);
+      document.getElementById(`rotation-${axis}`).value = rotation[axis];
+    }
+  });
+
   [
     cubeObject,
     controlVerticesObject,
     controlMeshObject
-  ].filter(Boolean).forEach(mesh => {
-    mesh.rotation.x = rotation.x;
-    mesh.rotation.y = rotation.y;
+  ].filter(Boolean)
+  .forEach(mesh => {
+    mesh.rotation.set(rotation.x, rotation.y, rotation.z);
   });
 };
 function handleAmbientIntensityChange() {

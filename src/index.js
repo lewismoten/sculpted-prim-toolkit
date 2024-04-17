@@ -127,9 +127,16 @@ function drawControlVertices(controlVertices) {
   controlVerticesObject.visible = document.getElementById('show-control-vertices').checked;
 }
 function sphericalIndex(x, y) {
-  if(y >= height || y <= 0) {
+  if(y === height || y === 0) {
     // poles of top and bottom are centered
     x = Math.floor(width / 2);
+  } 
+  if(x < 0) {
+    // stitch left to right
+    x = width - 1;
+  } else if(x >= width) {
+    // stitch right to left
+    x = 0;
   }
   return y * (width + 1) + x;
 }
@@ -176,7 +183,7 @@ function createSphericalControlVertices(controlVertices, horizontalSegments, ver
 
 function createSphericalControlTriangles(horizontalSegments, verticalSegments) {
   var indexedTriangles = [];
-  for(let x = 0; x < horizontalSegments; x++) {
+  for(let x = -1; x < horizontalSegments; x++) {
     for(let y = 0; y < verticalSegments; y++) {
       const centerIndex = sphericalIndex(x, y);
       const topIndex = sphericalIndex(x, y + 1);

@@ -92,6 +92,10 @@ function readControlVertices(ctx) {
   const controlVertices = [];
   horizontalSegments = Math.floor(canvas2D.width / 2);
   verticalSegments = Math.floor(canvas2D.height / 2);
+
+  document.getElementById('horizontal-segments').innerText = horizontalSegments.toLocaleString();
+  document.getElementById('vertical-segments').innerText = verticalSegments.toLocaleString();
+
   for(let i = 0; i < pixels.length; i += 4) {
     const x = (i / 4) % canvas2D.width;
     const y = Math.floor((i / 4) / canvas2D.width);
@@ -176,6 +180,9 @@ function createSphericalControlGeometry(controlVertices, horizontalSegments, ver
   const indexedTriangles = createSphericalControlTriangles(horizontalSegments, verticalSegments);
   controlMeshGeometry.setIndex(indexedTriangles);
   controlMeshGeometry.setDrawRange(0, indexedTriangles.length);
+
+  document.getElementById('control-mesh-vertices').innerText = controlVertices.length.toLocaleString();
+  document.getElementById('control-mesh-faces').innerText = (indexedTriangles.length / 3).toLocaleString();
   return controlMeshGeometry;
 }
 

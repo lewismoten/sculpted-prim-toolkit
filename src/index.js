@@ -69,6 +69,13 @@ function handleWindowLoad() {
       option.innerText = file;
       imageSelector.appendChild(option);
     });
+    const textureSelector = document.getElementById('texture-selector');
+    files.textures.forEach(file => {
+      const option = document.createElement('option');
+      option.value = `images/textures/${file}`;
+      option.innerText = file;
+      textureSelector.appendChild(option);
+    });
     handleImageSelectorChange();
   });
 }

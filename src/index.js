@@ -11,6 +11,7 @@ let directionaLight;
 let rotation = {x: 0, y: 0, z: 0};
 let horizontalSegments = 32;
 let verticalSegments = 32;
+let controls;
 
 const scene = new THREE.Scene();
 let camera;
@@ -36,10 +37,11 @@ function handleWindowLoad() {
   ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
   scene.add(ambientLight);
 
-  new OrbitControls( camera, renderer.domElement );
+  controls = new OrbitControls( camera, renderer.domElement );
 
   camera.position.set(1.5, 1.5, 1.5);
   camera.lookAt(0, 0, 0);
+
 
   drawCube();
 
@@ -57,6 +59,12 @@ function handleWindowLoad() {
       document.getElementById(`rotation-${axis}`).value = 0;
     });
   });
+  const cameras = ['front', 'back', 'left', 'right', 'top', 'bottom', 'iso', 'perspective'];
+  cameras.forEach(angle => {
+    document.getElementById(`camera-${angle}`)
+      .addEventListener('click', changeCameraAngle.bind(this, angle));
+  });
+
   'xyz'.split('').forEach(axis => {
     const rotationInput = document.getElementById(`rotation-${axis}`);
     rotationInput.min = -Math.PI;
@@ -96,6 +104,65 @@ function handleWindowLoad() {
     });
     handleTextureSelectorChange();
   });
+}
+
+function changeCameraAngle(angle) {
+  const bounds = new THREE.Box3().setFromObject(controlMeshObject);
+  const center = bounds.getCenter(new THREE.Vector3());
+  const size = bounds.getSize(new THREE.Vector3());
+  // Create camera based on angle and size of mesh
+  const camera = createCamera(angle, size);
+  // Calculate camera position based on angle, field of view, mesh size & location
+  const pos = getAnglePosition(angle, camera.fov, center, size);
+  camera.position.set(pos.x, pos.y, pos.z);
+  camera.lookAt(0, 0, 0);
+}
+function createCamera(angle, size) {
+  controls.dispose();
+  scene.remove(camera);
+  switch(angle) {
+    case 'front':
+    case 'back':
+    case 'left':
+    case 'right':
+    case 'top':
+    case 'bottom':
+    case 'iso':
+      camera = new THREE.OrthographicCamera(size.x / -2, size.x / 2, size.y / 2, size.y / -2, 1, 1000);
+      break;
+    case 'perspective':
+      camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
+      break;
+  }
+  controls = new OrbitControls( camera, renderer.domElement );
+  camera.up.set(0, 0, -1);
+  return camera;
+}
+function getAnglePosition(angle, fov, targetPos, targetSize) {
+
+  let distance;
+  if(angle === 'perspective') {
+    distance = Math.max(targetSize.x, targetSize.y, targetSize.z) / (2 * Math.tan(fov * Math.PI / 360));
+  } else {
+    distance = Math.max(targetSize.x, targetSize.y, targetSize.z) * 2;
+  }
+
+  const offset = (x, y, z) => ({
+    x: targetPos.x + x * distance, 
+    y: targetPos.y + y * distance,
+    z: targetPos.z + z * distance
+  });
+
+
+  switch(angle) {
+    case 'front': return offset(0, 0, 1);
+    case 'back': return offset(0, 0, -1);
+    case 'left': return offset(-1, 0, 0);
+    case 'right': return offset(1, 0, 0);
+    case 'top': return offset(0, 1, 0);
+    case 'bottom': return offset(0, -1, 0);
+    default: return offset(1,1,1);
+  }
 }
 function handleTextureSelectorChange() {
   const textureSelector = document.getElementById('texture-selector');
@@ -401,6 +468,7 @@ function handleDirectionalIntensityChange() {
 }
 function animate() {
 	requestAnimationFrame( animate );
+  controls.update();
   rotate();
   renderer.render( scene, camera );
 }

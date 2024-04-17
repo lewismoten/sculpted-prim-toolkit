@@ -7,6 +7,7 @@ let canvas3D;
 let width;
 let height;
 let ambientLight;
+let isRotating = false;
 
 const scene = new THREE.Scene();
 let camera;
@@ -36,6 +37,11 @@ function handleWindowLoad() {
 
   canvas2D = document.getElementById('image-preview');
   document.getElementById('image-selector').addEventListener('change', handleImageSelectorChange);
+
+  isRotating = document.getElementById('rotate-object').checked;
+  document.getElementById('rotate-object').addEventListener('change', () => {
+    isRotating = !isRotating;
+  });
 
   document.getElementById('scaleX').addEventListener('input', handleScaleXChange);
   document.getElementById('scaleY').addEventListener('input', handleScaleYChange);
@@ -204,8 +210,10 @@ function handleShowControlMeshChange() {
 }
 const rotate = (mesh) => {
   if(!mesh) return;
-  // mesh.rotation.x += 0.01;
-  // mesh.rotation.y += 0.01;
+  if(isRotating) {
+    mesh.rotation.x += 0.01;
+    mesh.rotation.y += 0.01;
+  }
 };
 function handleAmbientIntensityChange() {
   ambientLight.intensity = document.getElementById('ambientIntensity').value;

@@ -51,6 +51,12 @@ function handleWindowLoad() {
   document.getElementById('scaleY').addEventListener('input', applyScaleToObjects);
   document.getElementById('scaleZ').addEventListener('input', applyScaleToObjects);
 
+  document.getElementById('no-rotation').addEventListener('click', () => {
+    "xyz".split('').forEach(axis => {
+      document.getElementById(`spin-${axis}`).checked = false;
+      document.getElementById(`rotation-${axis}`).value = 0;
+    });
+  });
   'xyz'.split('').forEach(axis => {
     const rotationInput = document.getElementById(`rotation-${axis}`);
     rotationInput.min = -Math.PI;

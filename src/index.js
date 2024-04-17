@@ -164,7 +164,7 @@ function sphericalIndex(x, y, horizontalSegments, verticalSegments) {
 function drawSphericalControlMesh(controlVertices) {
   cleanupControlMesh();
   const controlMeshGeometry = createSphericalControlGeometry(controlVertices, horizontalSegments, verticalSegments);
-  const controlMeshMaterial = new THREE.MeshStandardMaterial( { color: 'white', side: THREE.DoubleSide } );
+  const controlMeshMaterial = new THREE.MeshStandardMaterial( { color: 'white' } );
   controlMeshObject = new THREE.Mesh(controlMeshGeometry, controlMeshMaterial);
   setPositionCentered(controlMeshObject);
   scene.add(controlMeshObject);
@@ -186,6 +186,7 @@ function createSphericalControlGeometry(controlVertices, horizontalSegments, ver
   const indexedTriangles = createSphericalControlTriangles(horizontalSegments, verticalSegments);
   controlMeshGeometry.setIndex(indexedTriangles);
   controlMeshGeometry.setDrawRange(0, indexedTriangles.length);
+  controlMeshGeometry.computeVertexNormals();
 
   document.getElementById('control-mesh-vertices').innerText = controlVertices.length.toLocaleString();
   document.getElementById('control-mesh-faces').innerText = (indexedTriangles.length / 3).toLocaleString();
@@ -207,7 +208,7 @@ function createSphericalControlVertices(controlVertices, horizontalSegments, ver
 function createSphericalControlTriangles(horizontalSegments, verticalSegments) {
   var indexedTriangles = [];
   for(let x = 0; x < horizontalSegments; x++) {
-    for(let y = 0; y < verticalSegments - 1; y++) {
+    for(let y = 0; y < verticalSegments; y++) {
       const centerIndex = sphericalIndex(x, y, horizontalSegments, verticalSegments);
       const topIndex = sphericalIndex(x, y - 1, horizontalSegments, verticalSegments);
       const leftIndex = sphericalIndex(x + 1, y, horizontalSegments, verticalSegments);
@@ -219,14 +220,14 @@ function createSphericalControlTriangles(horizontalSegments, verticalSegments) {
       const rightIndex = sphericalIndex(x + 1, y, horizontalSegments, verticalSegments);
         // Add triangles in counter-clockwise order
 
-      if(y === 0) {
-        indexedTriangles.push(centerIndex, bottomIndex, rightIndex);
-      } else if(y === verticalSegments - 2) {
-        indexedTriangles.push(centerIndex, bottomIndex, rightIndex);
-      } else {
-        indexedTriangles.push(centerIndex, rightIndex, bottomRightIndex);
-        indexedTriangles.push(bottomRightIndex, bottomIndex, centerIndex);
-      }
+      // if(y === 0) {
+      //   indexedTriangles.push(centerIndex, bottomIndex, rightIndex);
+      // } else if(y === verticalSegments - 1) {
+      //   indexedTriangles.push(centerIndex, bottomIndex, rightIndex);
+      // } else {
+        indexedTriangles.push(bottomRightIndex, rightIndex, centerIndex);
+        indexedTriangles.push(centerIndex, bottomIndex, bottomRightIndex);
+      // }
     }
   }
   return indexedTriangles;

@@ -55,7 +55,7 @@ function handleImage2DLoad() {
   ctx.drawImage(image2D, 0, 0);
   const controlVertices = readControlVertices(ctx);
   drawControlVertices(controlVertices);
-  drawControlMesh(controlVertices);
+  drawSphericalControlMesh(controlVertices);
 }
 function mapCv(value) {
   return (value - 128) / 128;
@@ -106,58 +106,51 @@ function drawControlVertices(controlVertices) {
 
   camera.position.z = 5;
 }
-function xyIndex(x, y) {
-  // stitch edges of x
-  if(x < 0) x = width - 1;
-  if(x >= width) x = 0;
-  // do not stitch edges of y
-  if(y < 0) y = 0;
-  if(y >= height) y = height - 1;
-  // use left corner for top/bottom edges
-  if(y === 0) x = 0;
-  if(y === height - 1) x = 0;
-  return (y * width + x);
+function sphericalIndex(x, y) {
+  return y * (width + 1) + x;
 }
-function drawControlMesh(controlVertices) {
+function drawSphericalControlMesh(controlVertices) {
   if(controlMeshObject) {
+    scene.remove(controlMeshObject);
     controlMeshObject.geometry.dispose();
     controlMeshObject.material.dispose();
-    scene.remove(controlMeshObject);
   }
 
   const controlMeshGeometry = new THREE.BufferGeometry();
-  const vertices = controlVertices.reduce((all, { x, y, z }, i) => {
+  const count = ((width + 1) * (height + 1)) * 3;
+  const vertices = new Float32Array(count);
+  controlVertices.forEach(({ x, y, z }, i) => {
     const offset = i * 3;
-    all[offset] = x;
-    all[offset + 1] = y;
-    all[offset + 2] = z;
-    return all;
-  }, new Float32Array(controlVertices.length * 3));
+    vertices[offset] = x;
+    vertices[offset + 1] = y;
+    vertices[offset + 2] = z;
+  });
   controlMeshGeometry.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
 
   const controlMeshMaterial = new THREE.MeshBasicMaterial( { color: 0xcccccc, side: THREE.DoubleSide } );
 
-  
   var indexedTriangles = [];
-  for(let x = 1; x < width - 1; x++) {
-    for(let y = 1; y < height - 1; y++) {
-      const center = xyIndex(x, y);
-      const topLeft = xyIndex(x-1, y-1);
-      const topRight = xyIndex(x, y-1);
-      const middleLeft = xyIndex(x-1, y);
-      const middleRight = xyIndex(x+1, y);
-      const bottomCenter = xyIndex(x, y+1);
+  for(let x = 0; x < width; x++) {
+    for(let y = 0; y < height; y++) {
+      const centerIndex = sphericalIndex(x, y);
+      const topIndex = sphericalIndex(x, y + 1);
+      const leftIndex = sphericalIndex(x + 1, y);
+      const topLeftIndex = sphericalIndex(x + 1, y + 1);
       
-      indexedTriangles.push(center, topLeft, middleLeft);
-      indexedTriangles.push(center, middleLeft, bottomCenter);
-      indexedTriangles.push(center, topRight, middleRight);
-      indexedTriangles.push(center, middleRight, bottomCenter);
+      if(topLeftIndex >= 0 && topIndex >= 0 && leftIndex >= 0) {
+        // Add triangles in counter-clockwise order
+        indexedTriangles.push(centerIndex, topIndex, leftIndex);
+        indexedTriangles.push(topIndex, topLeftIndex, leftIndex);
+      }
     }
   }
   controlMeshGeometry.setIndex(indexedTriangles);
 
   controlMeshObject = new THREE.Mesh(controlMeshGeometry, controlMeshMaterial);
+
   scene.add(controlMeshObject);
+
+  controlMeshGeometry.setDrawRange(0, indexedTriangles.length);
 
   applyScale(controlMeshObject);
 

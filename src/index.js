@@ -72,6 +72,7 @@ function handleImage2DLoad() {
   const ctx = canvas2D.getContext('2d', {willReadFrequently: true});
   canvas2D.width = image2D.width;
   canvas2D.height = image2D.height;
+  document.getElementById('image-size').innerText = `${image2D.width}x${image2D.height}`;
   ctx.drawImage(image2D, 0, 0);
   const controlVertices = readControlVertices(ctx);
   drawControlVertices(controlVertices);

@@ -6,11 +6,11 @@ let canvas2D;
 let canvas3D;
 let width;
 let height;
+let ambientLight;
 
 const scene = new THREE.Scene();
 let camera;
 let renderer;
-let orbitControls;
 
 function handleWindowLoad() {
   canvas3D = document.getElementById('image-3d');
@@ -21,32 +21,15 @@ function handleWindowLoad() {
   renderer = new THREE.WebGLRenderer({ canvas: canvas3D});
   renderer.setSize( width, height );
 
-  // const light = new THREE.DirectionalLight(0xffffff, 10);
-  // light.position.set(3, 3, 3);
-  // light.lookAt(0, 0, 0);
-  // // light.castShadow = true;
-  // scene.add(light);
+  const light = new THREE.DirectionalLight(0xffffff, 10);
+  light.position.set(1.5, 1.5, 1.5);
+  light.lookAt(0, 0, 0);
+  scene.add(light);
 
-  // Create a spot light
-const spotLight = new THREE.SpotLight(0xffffff); // White light
-spotLight.position.set(10, 10, 10); // Position the light at (10, 10, 10)
-spotLight.target.position.set(0, 0, 0); // Set the target point at (0, 0, 0)
-spotLight.angle = Math.PI / 4; // Angle of the spotlight cone (in radians)
-spotLight.penumbra = 0.05; // Softens the edges of the spotlight cone
-spotLight.decay = 2; // Intensity decay over distance
-spotLight.distance = 200; // Maximum range of the light
-
-// Add the spotlight to the scene
-scene.add(spotLight);
-
-// Optionally, add the spotlight's target to the scene
-scene.add(spotLight.target);
-
-
-  const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+  ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
   scene.add(ambientLight);
 
-  orbitControls = new OrbitControls( camera, renderer.domElement );
+  const orbitControls = new OrbitControls( camera, renderer.domElement );
 
   camera.position.set(1.5, 1.5, 1.5);
   camera.lookAt(0, 0, 0);
@@ -58,6 +41,7 @@ scene.add(spotLight.target);
   document.getElementById('scaleY').addEventListener('input', handleScaleYChange);
   document.getElementById('scaleZ').addEventListener('input', handleScaleZChange);
 
+  document.getElementById('ambientIntensity').addEventListener('input', handleAmbientIntensityChange);
   document.getElementById('show-control-vertices').addEventListener('change', handleShowControlVerticesChange);
   document.getElementById('show-control-mesh').addEventListener('change', handleShowControlMeshChange);
   handleImageSelectorChange();
@@ -223,7 +207,9 @@ const rotate = (mesh) => {
   // mesh.rotation.x += 0.01;
   // mesh.rotation.y += 0.01;
 };
-
+function handleAmbientIntensityChange() {
+  ambientLight.intensity = document.getElementById('ambientIntensity').value;
+}
 function animate() {
 	requestAnimationFrame( animate );
   rotate(controlVerticesObject);

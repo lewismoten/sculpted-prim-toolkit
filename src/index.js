@@ -21,12 +21,35 @@ function handleWindowLoad() {
   renderer = new THREE.WebGLRenderer({ canvas: canvas3D});
   renderer.setSize( width, height );
 
-  const light = new THREE.DirectionalLight(0xffffff, 1);
-  light.position.set(1, 1, 1);
-  scene.add(light);
+  // const light = new THREE.DirectionalLight(0xffffff, 10);
+  // light.position.set(3, 3, 3);
+  // light.lookAt(0, 0, 0);
+  // // light.castShadow = true;
+  // scene.add(light);
+
+  // Create a spot light
+const spotLight = new THREE.SpotLight(0xffffff); // White light
+spotLight.position.set(10, 10, 10); // Position the light at (10, 10, 10)
+spotLight.target.position.set(0, 0, 0); // Set the target point at (0, 0, 0)
+spotLight.angle = Math.PI / 4; // Angle of the spotlight cone (in radians)
+spotLight.penumbra = 0.05; // Softens the edges of the spotlight cone
+spotLight.decay = 2; // Intensity decay over distance
+spotLight.distance = 200; // Maximum range of the light
+
+// Add the spotlight to the scene
+scene.add(spotLight);
+
+// Optionally, add the spotlight's target to the scene
+scene.add(spotLight.target);
+
+
+  const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+  scene.add(ambientLight);
 
   orbitControls = new OrbitControls( camera, renderer.domElement );
-  camera.position.z = 5;
+
+  camera.position.set(1.5, 1.5, 1.5);
+  camera.lookAt(0, 0, 0);
 
   canvas2D = document.getElementById('image-preview');
   document.getElementById('image-selector').addEventListener('change', handleImageSelectorChange);
@@ -98,26 +121,47 @@ function drawControlVertices(controlVertices) {
     const mesh = new THREE.Mesh( geometry, material );
     mesh.position.set(x, y, z);
     controlVerticesObject.add(mesh);
-  })
+  });
+  setPositionCentered(controlVerticesObject);
   scene.add( controlVerticesObject );
 
   applyScale(controlVerticesObject);
   controlVerticesObject.visible = document.getElementById('show-control-vertices').checked;
-
-  camera.position.z = 5;
 }
 function sphericalIndex(x, y) {
   return y * (width + 1) + x;
 }
+
 function drawSphericalControlMesh(controlVertices) {
+  cleanupControlMesh();
+  const controlMeshGeometry = createSphericalControlGeometry(controlVertices, width, height);
+  const controlMeshMaterial = new THREE.MeshPhongMaterial( { color: 'red' } );
+  controlMeshObject = new THREE.Mesh(controlMeshGeometry, controlMeshMaterial);
+  setPositionCentered(controlMeshObject);
+  scene.add(controlMeshObject);
+  applyScale(controlMeshObject);
+  controlMeshObject.visible = document.getElementById('show-control-mesh').checked;
+}
+
+function cleanupControlMesh() {
   if(controlMeshObject) {
     scene.remove(controlMeshObject);
     controlMeshObject.geometry.dispose();
     controlMeshObject.material.dispose();
   }
-
+}
+function createSphericalControlGeometry(controlVertices, horizontalSegments, verticalSegments) {
   const controlMeshGeometry = new THREE.BufferGeometry();
-  const count = ((width + 1) * (height + 1)) * 3;
+  const vertices = createSphericalControlVertices(controlVertices, horizontalSegments, verticalSegments);
+  controlMeshGeometry.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
+  const indexedTriangles = createSphericalControlTriangles(horizontalSegments, verticalSegments);
+  controlMeshGeometry.setIndex(indexedTriangles);
+  controlMeshGeometry.setDrawRange(0, indexedTriangles.length);
+  return controlMeshGeometry;
+}
+
+function createSphericalControlVertices(controlVertices, horizontalSegments, verticalSegments) {
+  const count = ((horizontalSegments + 1) * (verticalSegments + 1)) * 3;
   const vertices = new Float32Array(count);
   controlVertices.forEach(({ x, y, z }, i) => {
     const offset = i * 3;
@@ -125,18 +169,17 @@ function drawSphericalControlMesh(controlVertices) {
     vertices[offset + 1] = y;
     vertices[offset + 2] = z;
   });
-  controlMeshGeometry.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
+  return vertices;
+}
 
-  const controlMeshMaterial = new THREE.MeshBasicMaterial( { color: 0xcccccc, side: THREE.DoubleSide } );
-
+function createSphericalControlTriangles(horizontalSegments, verticalSegments) {
   var indexedTriangles = [];
-  for(let x = 0; x < width; x++) {
-    for(let y = 0; y < height; y++) {
+  for(let x = 0; x < horizontalSegments; x++) {
+    for(let y = 0; y < verticalSegments; y++) {
       const centerIndex = sphericalIndex(x, y);
       const topIndex = sphericalIndex(x, y + 1);
       const leftIndex = sphericalIndex(x + 1, y);
       const topLeftIndex = sphericalIndex(x + 1, y + 1);
-      
       if(topLeftIndex >= 0 && topIndex >= 0 && leftIndex >= 0) {
         // Add triangles in counter-clockwise order
         indexedTriangles.push(centerIndex, topIndex, leftIndex);
@@ -144,17 +187,10 @@ function drawSphericalControlMesh(controlVertices) {
       }
     }
   }
-  controlMeshGeometry.setIndex(indexedTriangles);
-
-  controlMeshObject = new THREE.Mesh(controlMeshGeometry, controlMeshMaterial);
-
-  scene.add(controlMeshObject);
-
-  controlMeshGeometry.setDrawRange(0, indexedTriangles.length);
-
-  applyScale(controlMeshObject);
-
-  controlMeshObject.visible = document.getElementById('show-control-mesh').checked;
+  return indexedTriangles;
+}
+function setPositionCentered(mesh) {
+  mesh.position.set(0,0,0);
 }
 
 function applyScale(mesh) {
@@ -184,8 +220,8 @@ function handleShowControlMeshChange() {
 }
 const rotate = (mesh) => {
   if(!mesh) return;
-  mesh.rotation.x += 0.01;
-  mesh.rotation.y += 0.01;
+  // mesh.rotation.x += 0.01;
+  // mesh.rotation.y += 0.01;
 };
 
 function animate() {

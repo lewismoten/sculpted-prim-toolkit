@@ -69,16 +69,23 @@ function handleWindowLoad() {
       const option = document.createElement('option');
       option.value = `images/sculpted-prims/${file}`;
       option.innerText = file;
+      if(file === 'UFO Sculpty 1.0.png') {
+        option.selected = true;
+      }
       imageSelector.appendChild(option);
     });
+    handleImageSelectorChange();
     const textureSelector = document.getElementById('texture-selector');
     files.textures.forEach(file => {
       const option = document.createElement('option');
       option.value = `images/textures/${file}`;
       option.innerText = file;
+      if(file === 'Funky UFO 1.0.png') {
+        option.selected = true;
+      }
       textureSelector.appendChild(option);
     });
-    handleImageSelectorChange();
+    handleTextureSelectorChange();
   });
 }
 function handleTextureSelectorChange() {
@@ -249,10 +256,24 @@ function createSphericalControlGeometry(controlVertices, horizontalSegments, ver
   controlMeshGeometry.setIndex(indexedTriangles);
   controlMeshGeometry.setDrawRange(0, indexedTriangles.length);
   controlMeshGeometry.computeVertexNormals();
-
+  updateUvMapping(controlMeshGeometry, horizontalSegments, verticalSegments);
   document.getElementById('control-mesh-vertices').innerText = controlVertices.length.toLocaleString();
   document.getElementById('control-mesh-faces').innerText = (indexedTriangles.length / 3).toLocaleString();
   return controlMeshGeometry;
+}
+function updateUvMapping(geometry, horizontalSegments, verticalSegments) {
+  // geometry.computeBoundingSphere();
+  const uvs = new Float32Array(geometry.attributes.position.count * 2);
+  const count = geometry.attributes.position.count;
+  for(let i = 0; i < count; i++) {
+    const offset = i * 2;
+    const x = i % (horizontalSegments + 1);
+    const y = Math.floor(i / (horizontalSegments + 1));
+    uvs[offset] = x / horizontalSegments;
+    uvs[offset + 1] = y / verticalSegments;
+  }
+  geometry.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
+
 }
 
 function createSphericalControlVertices(controlVertices, horizontalSegments, verticalSegments) {

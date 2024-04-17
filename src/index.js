@@ -7,11 +7,14 @@ let canvas3D;
 let width;
 let height;
 let ambientLight;
+let directionaLight;
 let isRotating = false;
 
 const scene = new THREE.Scene();
 let camera;
 let renderer;
+
+let cubeObject;
 
 function handleWindowLoad() {
   canvas3D = document.getElementById('image-3d');
@@ -22,18 +25,20 @@ function handleWindowLoad() {
   renderer = new THREE.WebGLRenderer({ canvas: canvas3D});
   renderer.setSize( width, height );
 
-  const light = new THREE.DirectionalLight(0xffffff, 10);
-  light.position.set(1.5, 1.5, 1.5);
-  light.lookAt(0, 0, 0);
-  scene.add(light);
+  directionaLight = new THREE.DirectionalLight(0xffffff, 1);
+  directionaLight.position.set(1.5, 1.5, 1.5);
+  directionaLight.lookAt(0, 0, 0);
+  scene.add(directionaLight);
 
   ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
   scene.add(ambientLight);
 
-  const orbitControls = new OrbitControls( camera, renderer.domElement );
+  new OrbitControls( camera, renderer.domElement );
 
   camera.position.set(1.5, 1.5, 1.5);
   camera.lookAt(0, 0, 0);
+
+  drawCube();
 
   canvas2D = document.getElementById('image-preview');
   document.getElementById('image-selector').addEventListener('change', handleImageSelectorChange);
@@ -48,8 +53,10 @@ function handleWindowLoad() {
   document.getElementById('scaleZ').addEventListener('input', handleScaleZChange);
 
   document.getElementById('ambientIntensity').addEventListener('input', handleAmbientIntensityChange);
+  document.getElementById('directionalIntensity').addEventListener('input', handleDirectionalIntensityChange);
   document.getElementById('show-control-vertices').addEventListener('change', handleShowControlVerticesChange);
   document.getElementById('show-control-mesh').addEventListener('change', handleShowControlMeshChange);
+  document.getElementById('show-cube').addEventListener('change', handleShowCubeChange);
   handleImageSelectorChange();
   requestAnimationFrame( animate );
 }
@@ -125,7 +132,7 @@ function sphericalIndex(x, y) {
 function drawSphericalControlMesh(controlVertices) {
   cleanupControlMesh();
   const controlMeshGeometry = createSphericalControlGeometry(controlVertices, width, height);
-  const controlMeshMaterial = new THREE.MeshPhongMaterial( { color: 'red' } );
+  const controlMeshMaterial = new THREE.MeshStandardMaterial( { color: 'white', side: THREE.DoubleSide } );
   controlMeshObject = new THREE.Mesh(controlMeshGeometry, controlMeshMaterial);
   setPositionCentered(controlMeshObject);
   scene.add(controlMeshObject);
@@ -179,6 +186,20 @@ function createSphericalControlTriangles(horizontalSegments, verticalSegments) {
   }
   return indexedTriangles;
 }
+function drawCube() {
+  if(cubeObject) {
+    cubeObject.geometry.dispose();
+    cubeObject.material.dispose();
+    scene.remove(cubeObject);
+  }
+  const geometry = new THREE.BoxGeometry(1, 1, 1);
+  const material = new THREE.MeshStandardMaterial( { color: 'white', side: THREE.DoubleSide } );
+  cubeObject = new THREE.Mesh(geometry, material);
+  setPositionCentered(cubeObject);
+  scene.add(cubeObject);
+  applyScale(cubeObject);
+  cubeObject.visible = document.getElementById('show-cube').checked;
+}
 function setPositionCentered(mesh) {
   mesh.position.set(0,0,0);
 }
@@ -208,6 +229,9 @@ function handleShowControlVerticesChange() {
 function handleShowControlMeshChange() {
   controlMeshObject.visible = document.getElementById('show-control-mesh').checked;
 }
+function handleShowCubeChange() {
+  cubeObject.visible = document.getElementById('show-cube').checked;
+}
 const rotate = (mesh) => {
   if(!mesh) return;
   if(isRotating) {
@@ -218,10 +242,16 @@ const rotate = (mesh) => {
 function handleAmbientIntensityChange() {
   ambientLight.intensity = document.getElementById('ambientIntensity').value;
 }
+function handleDirectionalIntensityChange() {
+  directionaLight.intensity = document.getElementById('directionalIntensity').value;
+}
 function animate() {
 	requestAnimationFrame( animate );
-  rotate(controlVerticesObject);
-  rotate(controlMeshObject);
+  [
+    cubeObject,
+    controlVerticesObject,
+    controlMeshObject
+  ].forEach(rotate);
   renderer.render( scene, camera );
 }
 

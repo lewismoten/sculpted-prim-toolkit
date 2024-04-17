@@ -10,6 +10,8 @@ let ambientLight;
 let directionaLight;
 let isRotating = false;
 let rotation = {x: 0, y: 0, z: 0};
+let horizontalSegments = 32;
+let verticalSegments = 32;
 
 const scene = new THREE.Scene();
 let camera;
@@ -88,7 +90,14 @@ function rgbLong(r, g, b) {
 function readControlVertices(ctx) {
   const pixels = ctx.getImageData(0, 0, canvas2D.width, canvas2D.height).data;
   const controlVertices = [];
+  horizontalSegments = Math.floor(canvas2D.width / 2);
+  verticalSegments = Math.floor(canvas2D.height / 2);
   for(let i = 0; i < pixels.length; i += 4) {
+    const x = (i / 4) % canvas2D.width;
+    const y = Math.floor((i / 4) / canvas2D.width);
+    // skip odd pixels
+    if(x % 2 === 1) continue;
+    if(y % 2 === 1) continue;
     const r = pixels[i];
     const g = pixels[i + 1];
     const b = pixels[i + 2];
@@ -127,24 +136,24 @@ function drawControlVertices(controlVertices) {
   applyScale(controlVerticesObject);
   controlVerticesObject.visible = document.getElementById('show-control-vertices').checked;
 }
-function sphericalIndex(x, y) {
-  if(y === height || y === 0) {
+function sphericalIndex(x, y, horizontalSegments, verticalSegments) {
+  if(y === verticalSegments || y === 0) {
     // poles of top and bottom are centered
-    x = Math.floor(width / 2);
+    x = Math.floor(horizontalSegments / 2);
   } 
   if(x < 0) {
     // stitch left to right
-    x = width - 1;
-  } else if(x >= width) {
+    x = horizontalSegments - 1;
+  } else if(x >= horizontalSegments) {
     // stitch right to left
     x = 0;
   }
-  return y * (width + 1) + x;
+  return y * (horizontalSegments + 1) + x;
 }
 
 function drawSphericalControlMesh(controlVertices) {
   cleanupControlMesh();
-  const controlMeshGeometry = createSphericalControlGeometry(controlVertices, width, height);
+  const controlMeshGeometry = createSphericalControlGeometry(controlVertices, horizontalSegments, verticalSegments);
   const controlMeshMaterial = new THREE.MeshStandardMaterial( { color: 'white', side: THREE.DoubleSide } );
   controlMeshObject = new THREE.Mesh(controlMeshGeometry, controlMeshMaterial);
   setPositionCentered(controlMeshObject);
@@ -186,10 +195,10 @@ function createSphericalControlTriangles(horizontalSegments, verticalSegments) {
   var indexedTriangles = [];
   for(let x = -1; x < horizontalSegments; x++) {
     for(let y = 0; y < verticalSegments; y++) {
-      const centerIndex = sphericalIndex(x, y);
-      const topIndex = sphericalIndex(x, y - 1);
-      const leftIndex = sphericalIndex(x + 1, y);
-      const topLeftIndex = sphericalIndex(x - 1, y - 1);
+      const centerIndex = sphericalIndex(x, y, horizontalSegments, verticalSegments);
+      const topIndex = sphericalIndex(x, y - 1, horizontalSegments, verticalSegments);
+      const leftIndex = sphericalIndex(x + 1, y, horizontalSegments, verticalSegments);
+      const topLeftIndex = sphericalIndex(x - 1, y - 1, horizontalSegments, verticalSegments);
       if(topLeftIndex >= 0 && topIndex >= 0 && leftIndex >= 0) {
         // Add triangles in counter-clockwise order
         indexedTriangles.push(centerIndex, topIndex, leftIndex);

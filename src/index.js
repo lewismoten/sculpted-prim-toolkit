@@ -51,9 +51,9 @@ function handleWindowLoad() {
     isRotating = !isRotating;
   });
 
-  document.getElementById('scaleX').addEventListener('input', handleScaleXChange);
-  document.getElementById('scaleY').addEventListener('input', handleScaleYChange);
-  document.getElementById('scaleZ').addEventListener('input', handleScaleZChange);
+  document.getElementById('scaleX').addEventListener('input', applyScaleToObjects);
+  document.getElementById('scaleY').addEventListener('input', applyScaleToObjects);
+  document.getElementById('scaleZ').addEventListener('input', applyScaleToObjects);
 
   document.getElementById('ambientIntensity').addEventListener('input', handleAmbientIntensityChange);
   document.getElementById('directionalIntensity').addEventListener('input', handleDirectionalIntensityChange);
@@ -233,17 +233,12 @@ function applyScale(mesh) {
     document.getElementById('scaleZ').value
   );
 }
-function handleScaleXChange() {
-  const scaleX = document.getElementById('scaleX').value;
-  controlVerticesObject.scale.x = scaleX;
-}
-function handleScaleYChange() {
-  const scaleY = document.getElementById('scaleY').value;
-  controlVerticesObject.scale.y = scaleY;
-}
-function handleScaleZChange() {
-  const scaleZ = document.getElementById('scaleZ').value;
-  controlVerticesObject.scale.z = scaleZ;
+function applyScaleToObjects() {
+  [
+    cubeObject,
+    controlVerticesObject,
+    controlMeshObject
+  ].filter(Boolean).forEach(applyScale);
 }
 function handleShowControlVerticesChange() {
   controlVerticesObject.visible = document.getElementById('show-control-vertices').checked;

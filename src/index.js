@@ -141,10 +141,16 @@ function drawControlVertices(controlVertices) {
   controlVerticesObject.visible = document.getElementById('show-control-vertices').checked;
 }
 function sphericalIndex(x, y, horizontalSegments, verticalSegments) {
-  if(y === verticalSegments || y === 0) {
+  if(y >= verticalSegments || y <= 0) {
     // poles of top and bottom are centered
     x = Math.floor(horizontalSegments / 2);
-  } 
+  }
+  // keep y within bounds
+  if(y < 0) {
+    y = 0;
+  } else if(y >= verticalSegments) {
+    y = verticalSegments - 1;
+  }
   if(x < 0) {
     // stitch left to right
     x = horizontalSegments - 1;
@@ -200,8 +206,8 @@ function createSphericalControlVertices(controlVertices, horizontalSegments, ver
 
 function createSphericalControlTriangles(horizontalSegments, verticalSegments) {
   var indexedTriangles = [];
-  for(let x = -1; x < horizontalSegments; x++) {
-    for(let y = 0; y < verticalSegments; y++) {
+  for(let x = 0; x < horizontalSegments; x++) {
+    for(let y = 0; y < verticalSegments - 1; y++) {
       const centerIndex = sphericalIndex(x, y, horizontalSegments, verticalSegments);
       const topIndex = sphericalIndex(x, y - 1, horizontalSegments, verticalSegments);
       const leftIndex = sphericalIndex(x + 1, y, horizontalSegments, verticalSegments);
@@ -211,12 +217,16 @@ function createSphericalControlTriangles(horizontalSegments, verticalSegments) {
       const bottomLeftIndex = sphericalIndex(x - 1, y + 1, horizontalSegments, verticalSegments);
       const bottomIndex = sphericalIndex(x, y + 1, horizontalSegments, verticalSegments);
       const rightIndex = sphericalIndex(x + 1, y, horizontalSegments, verticalSegments);
-
-      // if(topLeftIndex >= 0 && topIndex >= 0 && leftIndex >= 0) {
         // Add triangles in counter-clockwise order
+
+      if(y === 0) {
+        indexedTriangles.push(centerIndex, bottomIndex, rightIndex);
+      } else if(y === verticalSegments - 2) {
+        indexedTriangles.push(centerIndex, bottomIndex, rightIndex);
+      } else {
         indexedTriangles.push(centerIndex, rightIndex, bottomRightIndex);
         indexedTriangles.push(bottomRightIndex, bottomIndex, centerIndex);
-      // }
+      }
     }
   }
   return indexedTriangles;

@@ -303,7 +303,7 @@ function getCellText(x, y, size) {
       col = Math.floor(col / 26);
     }
   }
-  return letters + row.toString().padStart(2, '0');
+  return letters + row.toString();
 }
 function loadTexture(textureUrl) {
   const textureImage = new Image();

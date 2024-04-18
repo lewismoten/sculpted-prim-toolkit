@@ -56,7 +56,7 @@ function handleWindowLoad() {
   const cameras = ['front', 'back', 'left', 'right', 'top', 'bottom', 'iso', 'perspective'];
   cameras.forEach(angle => {
     document.getElementById(`camera-${angle}`)
-      .addEventListener('click', changeCameraAngle.bind(this, angle));
+      .addEventListener('click', changeCameraAngle.bind(this, angle, width, height));
   });
   document.getElementById('camera-top').click();
 
@@ -99,21 +99,22 @@ function handleWindowLoad() {
   });
 }
 
-function changeCameraAngle(angle) {
-  const bounds = new THREE.Box3().setFromObject(controlMeshObject ?? cubeObject);
+function changeCameraAngle(angle, width, height) {
+  const bounds = new THREE.Box3().setFromObject(cubeObject);
   const center = bounds.getCenter(new THREE.Vector3());
   const size = bounds.getSize(new THREE.Vector3());
   // Create camera based on angle and size of mesh
-  const camera = createCamera(angle, size);
+  const camera = createCamera(angle, size, width, height);
   // Calculate camera position based on angle, field of view, mesh size & location
   const pos = getAnglePosition(angle, camera.fov, center, size);
   camera.position.set(pos.x, pos.y, pos.z);
   camera.lookAt(0, 0, 0);
 }
 
-function createCamera(angle, size) {
+function createCamera(angle, size, canvasWidth, canvasHeight) {
   if(controls) controls.dispose();
   if(camera) scene.remove(camera);
+  const canvasRatio = canvasWidth / canvasHeight;
   switch(angle) {
     case 'front':
     case 'back':
@@ -122,10 +123,20 @@ function createCamera(angle, size) {
     case 'top':
     case 'bottom':
     case 'iso':
-      camera = new THREE.OrthographicCamera(size.x / -2, size.x / 2, size.y / 2, size.y / -2, 1, 1000);
+      const max = Math.max(size.x, size.y, size.z);
+      const frustumWidth = max * canvasRatio;
+      const frustumHeight = max;
+      camera = new THREE.OrthographicCamera(
+        frustumWidth / -2,
+        frustumWidth / 2,
+        frustumHeight / 2,
+        frustumHeight / -2,
+        1,
+        1000
+      );
       break;
     case 'perspective':
-      camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
+      camera = new THREE.PerspectiveCamera(75, canvasRatio, 0.1, 1000);
       break;
   }
   controls = new OrbitControls( camera, renderer.domElement );
@@ -142,9 +153,9 @@ function getAnglePosition(angle, fov, targetPos, targetSize) {
   }
 
   const offset = (x, y, z) => ({
-    x: targetPos.x + x * distance, 
-    y: targetPos.y + y * distance,
-    z: targetPos.z + z * distance
+    x: targetPos.x + (x * distance), 
+    y: targetPos.y + (y * distance),
+    z: targetPos.z + (z * distance)
   });
 
 

@@ -362,6 +362,8 @@ function rgbLong(r, g, b) {
 function readControlVertices(ctx) {
   const width = canvas2D.width;
   const height = canvas2D.height;
+  const pixelDataBytes = 4;
+  // get pixels in row major order, top to bottom, left to right as (r, g, b, a)
   const pixels = ctx.getImageData(0, 0, width, height).data;
   const controlVertices = [];
   horizontalSegments = Math.floor(width / 2);
@@ -371,21 +373,21 @@ function readControlVertices(ctx) {
   document.getElementById('vertical-segments').innerText = verticalSegments.toLocaleString() + " + 1";
 
 
-  for(let i = 0; i < pixels.length; i += 4) {
-    const x = (i / 4) % width;
-    const y = Math.floor((i / 4) / width);
+  for(let i = 0; i < pixels.length; i += pixelDataBytes) {
+    const columnIndex = (i / pixelDataBytes) % width;
+    const rowIndex = Math.floor((i / pixelDataBytes) / width);
     // skip odd pixels
-    if(x % 2 === 1 && x !== width-1) continue;
-    if(y % 2 === 1) continue;
+    if(columnIndex % 2 === 1 && columnIndex !== width-1) continue;
+    if(rowIndex % 2 === 1) continue;
     const r = pixels[i];
     const g = pixels[i + 1];
     const b = pixels[i + 2];
     const color = rgbLong(r, g, b);
     controlVertices.push({
       color,
-      x: mapCv(r),
-      y: mapCv(g),
-      z: mapCv(b)
+      x: mapCv(g),
+      y: mapCv(b),
+      z: mapCv(r)
     })
   }
   return controlVertices;

@@ -161,6 +161,7 @@ function getAnglePosition(angle, fov, targetPos, targetSize) {
     case 'right': return offset(1, 0, 0);
     case 'top': return offset(0, 1, 0);
     case 'bottom': return offset(0, -1, 0);
+    case 'perspective': return ({x: 1.5, y: 1.5, z: 1.5});
     default: return offset(1,1,1);
   }
 }

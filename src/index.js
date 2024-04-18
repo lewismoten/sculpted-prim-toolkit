@@ -354,12 +354,20 @@ function handleImage2DLoad() {
   drawControlVertices(controlVertices);
   drawSphericalControlMesh(controlVertices);
 }
-function mapCv(value) {
-  // 0 to 255 === -0.5 to 0.5
-  return (value - 128) / 256;
+function mapByteToControlVectorValue(byteValue) {
+  // -0.5 to 0.5
+  return (byteValue - 128) / 256;
 }
 function rgbLong(r, g, b) {
   return (r << 16) | (g << 8) | b;
+}
+function convertRgbToVertex(r, g, b) {
+  return {
+    color: rgbLong(r, g, b),
+    x: mapByteToControlVectorValue(g),
+    y: mapByteToControlVectorValue(b),
+    z: mapByteToControlVectorValue(r)
+  };
 }
 function readControlVertices(ctx) {
   const width = canvas2D.width;
@@ -381,16 +389,7 @@ function readControlVertices(ctx) {
     // skip odd pixels
     if(columnIndex % 2 === 1 && columnIndex !== width-1) continue;
     if(rowIndex % 2 === 1) continue;
-    const r = pixels[i];
-    const g = pixels[i + 1];
-    const b = pixels[i + 2];
-    const color = rgbLong(r, g, b);
-    controlVertices.push({
-      color,
-      x: mapCv(g),
-      y: mapCv(b),
-      z: mapCv(r)
-    })
+    controlVertices.push(convertRgbToVertex(...pixels.slice(i, i + 3)));
   }
   return controlVertices;
 }

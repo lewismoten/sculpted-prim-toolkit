@@ -233,8 +233,8 @@ function readControlVertices(ctx) {
   horizontalSegments = Math.floor(width / 2);
   verticalSegments = Math.floor(height / 2);
 
-  document.getElementById('horizontal-segments').innerText = horizontalSegments.toLocaleString();
-  document.getElementById('vertical-segments').innerText = verticalSegments.toLocaleString();
+  document.getElementById('horizontal-segments').innerText = horizontalSegments.toLocaleString() + " + 1";
+  document.getElementById('vertical-segments').innerText = verticalSegments.toLocaleString() + " + 1";
 
 
   for(let i = 0; i < pixels.length; i += 4) {
@@ -330,25 +330,25 @@ function createSphericalControlGeometry(controlVertices, horizontalSegments, ver
   const indexedTriangles = createSphericalControlTriangles(horizontalSegments, verticalSegments);
   controlMeshGeometry.setIndex(indexedTriangles);
   controlMeshGeometry.setDrawRange(0, indexedTriangles.length);
-  controlMeshGeometry.computeVertexNormals();
-  updateUvMapping(controlMeshGeometry, horizontalSegments, verticalSegments);
+  const uvs = createUvMappingForSphere(controlMeshGeometry.attributes.position.count, horizontalSegments, verticalSegments);
+  controlMeshGeometry.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
+
   document.getElementById('control-mesh-vertices').innerText = controlVertices.length.toLocaleString();
   document.getElementById('control-mesh-faces').innerText = (indexedTriangles.length / 3).toLocaleString();
+  document.getElementById('control-mesh-positions').innerText = controlMeshGeometry.attributes.position.count.toLocaleString();
   return controlMeshGeometry;
 }
-function updateUvMapping(geometry, horizontalSegments, verticalSegments) {
-  // geometry.computeBoundingSphere();
-  const uvs = new Float32Array(geometry.attributes.position.count * 2);
-  const count = geometry.attributes.position.count;
-  for(let i = 0; i < count; i++) {
+function createUvMappingForSphere(positionCount, horizontalSegments, verticalSegments) {
+  const uvs = new Float32Array(positionCount * 2);
+  const verticesPerRow = horizontalSegments + 1;
+  for(let i = 0; i < positionCount; i++) {
     const offset = i * 2;
-    const x = i % (horizontalSegments + 1);
-    const y = Math.floor(i / (horizontalSegments + 1));
-    uvs[offset] = x / horizontalSegments;
-    uvs[offset + 1] = y / verticalSegments;
+    const u = horizontalSegments - (i % verticesPerRow);
+    const v = Math.floor(i / verticesPerRow);
+    uvs[offset] = u / horizontalSegments;
+    uvs[offset + 1] = v / verticalSegments;
   }
-  geometry.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
-
+  return uvs;
 }
 
 function createSphericalControlVertices(controlVertices, horizontalSegments, verticalSegments) {

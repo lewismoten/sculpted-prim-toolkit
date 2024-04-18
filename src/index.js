@@ -487,10 +487,10 @@ function sphericalIndex(x, y, horizontalSegments, verticalSegments) {
   }
   if(x < 0) {
     // stitch left to right
-    x = horizontalSegments - 1;
+    x += horizontalSegments;
   } else if(x >= horizontalSegments) {
     // stitch right to left
-    x = 0;
+    x -= horizontalSegments;
   }
   return y * (horizontalSegments + 1) + x;
 }
@@ -565,9 +565,18 @@ function createSphericalControlTriangles(horizontalSegments, verticalSegments) {
       const bottomRightIndex = sphericalIndex(x + 1, y + 1, horizontalSegments, verticalSegments);
       const bottomIndex = sphericalIndex(x, y + 1, horizontalSegments, verticalSegments);
       const rightIndex = sphericalIndex(x + 1, y, horizontalSegments, verticalSegments);
-        // Add triangles in counter-clockwise order
+      // Add triangles in counter-clockwise order
+      if(y === 0) {
+        // triangles at top of sphere
+        indexedTriangles.push(centerIndex, bottomIndex, bottomRightIndex);
+      } else if(y === verticalSegments - 1) {
+        // triangles at bottom of shere
+        indexedTriangles.push(bottomRightIndex, rightIndex, centerIndex);
+      } else {
+        // quads in the middle of the sphere
         indexedTriangles.push(bottomRightIndex, rightIndex, centerIndex);
         indexedTriangles.push(centerIndex, bottomIndex, bottomRightIndex);
+      }
     }
   }
   return indexedTriangles;

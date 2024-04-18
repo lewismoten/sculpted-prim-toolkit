@@ -369,6 +369,13 @@ function convertRgbToVertex(r, g, b) {
     z: mapByteToControlVectorValue(r)
   };
 }
+function canReadControlVertex(columnIndex, rowIndex, width, height) {
+  // only even columns and the last column contain control vertices
+  if(columnIndex % 2 === 1 && columnIndex !== width-1) return false;
+  // only even rows contain control vertices
+  if(rowIndex % 2 === 1) return false;
+  return true;
+}
 function readControlVertices(ctx) {
   const width = canvas2D.width;
   const height = canvas2D.height;
@@ -382,13 +389,10 @@ function readControlVertices(ctx) {
   document.getElementById('horizontal-segments').innerText = horizontalSegments.toLocaleString() + " + 1";
   document.getElementById('vertical-segments').innerText = verticalSegments.toLocaleString() + " + 1";
 
-
   for(let i = 0; i < pixels.length; i += pixelDataBytes) {
     const columnIndex = (i / pixelDataBytes) % width;
     const rowIndex = Math.floor((i / pixelDataBytes) / width);
-    // skip odd pixels
-    if(columnIndex % 2 === 1 && columnIndex !== width-1) continue;
-    if(rowIndex % 2 === 1) continue;
+    if(!canReadControlVertex(columnIndex, rowIndex, width, height)) continue;
     controlVertices.push(convertRgbToVertex(...pixels.slice(i, i + 3)));
   }
   return controlVertices;

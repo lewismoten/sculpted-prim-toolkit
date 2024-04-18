@@ -129,7 +129,7 @@ function createCamera(angle, size) {
       break;
   }
   controls = new OrbitControls( camera, renderer.domElement );
-  camera.up.set(0, 0, -1);
+  camera.up.set(0, -1, 0);
   return camera;
 }
 function getAnglePosition(angle, fov, targetPos, targetSize) {

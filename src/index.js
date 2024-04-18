@@ -226,19 +226,22 @@ function rgbLong(r, g, b) {
   return (r << 16) | (g << 8) | b;
 }
 function readControlVertices(ctx) {
-  const pixels = ctx.getImageData(0, 0, canvas2D.width, canvas2D.height).data;
+  const width = canvas2D.width;
+  const height = canvas2D.height;
+  const pixels = ctx.getImageData(0, 0, width, height).data;
   const controlVertices = [];
-  horizontalSegments = Math.floor(canvas2D.width / 2);
-  verticalSegments = Math.floor(canvas2D.height / 2);
+  horizontalSegments = Math.floor(width / 2);
+  verticalSegments = Math.floor(height / 2);
 
   document.getElementById('horizontal-segments').innerText = horizontalSegments.toLocaleString();
   document.getElementById('vertical-segments').innerText = verticalSegments.toLocaleString();
 
+
   for(let i = 0; i < pixels.length; i += 4) {
-    const x = (i / 4) % canvas2D.width;
-    const y = Math.floor((i / 4) / canvas2D.width);
+    const x = (i / 4) % width;
+    const y = Math.floor((i / 4) / width);
     // skip odd pixels
-    if(x % 2 === 1 && x !== canvas2D.width-1) continue;
+    if(x % 2 === 1 && x !== width-1) continue;
     if(y % 2 === 1) continue;
     const r = pixels[i];
     const g = pixels[i + 1];

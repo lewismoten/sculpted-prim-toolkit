@@ -219,7 +219,8 @@ function handleImage2DLoad() {
   drawSphericalControlMesh(controlVertices);
 }
 function mapCv(value) {
-  return (value - 128) / 128;
+  // 0 to 255 === -0.5 to 0.5
+  return (value - 128) / 256;
 }
 function rgbLong(r, g, b) {
   return (r << 16) | (g << 8) | b;

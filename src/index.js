@@ -56,7 +56,7 @@ function handleWindowLoad() {
   const cameras = ['front', 'back', 'left', 'right', 'top', 'bottom', 'iso', 'perspective'];
   cameras.forEach(angle => {
     document.getElementById(`camera-${angle}`)
-      .addEventListener('click', changeCameraAngle.bind(this, angle, width, height));
+      .addEventListener('click', changeCameraAngle.bind(this, angle, width, height, scene));
   });
   document.getElementById('camera-top').click();
 
@@ -99,7 +99,7 @@ function handleWindowLoad() {
   });
 }
 
-function changeCameraAngle(angle, width, height) {
+function changeCameraAngle(angle, width, height, scene) {
   const bounds = new THREE.Box3().setFromObject(cubeObject);
   const center = bounds.getCenter(new THREE.Vector3());
   const size = bounds.getSize(new THREE.Vector3());
@@ -109,10 +109,23 @@ function changeCameraAngle(angle, width, height) {
   const pos = getAnglePosition(angle, camera.fov, center, size);
   camera.position.set(pos.x, pos.y, pos.z);
   camera.lookAt(0, 0, 0);
+  createCameraControls(camera, renderer.domElement, scene.up);
+}
+
+function createCameraControls(camera, domElement, up) {
+if(controls) controls.dispose();
+// create controls with correct rotation behavior
+controls = new OrbitControls( camera, domElement );
+const direction = new THREE.Vector3(0, 0, -1);
+// align direciton with camera rotation
+direction.applyQuaternion(camera.quaternion);
+// direction and cammera up vector pointing in opposite directions?
+const reverse = direction.dot(camera.getWorldDirection(up)) < 0;
+// correct rotation behavior
+controls.rotateSpeed *= (reverse ? -1 : 1);
 }
 
 function createCamera(angle, size, canvasWidth, canvasHeight) {
-  if(controls) controls.dispose();
   if(camera) scene.remove(camera);
   const canvasRatio = canvasWidth / canvasHeight;
   switch(angle) {
@@ -139,12 +152,6 @@ function createCamera(angle, size, canvasWidth, canvasHeight) {
       camera = new THREE.PerspectiveCamera(75, canvasRatio, 0.1, 1000);
       break;
   }
-  controls = new OrbitControls( camera, renderer.domElement );
-  var direction = new THREE.Vector3(0, 0, -1);
-  direction.applyQuaternion(camera.quaternion);
-  var angle = direction.angleTo(new THREE.Vector3(0, 1, 0));
-  var isLookingUp = angle > Math.PI / 2;
-  controls.rotateSpeed *= (isLookingUp ? -1 : 1);
   return camera;
 }
 function getAnglePosition(angle, fov, targetPos, targetSize) {

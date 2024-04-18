@@ -37,12 +37,6 @@ function handleWindowLoad() {
   ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
   scene.add(ambientLight);
 
-  controls = new OrbitControls( camera, renderer.domElement );
-
-  camera.position.set(1.5, 1.5, 1.5);
-  camera.lookAt(0, 0, 0);
-
-
   drawCube();
 
   canvas2D = document.getElementById('image-preview');
@@ -64,14 +58,13 @@ function handleWindowLoad() {
     document.getElementById(`camera-${angle}`)
       .addEventListener('click', changeCameraAngle.bind(this, angle));
   });
+  document.getElementById('camera-back').click();
 
   'xyz'.split('').forEach(axis => {
     const rotationInput = document.getElementById(`rotation-${axis}`);
     rotationInput.min = -Math.PI;
     rotationInput.max = Math.PI;
     rotationInput.value = 0;
-    const spinCheckbox = document.getElementById(`spin-${axis}`);
-    spinCheckbox.checked = axis !== "z";
   });
 
   document.getElementById('ambientIntensity').addEventListener('input', handleAmbientIntensityChange);
@@ -107,7 +100,7 @@ function handleWindowLoad() {
 }
 
 function changeCameraAngle(angle) {
-  const bounds = new THREE.Box3().setFromObject(controlMeshObject);
+  const bounds = new THREE.Box3().setFromObject(controlMeshObject ?? cubeObject);
   const center = bounds.getCenter(new THREE.Vector3());
   const size = bounds.getSize(new THREE.Vector3());
   // Create camera based on angle and size of mesh
@@ -117,9 +110,10 @@ function changeCameraAngle(angle) {
   camera.position.set(pos.x, pos.y, pos.z);
   camera.lookAt(0, 0, 0);
 }
+
 function createCamera(angle, size) {
-  controls.dispose();
-  scene.remove(camera);
+  if(controls) controls.dispose();
+  if(camera) scene.remove(camera);
   switch(angle) {
     case 'front':
     case 'back':
@@ -469,7 +463,7 @@ function handleDirectionalIntensityChange() {
 }
 function animate() {
 	requestAnimationFrame( animate );
-  controls.update();
+  if(controls) controls.update();
   rotate();
   renderer.render( scene, camera );
 }

@@ -44,7 +44,7 @@ function handleWindowLoad() {
   canvas2D = document.getElementById('image-preview');
   document.getElementById('image-selector').addEventListener('change', handleImageSelectorChange);
   document.getElementById('texture-selector').addEventListener('change', handleTextureSelectorChange);
-
+  document.getElementById('reveal-vertices').addEventListener('change', handleImageSelectorChange);
   document.getElementById('scaleX').addEventListener('input', applyScaleToObjects);
   document.getElementById('scaleY').addEventListener('input', applyScaleToObjects);
   document.getElementById('scaleZ').addEventListener('input', applyScaleToObjects);
@@ -350,7 +350,27 @@ function handleImage2DLoad() {
   canvas2D.height = image2D.height;
   document.getElementById('image-size').innerText = `${image2D.width}x${image2D.height}`;
   ctx.drawImage(image2D, 0, 0);
-  const controlVertices = readControlVertices(ctx);
+
+  const segments = downsampleSegments(image2D.width/2, image2D.height/2, 1024);
+  horizontalSegments = segments.horizontal;
+  verticalSegments = segments.vertical;
+
+  document.getElementById('horizontal-segments').innerText = horizontalSegments.toLocaleString() + " + 1";
+  document.getElementById('vertical-segments').innerText = verticalSegments.toLocaleString() + " + 1";
+  document.getElementById('horizontal-downsampling').innerText = segments.horizontalDownsample === 0 ? '' : `(downsampled: ${segments.horizontalDownsample})`;
+  document.getElementById('vertical-downsampling').innerText = segments.verticalDownsample === 0 ? '' : `(downsampled: ${segments.verticalDownsample})`;
+
+  if(document.getElementById('reveal-vertices').checked) {
+    for(let x = 0; x < image2D.width; x++) {
+      for(let y = 0; y < image2D.height; y++) {
+        if(!canReadControlVertex(x, y, image2D.width, image2D.height, segments.horizontalDownsample, segments.verticalDownsample)) {
+          ctx.fillStyle = 'black';
+          ctx.fillRect(x, y, 1, 1);
+        }
+      }
+    }
+  }
+  const controlVertices = readControlVertices(ctx, segments);
   drawControlVertices(controlVertices);
   drawSphericalControlMesh(controlVertices);
 }
@@ -407,28 +427,18 @@ function downsampleSegments(width, height, verticesLimit) {
   }
   return segments;
 }
-function readControlVertices(ctx) {
+function readControlVertices(ctx, segments) {
   const width = canvas2D.width;
   const height = canvas2D.height;
   const pixelDataBytes = 4;
   // get pixels in row major order, top to bottom, left to right as (r, g, b, a)
   const pixels = ctx.getImageData(0, 0, width, height).data;
   const controlVertices = [];
-  const segments = downsampleSegments(width/2, height/2, 1024);
-  horizontalSegments = segments.horizontal;
-  verticalSegments = segments.vertical;
-  let horizontalDownsample = segments.horizontalDownsample;
-  let verticalDownsample = segments.verticalDownsample;
-
-  document.getElementById('horizontal-segments').innerText = horizontalSegments.toLocaleString() + " + 1";
-  document.getElementById('vertical-segments').innerText = verticalSegments.toLocaleString() + " + 1";
-  document.getElementById('horizontal-downsampling').innerText = horizontalDownsample === 0 ? '' : `(downsampled: ${horizontalDownsample})`;
-  document.getElementById('vertical-downsampling').innerText = verticalDownsample === 0 ? '' : `(downsampled: ${verticalDownsample})`;
 
   for(let i = 0; i < pixels.length; i += pixelDataBytes) {
     const columnIndex = (i / pixelDataBytes) % width;
     const rowIndex = Math.floor((i / pixelDataBytes) / width);
-    if(!canReadControlVertex(columnIndex, rowIndex, width, height, horizontalDownsample, verticalDownsample)) continue;
+    if(!canReadControlVertex(columnIndex, rowIndex, width, height, segments.horizontalDownsample, segments.verticalDownsample)) continue;
     controlVertices.push(convertRgbToVertex(...pixels.slice(i, i + 3)));
   }
   return controlVertices;

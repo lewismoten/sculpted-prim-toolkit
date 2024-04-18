@@ -525,13 +525,53 @@ function createSphericalControlTriangles(horizontalSegments, verticalSegments) {
   }
   return indexedTriangles;
 }
+function faceColor(face) {
+  switch(face.toLowerCase()) {
+    case 'top':
+    case 'bottom':
+      return 'red';
+    case 'front':
+    case 'back':
+      return 'green';
+    case 'left':
+    case 'right':
+      return 'blue';
+    default:
+      return 'white';
+  }
+}
 function textMaterial(text) {
+
+  const color = faceColor(text);
+
   const canvas = document.createElement('canvas');
   canvas.width = 128;
   canvas.height = 128;
   const ctx = canvas.getContext('2d');
-  ctx.fillStyle = 'white';
+
+  // draw gradient
+  const centerX = canvas.width / 2;
+  const centerY = canvas.height / 2;
+  const radius = Math.sqrt(centerX * centerX + centerY * centerY);
+  const gradient = ctx.createRadialGradient(
+    centerX,
+    centerY, 
+    0,
+    centerX,
+    centerY,
+    radius
+  );
+  gradient.addColorStop(0, 'white');
+  gradient.addColorStop(1, color);
+  ctx.fillStyle = gradient;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // draw outline
+  ctx.strokeStyle = 'black';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(0, 0, canvas.width, canvas.height);
+
+  // draw text
   ctx.fillStyle = 'black';
   const fontSize = 32;
   ctx.font = `${fontSize}px sans-serif`;
@@ -548,7 +588,7 @@ function drawCube() {
     scene.remove(cubeObject);
   }
   const geometry = new THREE.BoxGeometry(1, 1, 1);
-  const material = new THREE.MeshStandardMaterial( { color: 'white', side: THREE.DoubleSide } );
+  const material = new THREE.MeshBasicMaterial( { color: 'white' } );
   cubeObject = new THREE.Mesh(geometry, material);
   setPositionCentered(cubeObject);
 

@@ -1,6 +1,8 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 
+const defaultCameraAngle = 'front';
+
 let image2D;
 let canvas2D;
 let canvas3D;
@@ -58,7 +60,7 @@ function handleWindowLoad() {
     document.getElementById(`camera-${angle}`)
       .addEventListener('click', changeCameraAngle.bind(this, angle, width, height));
   });
-  document.getElementById('camera-top').click();
+  document.getElementById(`camera-${defaultCameraAngle}`).click();
 
   'xyz'.split('').forEach(axis => {
     const rotationInput = document.getElementById(`rotation-${axis}`);

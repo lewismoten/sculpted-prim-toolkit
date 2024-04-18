@@ -507,24 +507,12 @@ function createSphericalControlTriangles(horizontalSegments, verticalSegments) {
   for(let x = 0; x < horizontalSegments; x++) {
     for(let y = 0; y < verticalSegments; y++) {
       const centerIndex = sphericalIndex(x, y, horizontalSegments, verticalSegments);
-      const topIndex = sphericalIndex(x, y - 1, horizontalSegments, verticalSegments);
-      const leftIndex = sphericalIndex(x + 1, y, horizontalSegments, verticalSegments);
-      const topLeftIndex = sphericalIndex(x - 1, y - 1, horizontalSegments, verticalSegments);
-      const topRightIndex = sphericalIndex(x + 1, y - 1, horizontalSegments, verticalSegments);
       const bottomRightIndex = sphericalIndex(x + 1, y + 1, horizontalSegments, verticalSegments);
-      const bottomLeftIndex = sphericalIndex(x - 1, y + 1, horizontalSegments, verticalSegments);
       const bottomIndex = sphericalIndex(x, y + 1, horizontalSegments, verticalSegments);
       const rightIndex = sphericalIndex(x + 1, y, horizontalSegments, verticalSegments);
         // Add triangles in counter-clockwise order
-
-      // if(y === 0) {
-      //   indexedTriangles.push(centerIndex, bottomIndex, rightIndex);
-      // } else if(y === verticalSegments - 1) {
-      //   indexedTriangles.push(centerIndex, bottomIndex, rightIndex);
-      // } else {
         indexedTriangles.push(bottomRightIndex, rightIndex, centerIndex);
         indexedTriangles.push(centerIndex, bottomIndex, bottomRightIndex);
-      // }
     }
   }
   return indexedTriangles;

@@ -238,7 +238,7 @@ function readControlVertices(ctx) {
     const x = (i / 4) % canvas2D.width;
     const y = Math.floor((i / 4) / canvas2D.width);
     // skip odd pixels
-    if(x % 2 === 1) continue;
+    if(x % 2 === 1 && x !== canvas2D.width-1) continue;
     if(y % 2 === 1) continue;
     const r = pixels[i];
     const g = pixels[i + 1];

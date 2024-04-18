@@ -90,7 +90,7 @@ function handleWindowLoad() {
       const option = document.createElement('option');
       option.value = `images/textures/${file}`;
       option.innerText = file;
-      if(file === 'Funky UFO 1.0.png') {
+      if(file === 'mapping grid guide.png') {
         option.selected = true;
       }
       textureSelector.appendChild(option);

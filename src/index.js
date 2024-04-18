@@ -56,7 +56,7 @@ function handleWindowLoad() {
   const cameras = ['front', 'back', 'left', 'right', 'top', 'bottom', 'iso', 'perspective'];
   cameras.forEach(angle => {
     document.getElementById(`camera-${angle}`)
-      .addEventListener('click', changeCameraAngle.bind(this, angle, width, height, scene));
+      .addEventListener('click', changeCameraAngle.bind(this, angle, width, height));
   });
   document.getElementById('camera-top').click();
 
@@ -99,7 +99,7 @@ function handleWindowLoad() {
   });
 }
 
-function changeCameraAngle(angle, width, height, scene) {
+function changeCameraAngle(angle, width, height) {
   const bounds = new THREE.Box3().setFromObject(cubeObject);
   const center = bounds.getCenter(new THREE.Vector3());
   const size = bounds.getSize(new THREE.Vector3());
@@ -109,20 +109,13 @@ function changeCameraAngle(angle, width, height, scene) {
   const pos = getAnglePosition(angle, camera.fov, center, size);
   camera.position.set(pos.x, pos.y, pos.z);
   camera.lookAt(0, 0, 0);
-  createCameraControls(camera, renderer.domElement, scene.up);
+  createCameraControls(camera, renderer.domElement);
 }
 
-function createCameraControls(camera, domElement, up) {
-if(controls) controls.dispose();
-// create controls with correct rotation behavior
-controls = new OrbitControls( camera, domElement );
-const direction = new THREE.Vector3(0, 0, -1);
-// align direciton with camera rotation
-direction.applyQuaternion(camera.quaternion);
-// direction and cammera up vector pointing in opposite directions?
-const reverse = direction.dot(camera.getWorldDirection(up)) < 0;
-// correct rotation behavior
-controls.rotateSpeed *= (reverse ? -1 : 1);
+function createCameraControls(camera, domElement) {
+  if(controls) controls.dispose();
+  // NOTE: Create controls after camera has been positioned and rotated
+  controls = new OrbitControls( camera, domElement );
 }
 
 function createCamera(angle, size, canvasWidth, canvasHeight) {

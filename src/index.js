@@ -58,7 +58,7 @@ function handleWindowLoad() {
     document.getElementById(`camera-${angle}`)
       .addEventListener('click', changeCameraAngle.bind(this, angle));
   });
-  document.getElementById('camera-back').click();
+  document.getElementById('camera-top').click();
 
   'xyz'.split('').forEach(axis => {
     const rotationInput = document.getElementById(`rotation-${axis}`);

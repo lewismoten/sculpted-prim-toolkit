@@ -90,9 +90,9 @@ function handleWindowLoad() {
       const option = document.createElement('option');
       option.value = `images/textures/${file}`;
       option.innerText = file;
-      if(file === 'mapping grid guide.png') {
-        option.selected = true;
-      }
+      // if(file === 'mapping grid guide.png') {
+      //   option.selected = true;
+      // }
       textureSelector.appendChild(option);
     });
     handleTextureSelectorChange();
@@ -159,15 +159,134 @@ function getAnglePosition(angle, fov, targetPos, targetSize) {
     default: return offset(1,1,1);
   }
 }
+const alignmentMapPattern = /alignment-map-(\d+)$/;
 function handleTextureSelectorChange() {
   const textureSelector = document.getElementById('texture-selector');
   const textureUrl = textureSelector.value;
   skin?.dispose();
   if(textureUrl === '') {
     removeTexture(controlMeshObject);
+  } else if(alignmentMapPattern.test(textureUrl)) {
+    const size = parseInt(textureUrl.match(alignmentMapPattern)[1]);
+    loadAlignmentMap(size);
   } else {
     loadTexture(textureUrl);
   }
+}
+function loadAlignmentMap(size) {
+  const canvas = document.createElement('canvas');
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext('2d');
+
+  // horizontal gradient for hue
+  const hueGradient = ctx.createLinearGradient(0, 0, size, 0);
+  const stops = 7;
+  for(let i = 0; i <= stops; i++) {
+    const hue = 360 - Math.floor((360 / stops) * i);
+    hueGradient.addColorStop(i/stops, `hsl(${hue}, 100%, 50%)`);
+  }
+  ctx.fillStyle = hueGradient;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // vertical gradient for saturation
+  const saturationGradient = ctx.createLinearGradient(0, 0, 0, size);
+  saturationGradient.addColorStop(0, 'rgba(128, 128, 128, 1)');
+  saturationGradient.addColorStop(1, 'rgba(128, 128, 128, 0)');
+  ctx.fillStyle = saturationGradient;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // Center cross hairs
+  ctx.strokeStyle = 'red';
+  ctx.lineWidth = 10 * (size / 512);
+  ctx.beginPath();
+  ctx.moveTo(0, canvas.height / 2);
+  ctx.lineTo(canvas.width, canvas.height / 2);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(canvas.width / 2, 0);
+  ctx.lineTo(canvas.width / 2, canvas.height);
+  ctx.stroke();
+
+  ctx.lineWidth = 1;
+  ctx.strokeStyle = 'black';
+
+  const cellSize = 32;
+  const cellWidth = cellSize;
+  const cellHeight = cellSize;
+  let fontSize = cellSize / 2.5;
+  if(size >= 512) {
+    fontSize = cellSize / 3;
+  }
+  for(let x = 0; x < canvas.width; x+=cellWidth) {
+    // vertical grid lines
+    ctx.beginPath();
+    ctx.moveTo(x, 0);
+    ctx.lineTo(x, canvas.height);
+    ctx.stroke();
+
+    // odd columns are shaded
+    const col = Math.floor(x / cellWidth);
+    if(col % 2 === 1) {
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+      ctx.fillRect(x, 0, cellWidth, canvas.height);
+    }
+
+  }
+  const bgColors = ['red', 'orange', 'yellow', 'green', 'blue', 'indigo', 'violet', 'white', 'black'];
+  const fgColors = ['black', 'black', 'black', 'yellow', 'yellow', 'white', 'black', 'black', 'white'];
+
+  for(let y = 0; y < canvas.height; y+= cellHeight) {
+    // horizontal grid lines
+    ctx.beginPath();
+    ctx.moveTo(0, y);
+    ctx.lineTo(canvas.width, y);
+    ctx.stroke();
+    for(let x = 0; x < canvas.width; x+=cellWidth) {
+      const row = Math.floor(y / cellHeight);
+      const col = Math.floor(x / cellWidth);
+      const colorIndex = (row + col) % bgColors.length;
+
+      // draw circle background
+      ctx.beginPath();
+      ctx.arc(x + cellWidth/2, y + cellHeight/2, cellWidth/2.5, 0, Math.PI * 2);
+      ctx.fillStyle = bgColors[colorIndex];
+      ctx.fill();
+
+      // draw coordinates over circle
+      ctx.font = `${fontSize}px sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      const text = getCellText(x, y, cellSize);
+      ctx.fillStyle = fgColors[colorIndex];
+      ctx.fillText(text, x + cellWidth/2, y + cellHeight/2, x + cellWidth);
+    }
+  }
+
+
+  const dataURL = canvas.toDataURL();
+  const image = new Image();
+  image.src = dataURL;
+  image.onload = () => {
+    drawTexturePreview(image);
+    applyTextureToObject(image, controlMeshObject);
+  }
+}
+function getCellText(x, y, size) {
+  let row = Math.floor(y / size) + 1;
+  let col = Math.floor(x / size) + 1;
+  let letters = '';
+  while(col > 0) {
+    const remainder = col % 26;
+    if(remainder === 0) {
+      letters = 'Z' + letters;
+      col = Math.floor(col / 26) - 1;
+    } else {
+      letters = String.fromCharCode(64 + remainder) + letters;
+      col = Math.floor(col / 26);
+    }
+  }
+  return letters + row.toString().padStart(2, '0');
 }
 function loadTexture(textureUrl) {
   const textureImage = new Image();
@@ -330,6 +449,7 @@ function createSphericalControlGeometry(controlVertices, horizontalSegments, ver
   const indexedTriangles = createSphericalControlTriangles(horizontalSegments, verticalSegments);
   controlMeshGeometry.setIndex(indexedTriangles);
   controlMeshGeometry.setDrawRange(0, indexedTriangles.length);
+  controlMeshGeometry.computeVertexNormals();
   const uvs = createUvMappingForSphere(controlMeshGeometry.attributes.position.count, horizontalSegments, verticalSegments);
   controlMeshGeometry.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
 

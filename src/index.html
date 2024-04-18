@@ -8,7 +8,14 @@
 <body>
   Sculptured Prim: <select id="image-selector"></select>
   <span id="image-size"></span><br />
-  Texture: <select id="texture-selector"><option value="">None</option></select><br />
+  Texture: <select id="texture-selector">
+    <option value="">None</option>
+    <option value="alignment-map-256" selected>Alignment Map 256</option>
+    <option value="alignment-map-512">Alignment Map 512</option>
+    <option value="alignment-map-1024">Alignment Map 1024</option>
+    <option value="alignment-map-2048">Alignment Map 2048</option>
+    <option value="alignment-map-4096">Alignment Map 4096</option>
+  </select><br />
   <canvas id="image-preview"></canvas><br />
   <canvas id="texture-preview"></canvas><br />
   <canvas id="image-3d" width="320" height="200"></canvas><br />

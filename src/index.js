@@ -439,7 +439,13 @@ function readControlVertices(ctx, segments) {
     const columnIndex = (i / pixelDataBytes) % width;
     const rowIndex = Math.floor((i / pixelDataBytes) / width);
     if(!canReadControlVertex(columnIndex, rowIndex, width, height, segments.horizontalDownsample, segments.verticalDownsample)) continue;
-    controlVertices.push(convertRgbToVertex(...pixels.slice(i, i + 3)));
+    if(columnIndex === width - 1) {
+      // last column is first column
+      const ii = rowIndex * width * pixelDataBytes;
+      controlVertices.push(convertRgbToVertex(...pixels.slice(ii, ii + 3)));
+    } else {
+      controlVertices.push(convertRgbToVertex(...pixels.slice(i, i + 3)));
+    }
   }
   return controlVertices;
 }

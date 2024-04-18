@@ -140,6 +140,11 @@ function createCamera(angle, size, canvasWidth, canvasHeight) {
       break;
   }
   controls = new OrbitControls( camera, renderer.domElement );
+  var direction = new THREE.Vector3(0, 0, -1);
+  direction.applyQuaternion(camera.quaternion);
+  var angle = direction.angleTo(new THREE.Vector3(0, 1, 0));
+  var isLookingUp = angle > Math.PI / 2;
+  controls.rotateSpeed *= (isLookingUp ? -1 : 1);
   return camera;
 }
 function getAnglePosition(angle, fov, targetPos, targetSize) {

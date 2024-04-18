@@ -525,6 +525,22 @@ function createSphericalControlTriangles(horizontalSegments, verticalSegments) {
   }
   return indexedTriangles;
 }
+function textMaterial(text) {
+  const canvas = document.createElement('canvas');
+  canvas.width = 128;
+  canvas.height = 128;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = 'white';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = 'black';
+  const fontSize = 32;
+  ctx.font = `${fontSize}px sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(text, canvas.width / 2, canvas.height / 2);
+  const url = canvas.toDataURL();
+  return new THREE.MeshStandardMaterial({ map: new THREE.TextureLoader().load(url) })
+}
 function drawCube() {
   if(cubeObject) {
     cubeObject.geometry.dispose();
@@ -535,6 +551,12 @@ function drawCube() {
   const material = new THREE.MeshStandardMaterial( { color: 'white', side: THREE.DoubleSide } );
   cubeObject = new THREE.Mesh(geometry, material);
   setPositionCentered(cubeObject);
+
+  // Add materials in the order of the cubes faces
+  // (this is the standard order for a cuboid in most 3d modeling programs)
+  const materials = ['Right', 'Left', 'Top', 'Bottom', 'Front', 'Back'].map(textMaterial);
+  cubeObject.material = materials;
+
   scene.add(cubeObject);
   applyScale(cubeObject);
   cubeObject.visible = document.getElementById('show-cube').checked;

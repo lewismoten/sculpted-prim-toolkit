@@ -374,6 +374,8 @@ function canReadControlVertex(columnIndex, rowIndex, width, height) {
   if(columnIndex % 2 === 1 && columnIndex !== width-1) return false;
   // only even rows contain control vertices
   if(rowIndex % 2 === 1) return false;
+  // skip row/column 2
+  if(columnIndex % 4 === 2 || rowIndex % 4 === 2) return false;
   return true;
 }
 function readControlVertices(ctx) {
@@ -383,8 +385,8 @@ function readControlVertices(ctx) {
   // get pixels in row major order, top to bottom, left to right as (r, g, b, a)
   const pixels = ctx.getImageData(0, 0, width, height).data;
   const controlVertices = [];
-  horizontalSegments = Math.floor(width / 2);
-  verticalSegments = Math.floor(height / 2);
+  horizontalSegments = 32; // Math.floor(width / 2);
+  verticalSegments = 32; // Math.floor(height / 2);
 
   document.getElementById('horizontal-segments').innerText = horizontalSegments.toLocaleString() + " + 1";
   document.getElementById('vertical-segments').innerText = verticalSegments.toLocaleString() + " + 1";

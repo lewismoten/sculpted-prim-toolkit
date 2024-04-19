@@ -374,15 +374,8 @@ function handleImage2DLoad() {
   drawControlVertices(controlVertices);
   drawSphericalControlMesh(controlVertices);
 }
-console.log(0, mapByteToControlVectorValue(0));
-console.log(127, mapByteToControlVectorValue(127));
-console.log(128, mapByteToControlVectorValue(128));
-console.log(255, mapByteToControlVectorValue(255));
-
 function mapByteToControlVectorValue(byteValue) {
-  // 0 to 255 to -0.5 to 0.5, but nothing at 0.0
-  if(byteValue >= 128) byteValue++;
-  return (byteValue - 128) / 256;
+  return (byteValue / 255) - 0.5;
 }
 function rgbLong(r, g, b) {
   return (r << 16) | (g << 8) | b;

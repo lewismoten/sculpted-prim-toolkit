@@ -362,19 +362,23 @@ function handleImage2DLoad() {
   document.getElementById('horizontal-downsampling').innerText = segments.horizontalDownsample === 0 ? '' : `(downsampled: ${segments.horizontalDownsample})`;
   document.getElementById('vertical-downsampling').innerText = segments.verticalDownsample === 0 ? '' : `(downsampled: ${segments.verticalDownsample})`;
 
-  if(document.getElementById('reveal-vertices').checked) {
-    for(let x = 0; x < image2D.width; x++) {
-      for(let y = 0; y < image2D.height; y++) {
-        if(!canReadControlVertex(x, y, image2D.width, image2D.height, segments.horizontalDownsample, segments.verticalDownsample)) {
-          ctx.fillStyle = 'black';
-          ctx.fillRect(x, y, 1, 1);
-        }
-      }
-    }
-  }
+  hideUnusedPixels(canvas2D, segments.horizontalDownsample, segments.verticalDownsample);
   const controlVertices = readControlVertices(ctx, segments);
   drawControlVertices(controlVertices);
   drawSphericalControlMesh(controlVertices);
+}
+function hideUnusedPixels(canvas, skipH, skipV) {
+  if(!document.getElementById('reveal-vertices').checked) return;
+  const ctx = canvas.getContext('2d', {willReadFrequently: true});
+  const width = canvas.width;
+  const height = canvas.height;
+  ctx.fillStyle = 'black';
+  for(let x = 0; x < width; x++) {
+    for(let y = 0; y < height; y++) {
+      if(canReadControlVertex(x, y, width, height, skipH, skipV)) continue;
+      ctx.fillRect(x, y, 1, 1);
+    }
+  }
 }
 function mapByteToControlVectorValue(byteValue) {
   return (byteValue / 255) - 0.5;
@@ -390,7 +394,7 @@ function convertRgbToVertex(r, g, b) {
     z: mapByteToControlVectorValue(r)
   };
 }
-function canReadControlVertex(columnIndex, rowIndex, width, height, horizontalDownsample, verticalDownsample) {
+function canReadControlVertex(columnIndex, rowIndex, width, height, skipH, skipV) {
   // only even columns and the last column contain control vertices
   if(columnIndex % 2 === 1 && columnIndex !== width-1) return false;
   // only even rows contain control vertices
@@ -398,12 +402,12 @@ function canReadControlVertex(columnIndex, rowIndex, width, height, horizontalDo
   // is even column?
   if(columnIndex !== width -1) {
     // skip additional columns in downsampled models
-    for(let i = 1; i <= horizontalDownsample; i++) {
+    for(let i = 1; i <= skipH; i++) {
       if(columnIndex % Math.pow(2, i+1) === i * 2) return false;
     }
   }
   // skip additional rows in downsampled models
-  for(let i = 1; i <= verticalDownsample; i++) {
+  for(let i = 1; i <= skipV; i++) {
     if(rowIndex % Math.pow(2, i+1) === i * 2) return false;
   }
   return true;

@@ -321,6 +321,8 @@ function drawTexturePreview(image) {
 }
 function applyTextureToObject(image, object) {
   skin = new THREE.Texture(image);
+  skin.wrapS = THREE.RepeatWrapping;
+  skin.wrapT = THREE.RepeatWrapping;
   skin.needsUpdate = true;
   if(object) {
     object.material.map = skin;
@@ -556,8 +558,7 @@ function createUvMappingForSphere(positionCount, horizontalSegments, verticalSeg
       uvs[v] = 0.0;
     } else {
       // middle of sphere
-      const theta = column / horizontalSegments * Math.PI * 2;
-      uvs[u] = theta / (Math.PI * 2);
+      uvs[u] = column / horizontalSegments;
       uvs[v] = 1 - (row / verticalSegments);
     }
   }

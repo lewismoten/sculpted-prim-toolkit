@@ -535,12 +535,32 @@ function createSphericalControlGeometry(controlVertices, horizontalSegments, ver
 function createUvMappingForSphere(positionCount, horizontalSegments, verticalSegments) {
   const uvs = new Float32Array(positionCount * 2);
   const verticesPerRow = horizontalSegments + 1;
+  // first/last row has one vertex
+  let row = 0;
+  let column = 0;
   for(let i = 0; i < positionCount; i++) {
-    const offset = i * 2;
-    const u = horizontalSegments - (i % verticesPerRow);
-    const v = Math.floor(i / verticesPerRow);
-    uvs[offset] = u / horizontalSegments;
-    uvs[offset + 1] = v / verticalSegments;
+    if(i !== 0) {
+      column++;
+      if(column === verticesPerRow) {
+        column = 0;
+        row++;
+      }
+    }
+    const u = i * 2;
+    const v = u + 1;
+    if(row=== 0) {
+      // top pole
+      uvs[u] = 0.5;
+      uvs[v] = 1;
+    } else if(row === verticalSegments) {
+      // bottom pole
+      uvs[u] = 0.5;
+      uvs[v] = 1;
+    } else {
+      // middle of sphere
+      uvs[u] = column / horizontalSegments;
+      uvs[v] = 1 - (row / verticalSegments);
+    }
   }
   return uvs;
 }

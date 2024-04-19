@@ -587,14 +587,14 @@ function createSphericalControlTriangles(horizontalSegments, verticalSegments) {
       const rightIndex = sphericalIndex(x + 1, y, horizontalSegments, verticalSegments);
       // Add triangles in counter-clockwise order
       if(y === 0) {
-        // triangles at top of sphere
+        // triangles at top pole
         indexedTriangles.push(centerIndex, bottomIndex, bottomRightIndex);
       } else if(y === verticalSegments - 1) {
-        // triangles at bottom of shere
-        indexedTriangles.push(bottomRightIndex, rightIndex, centerIndex);
+        // triangles at bottom pole
+        indexedTriangles.push(centerIndex, bottomRightIndex, rightIndex);
       } else {
-        // quads in the middle of the sphere
-        indexedTriangles.push(bottomRightIndex, rightIndex, centerIndex);
+        // quads in the middle of poles
+        indexedTriangles.push(centerIndex, bottomRightIndex, rightIndex);
         indexedTriangles.push(centerIndex, bottomIndex, bottomRightIndex);
       }
     }

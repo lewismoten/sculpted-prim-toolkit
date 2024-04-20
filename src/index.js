@@ -477,8 +477,9 @@ function drawControlVertices(controlVertices) {
   controlVerticesObject = new THREE.Object3D();
   const exists = [];
   controlVertices.forEach(({ x, y, z, color }) => {
-    if(exists.includes(color)) return;
-    exists.push(color);
+    const tag = `${x},${y},${z}`;
+    if(exists.includes(tag)) return;
+    exists.push(tag);
     const geometry = new THREE.BoxGeometry( 0.01, 0.01, 0.01 );
     const material = new THREE.MeshBasicMaterial( { color } );
     const mesh = new THREE.Mesh( geometry, material );

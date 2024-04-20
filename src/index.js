@@ -541,6 +541,15 @@ function createSphericalControlGeometry(controlVertices, horizontalSegments, ver
   document.getElementById('control-mesh-positions').innerText = controlMeshGeometry.attributes.position.count.toLocaleString();
   return controlMeshGeometry;
 }
+function changeUvMapping() {
+  if(controlMeshObject) {
+    const geometry = controlMeshObject.geometry;
+    const uvs = createUvMappingForSphere(geometry.attributes.position.count, horizontalSegments, verticalSegments);
+    geometry.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
+    geometry.attributes.uv.needsUpdate = true;
+  }
+}
+
 function createUvMappingForSphere(positionCount, horizontalSegments, verticalSegments) {
   const uvs = new Float32Array(positionCount * 2);
   const verticesPerRow = horizontalSegments + 1;

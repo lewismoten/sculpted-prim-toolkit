@@ -554,6 +554,7 @@ function createSphericalControlGeometry(controlVertices, horizontalSegments, ver
   controlMeshGeometry.computeVertexNormals();
   const uvs = createUvMappingForSphere(controlMeshGeometry.attributes.position.count, horizontalSegments, verticalSegments);
   controlMeshGeometry.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
+  controlMeshGeometry.computeTangents();
 
   document.getElementById('control-mesh-vertices').innerText = controlVertices.length.toLocaleString();
   document.getElementById('control-mesh-faces').innerText = (indexedTriangles.length / 3).toLocaleString();

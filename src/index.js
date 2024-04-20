@@ -200,7 +200,7 @@ function handleTextureSelectorChange() {
   const textureUrl = textureSelector.value;
   skin?.dispose();
   if(textureUrl === '') {
-    removeTexture(controlMeshObject, nurbsMeshObject);
+    removeTexture(nurbsMeshObject);
   } else if(alignmentMapPattern.test(textureUrl)) {
     const size = parseInt(textureUrl.match(alignmentMapPattern)[1]);
     loadAlignmentMap(size);
@@ -304,7 +304,7 @@ function loadAlignmentMap(size) {
   image.src = dataURL;
   image.onload = () => {
     drawTexturePreview(image);
-    applyTextureToObjects(image, controlMeshObject, nurbsMeshObject);
+    applyTextureToObjects(image, nurbsMeshObject);
   }
 }
 function getCellText(x, y, size) {
@@ -328,7 +328,7 @@ function loadTexture(textureUrl) {
   textureImage.src = textureUrl;
   textureImage.onload = () => {
     drawTexturePreview(textureImage);
-    applyTextureToObjects(textureImage, controlMeshObject, nurbsMeshObject);
+    applyTextureToObjects(textureImage, nurbsMeshObject);
   }
 }
 function drawTexturePreview(image) {
@@ -602,10 +602,7 @@ function drawNurbsMesh(controlVertices) {
 function drawSphericalControlMesh(controlVertices) {
   cleanupControlMesh();
   const controlMeshGeometry = createSphericalControlGeometry(controlVertices, horizontalSegments, verticalSegments);
-  const controlMeshMaterial = new THREE.MeshStandardMaterial( { color: 'white' } );
-  if(skin) {
-    controlMeshMaterial.map = skin;
-  }
+  const controlMeshMaterial = new THREE.MeshStandardMaterial( { color: 0xFFFFFF, wireframe: true } );
   controlMeshObject = new THREE.Mesh(controlMeshGeometry, controlMeshMaterial);
   setPositionCentered(controlMeshObject);
   scene.add(controlMeshObject);

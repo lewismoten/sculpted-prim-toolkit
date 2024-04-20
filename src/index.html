@@ -20,7 +20,7 @@
   <canvas id="texture-preview"></canvas>
   <canvas id="image-3d" width="320" height="200"></canvas><br />
   <div class="group">
-    <div class="group-title">Camera</div>
+    <div class="group-title">Camera: <span id="camera-angle-selected"></span></div>
     <button id="camera-right">Right</button>
     <button id="camera-left">Left</button>
     <button id="camera-top">Top</button>
@@ -31,9 +31,6 @@
     <button id="camera-perspective">Perspective</button>
     <button id="camera-reset">Reset</button>
   </div>
-  
-  <br />
-
   <div class="group">
     <div class="group-title">Rotation</div>
     <label>X: <input type="range" id="rotation-x" min="0.01" max="1" step="0.01" value="1"></label>

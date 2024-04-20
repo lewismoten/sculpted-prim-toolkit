@@ -109,6 +109,7 @@ function handleWindowLoad() {
 
 function changeCameraAngle(angle, width, height) {
   currentCameraAngle = angle;
+  document.getElementById('camera-angle-selected').innerText = angle;
   const bounds = new THREE.Box3().setFromObject(cubeObject);
   const center = bounds.getCenter(new THREE.Vector3());
   const size = bounds.getSize(new THREE.Vector3());

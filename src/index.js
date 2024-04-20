@@ -504,13 +504,13 @@ function sphericalIndex(x, y, horizontalSegments, verticalSegments) {
   } else if(y >= verticalSegments) {
     y = verticalSegments - 1;
   }
-  if(x < 0) {
-    // stitch left to right
-    x += horizontalSegments + 1;
-  } else if(x >= horizontalSegments) {
-    // stitch right to left
-    x -= horizontalSegments + 1;
-  }
+if(x < 0) {
+  // stitch left to right
+  x += horizontalSegments + 1;
+} else if(x >= horizontalSegments) {
+  // stitch right to left
+  x -= horizontalSegments + 1;
+}
   return y * (horizontalSegments + 1) + x;
 }
 

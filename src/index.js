@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 
 const defaultCameraAngle = 'iso';
-const defaultSculpturedPrim = 'tatara7 cube.png';
+const defaultSculpturedPrim = '[DMGS] Overlook4b.png';
 
 let image2D;
 let canvas2D;

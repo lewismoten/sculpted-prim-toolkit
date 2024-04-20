@@ -404,17 +404,10 @@ function surviveDownsampling(value, amount) {
 }
 function canReadControlVertex(columnIndex, rowIndex, width, height, skipH, skipV) {
   // Top pole
-  if(rowIndex === 0) return columnIndex === Math.floor(width / 2);  
+  if(rowIndex === 0 || rowIndex === height - 1) return columnIndex === Math.floor(width / 2);  
   if(columnIndex % 2 === 1 || rowIndex % 2 === 1) return false;
   if(!surviveDownsampling(columnIndex, skipH)) return false;
   if(!surviveDownsampling(rowIndex, skipV)) return false;
-  // Bottom pole
-  let lastRowIndex = height - 2;
-  while(!surviveDownsampling(lastRowIndex, skipV)) {
-    lastRowIndex--;
-  }
-  if(rowIndex === lastRowIndex) return columnIndex === Math.floor(width / 2);
-
   return true;
 }
 function downsampleSegments(width, height, verticesLimit) {
@@ -451,22 +444,23 @@ function readControlVertices(ctx, segments) {
   for(let i = 0; i < pixels.length; i += pixelDataBytes) {
     const columnIndex = (i / pixelDataBytes) % width;
     const rowIndex = Math.floor((i / pixelDataBytes) / width);
-    if(rowIndex !== lastRow && firstVirtex) {
-      controlVertices.push(firstVirtex);
+    if(!canReadControlVertex(columnIndex, rowIndex, width, height, segments.horizontalDownsample, segments.verticalDownsample)) continue;
+
+    if(rowIndex !== lastRow) {
+      if(firstVirtex) controlVertices.push(firstVirtex);
       lastRow = rowIndex;
     }
-    if(!canReadControlVertex(columnIndex, rowIndex, width, height, segments.horizontalDownsample, segments.verticalDownsample)) continue;
+
     const vertex = convertRgbToVertex(...pixels.slice(i, i + 3));
     controlVertices.push(vertex);
     if(columnIndex === 0) firstVirtex = vertex;
     if(rowIndex === 0 || rowIndex === height - 1) {
       // repeat vector for all segments at the poles
-      for(let j = 0; j < segments.horizontal-2; j++) {
+      for(let j = 0; j < segments.horizontal; j++) {
         controlVertices.push(vertex);
       }
     }
   }
-  controlVertices.push(firstVirtex);
   return controlVertices;
 }
 let controlVerticesObject;

@@ -7,7 +7,11 @@
 </head>
 <body>
   Model: <select id="image-selector"></select>
-  <span id="image-size"></span><br />
+  <span id="image-size"></span>
+  <label>
+    <input type="checkbox" id="reveal-vertices">Show Data
+  </label>
+  <br />
   Skin: <select id="texture-selector">
     <option value="">None</option>
     <option value="alignment-map-256" selected>Alignment Map 256</option>
@@ -64,7 +68,5 @@
   Vertices: <span id="control-mesh-vertices"></span><br />
   Faces: <span id="control-mesh-faces"></span><br />
   Positions: <span id="control-mesh-positions"></span><br />
-  <label>
-    <input type="checkbox" id="reveal-vertices" checked>Reveal Vertices
-  </label>
+  
 </html>

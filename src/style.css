@@ -1,3 +1,10 @@
+body {
+  font-family: Arial, sans-serif;
+  font-size: 14px;
+  margin: 0;
+  padding: 0;
+  background-color: grey;
+}
 #image-3d {
   background-color: grey;
   border: 1px solid black;
@@ -21,4 +28,15 @@
 #horizontal-downsampling, #vertical-downsampling {
   color: red;
   padding-left: 8px;
+}
+.group {
+  border: 2px solid black;
+  padding: 3px;
+  margin: 3px;
+  border-radius: 5px;
+  background-color: lightgray;
+}
+.group-title {
+  background-color: white;
+  border-bottom: 1px solid black;
 }

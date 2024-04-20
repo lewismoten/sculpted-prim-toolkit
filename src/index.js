@@ -1,7 +1,8 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 
-const defaultCameraAngle = 'front';
+const defaultCameraAngle = 'bottom';
+const defaultSculpturedPrim = 'tatara7 cube.png';
 
 let image2D;
 let canvas2D;
@@ -81,7 +82,7 @@ function handleWindowLoad() {
       const option = document.createElement('option');
       option.value = `images/sculpted-prims/${file}`;
       option.innerText = file;
-      if(file === 'UFO Sculpty 1.0.png') {
+      if(file === defaultSculpturedPrim) {
         option.selected = true;
       }
       imageSelector.appendChild(option);

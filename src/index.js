@@ -396,13 +396,18 @@ function convertRgbToVertex(r, g, b) {
   };
 }
 function canReadControlVertex(columnIndex, rowIndex, width, height, skipH, skipV) {
-  if(rowIndex === height - 1 || rowIndex === 0) {
-    return columnIndex === Math.floor(width / 2);
+  // only even columns and the last column contain control vertices
+  if(columnIndex % 2 === 1 && columnIndex !== width-1) return false;
+  // only even rows contain control vertices
+  if(rowIndex % 2 === 1) return false;
+  // is even column?
+  if(columnIndex !== width -1) {
+    // skip additional columns in downsampled models
+    for(let i = 1; i <= skipH; i++) {
+      if(columnIndex % Math.pow(2, i+1) === i * 2) return false;
+    }
   }
-  if(columnIndex % 2 === 1 || rowIndex % 2 === 1) return false;
-  for(let i = 1; i <= skipH; i++) {
-    if(columnIndex % Math.pow(2, i+1) === i * 2) return false;
-  }
+  // skip additional rows in downsampled models
   for(let i = 1; i <= skipV; i++) {
     if(rowIndex % Math.pow(2, i+1) === i * 2) return false;
   }
@@ -440,15 +445,13 @@ function readControlVertices(ctx, segments) {
     const columnIndex = (i / pixelDataBytes) % width;
     const rowIndex = Math.floor((i / pixelDataBytes) / width);
     if(!canReadControlVertex(columnIndex, rowIndex, width, height, segments.horizontalDownsample, segments.verticalDownsample)) continue;
-    const vertex = convertRgbToVertex(...pixels.slice(i, i + 3));
-    controlVertices.push(vertex);
-    if(rowIndex === 0 || rowIndex === height - 1) {
-      // repeat vector for all segments at the poles
-      console.log('poles for %s', rowIndex, segments.horizontal);
-      for(let j = 0; j < segments.horizontal; j++) {
-        controlVertices.push(vertex);
-      }
-    }
+    // if(columnIndex === width - 1) {
+    //   // last column is first column
+    //   const ii = rowIndex * width * pixelDataBytes;
+    //   controlVertices.push(convertRgbToVertex(...pixels.slice(ii, ii + 3)));
+    // } else {
+      controlVertices.push(convertRgbToVertex(...pixels.slice(i, i + 3)));
+    // }
   }
   return controlVertices;
 }

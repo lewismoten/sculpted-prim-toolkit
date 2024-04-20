@@ -756,6 +756,7 @@ const rotate = () => {
       document.getElementById(`rotation-${axis}`).value = rotation[axis];
     }
   });
+  document.getElementById('rotation-value').innerText = `${rotation.x.toFixed(2)}, ${rotation.y.toFixed(2)}, ${rotation.z.toFixed(2)}`;
 
   [
     cubeObject,

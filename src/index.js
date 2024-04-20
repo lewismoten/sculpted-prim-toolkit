@@ -756,7 +756,6 @@ const rotate = () => {
       document.getElementById(`rotation-${axis}`).value = rotation[axis];
     }
   });
-  document.getElementById('rotation-value').innerText = `${rotation.x.toFixed(2)}, ${rotation.y.toFixed(2)}, ${rotation.z.toFixed(2)}`;
 
   [
     cubeObject,
@@ -777,6 +776,11 @@ function animate() {
 	requestAnimationFrame( animate );
   if(controls) controls.update();
   rotate();
+
+  // Update UI
+  document.getElementById('rotation-value').innerText = `${rotation.x.toFixed(2)}, ${rotation.y.toFixed(2)}, ${rotation.z.toFixed(2)}`;
+  document.getElementById('scale-value').innerText = `${document.getElementById('scaleX').value}, ${document.getElementById('scaleY').value}, ${document.getElementById('scaleZ').value}`;
+
   renderer.render( scene, camera );
 }
 

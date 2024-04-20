@@ -46,3 +46,9 @@ body {
 .group .group .group-title {
   background-color: lightgray;
 }
+.scaler-input {
+  width: 45px;
+}
+.degree-input {
+  width: 60px;
+}

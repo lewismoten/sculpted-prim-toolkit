@@ -62,10 +62,25 @@ function handleWindowLoad() {
   document.getElementById('texture-horizontal-repeat').addEventListener('input', repeatTextureHorizontally);
   document.getElementById('texture-vertical-repeat').addEventListener('input', repeatTextureVertically);
 
+  "xyz".split('').forEach(axis => {
+    const radianInput = document.getElementById(`rotation-${axis}`);
+    const degreesInput = document.getElementById(`rotation-${axis}-degrees`);
+    const defaultDegrees = 0;
+    setObjectRotationRadiansInput(axis, degreesToRadians(defaultDegrees));
+    setObjectRotationDegreeInput(axis, radiansToDegrees(defaultDegrees));
+    degreesInput.addEventListener('input', () => {
+      setObjectRotationRadiansInput(axis, degreesToRadians(parseFloat(degreesInput.value)));
+    });
+    radianInput.addEventListener('input', () => {
+      setObjectRotationDegreeInput(axis, radiansToDegrees(parseFloat(radianInput.value)));
+    })
+  });
+  
   document.getElementById('no-rotation').addEventListener('click', () => {
     "xyz".split('').forEach(axis => {
       document.getElementById(`spin-${axis}`).checked = false;
       document.getElementById(`rotation-${axis}`).value = 0;
+      setObjectRotationDegreeInput(axis, radiansToDegrees(0))
     });
   });
   const cameras = ['front', 'back', 'left', 'right', 'top', 'bottom', 'iso', 'perspective'];
@@ -116,7 +131,28 @@ function handleWindowLoad() {
     handleTextureSelectorChange();
   });
 }
-
+function setObjectRotationDegreeInput(axis, degrees) {
+  // round by 0.05
+  degrees = Math.round(degrees * 20) / 20;
+  document.getElementById(`rotation-${axis}-degrees`).value = degrees.toFixed(2);
+}
+function setObjectRotationRadiansInput(axis, radians) {
+  document.getElementById(`rotation-${axis}`).value = radians.toFixed(2);
+}
+function radiansToDegrees(radians) {
+  // -Math.PI = 180 degrees, 0 = 0 degrees, Math.PI = -180 degrees
+  let scale = radians / Math.PI / 2;
+  if(scale < 0) scale += 1;
+  return (scale * 360) % 360;
+}
+function degreesToRadians(degrees) {
+  // 0 degrees = 0 radians, 360 degrees = Math.PI, 180 degrees = -Math.PI
+  let scale = (degrees / 360);
+  if(scale > 0.5) {
+    scale = scale - 1;
+  }
+  return scale * Math.PI * 2;
+}
 function changeCameraAngle(angle, width, height) {
   currentCameraAngle = angle;
   document.getElementById('camera-angle-selected').innerText = angle;
@@ -831,9 +867,11 @@ const rotateWrap = (value, offset) => {
 const rotate = () => {
   "xyz".split('').forEach(axis => {
     rotation[axis] = parseFloat(document.getElementById(`rotation-${axis}`).value);
+
     if(document.getElementById(`spin-${axis}`).checked) {
       rotation[axis] = rotateWrap(rotation[axis], 0.02);
-      document.getElementById(`rotation-${axis}`).value = rotation[axis];
+      setObjectRotationRadiansInput(axis, rotation[axis]);
+      setObjectRotationDegreeInput(axis, radiansToDegrees(rotation[axis]));
     }
   });
 

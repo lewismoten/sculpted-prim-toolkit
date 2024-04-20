@@ -12,7 +12,7 @@ let canvas3D;
 let width;
 let height;
 let ambientLight;
-let directionaLight;
+let directionalLight;
 let rotation = {x: 0, y: 0, z: 0};
 let horizontalSegments = 32;
 let verticalSegments = 32;
@@ -34,10 +34,10 @@ function handleWindowLoad() {
   renderer = new THREE.WebGLRenderer({ canvas: canvas3D});
   renderer.setSize( width, height );
 
-  directionaLight = new THREE.DirectionalLight(0xffffff, 1);
-  directionaLight.position.set(1.5, 1.5, 1.5);
-  directionaLight.lookAt(0, 0, 0);
-  scene.add(directionaLight);
+  directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+  directionalLight.position.set(1.5, 1.5, 1.5);
+  directionalLight.lookAt(0, 0, 0);
+  scene.add(directionalLight);
 
   ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
   scene.add(ambientLight);
@@ -76,7 +76,6 @@ function handleWindowLoad() {
   });
 
   document.getElementById('ambientIntensity').addEventListener('input', handleAmbientIntensityChange);
-  document.getElementById('directionalIntensity').addEventListener('input', handleDirectionalIntensityChange);
   document.getElementById('show-control-vertices').addEventListener('change', handleShowControlVerticesChange);
   document.getElementById('show-control-mesh').addEventListener('change', handleShowControlMeshChange);
   document.getElementById('show-cube').addEventListener('change', handleShowCubeChange);
@@ -769,13 +768,22 @@ const rotate = () => {
 function handleAmbientIntensityChange() {
   ambientLight.intensity = document.getElementById('ambientIntensity').value;
 }
-function handleDirectionalIntensityChange() {
-  directionaLight.intensity = document.getElementById('directionalIntensity').value;
+
+function changeDirectionalLight() {
+  const angle = parseFloat(document.getElementById('directional-light-angle').value);
+  const elevation = parseFloat(document.getElementById('directional-light-elevation').value);
+  directionalLight.position.set(
+    Math.cos(angle) * Math.cos(elevation),
+    Math.sin(elevation),
+    Math.sin(angle) * Math.cos(elevation)
+  );
+  directionalLight.intensity = document.getElementById('directionalIntensity').value;
 }
 function animate() {
 	requestAnimationFrame( animate );
   if(controls) controls.update();
   rotate();
+  changeDirectionalLight();
 
   // Update UI
   document.getElementById('rotation-value').innerText = `${rotation.x.toFixed(2)}, ${rotation.y.toFixed(2)}, ${rotation.z.toFixed(2)}`;

@@ -52,9 +52,13 @@
   <label><input type="checkbox" id="show-cube">Cube</label>
   <label><input type="checkbox" id="show-control-vertices">Control Vertices</label>
   <label><input type="checkbox" id="show-control-mesh" checked>Control Mesh</label><br />
-  Light Intensity:<br />
-  <label>Ambient: <input type="range" id="ambientIntensity" min="0" max="5" step="0.01" value=".5"></label><br />
-  <label>Directional: <input type="range" id="directionalIntensity" min="0" max="10" step="0.01" value="1"></label><br />
+  <div class="group">
+    <div class="group-title">Lighting</div>
+    <label>Ambient: <input type="range" id="ambientIntensity" min="0" max="5" step="0.01" value=".5"></label><br />
+    <label>Directional: <input type="range" id="directionalIntensity" min="0" max="10" step="0.01" value="1"></label><br />
+    <label>- Angle: <input type="range" id="directional-light-angle" min="-3.14" max="3.14" step=".01" value="0"></label><br />
+    <label>- Elevation: <input type="range" id="directional-light-elevation" min="-1" max="1" step=".01" value="0"></label><br />
+  </div>
   Horizontal Segments: <span id="horizontal-segments"></span><span id="horizontal-downsampling"></span><br />
   Verticle Segments: <span id="vertical-segments"></span><span id="vertical-downsampling"></span><br />
   Vertices: <span id="control-mesh-vertices"></span><br />

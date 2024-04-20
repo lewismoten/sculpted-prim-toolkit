@@ -4,6 +4,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 const defaultCameraAngle = 'front';
 const defaultModel = 'UFO Sculpty 1.0.png';
 const defaultSkin = 'Funky UFO 1.0.png';
+let currentCameraAngle = defaultCameraAngle;
 
 let image2D;
 let canvas2D;
@@ -62,6 +63,9 @@ function handleWindowLoad() {
     document.getElementById(`camera-${angle}`)
       .addEventListener('click', changeCameraAngle.bind(this, angle, width, height));
   });
+  document.getElementById('camera-reset').addEventListener('click', () => {
+    document.getElementById(`camera-${currentCameraAngle}`).click();
+  });
   document.getElementById(`camera-${defaultCameraAngle}`).click();
 
   'xyz'.split('').forEach(axis => {
@@ -104,6 +108,7 @@ function handleWindowLoad() {
 }
 
 function changeCameraAngle(angle, width, height) {
+  currentCameraAngle = angle;
   const bounds = new THREE.Box3().setFromObject(cubeObject);
   const center = bounds.getCenter(new THREE.Vector3());
   const size = bounds.getSize(new THREE.Vector3());

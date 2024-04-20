@@ -1,5 +1,7 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
+import { NURBSSurface } from 'three/examples/jsm/curves/NURBSSurface.js';
+import { ParametricGeometry } from 'three/addons/geometries/ParametricGeometry.js';
 
 const defaultCameraAngle = 'front';
 const defaultModel = 'UFO Sculpty 1.0.png';
@@ -24,6 +26,9 @@ let renderer;
 let skin;
 
 let cubeObject;
+let controlVerticesObject;
+let controlMeshObject;
+let nurbsMeshObject;
 
 function handleWindowLoad() {
   canvas3D = document.getElementById('image-3d');
@@ -83,6 +88,7 @@ function handleWindowLoad() {
   document.getElementById('ambientIntensity').addEventListener('input', handleAmbientIntensityChange);
   document.getElementById('show-control-vertices').addEventListener('change', handleShowControlVerticesChange);
   document.getElementById('show-control-mesh').addEventListener('change', handleShowControlMeshChange);
+  document.getElementById('show-nurbs-mesh').addEventListener('change', handleShowNurbsMeshChange);
   document.getElementById('show-cube').addEventListener('change', handleShowCubeChange);
   requestAnimationFrame( animate );
   fetch('files.json').then(response => response.json()).then(files => {
@@ -194,7 +200,7 @@ function handleTextureSelectorChange() {
   const textureUrl = textureSelector.value;
   skin?.dispose();
   if(textureUrl === '') {
-    removeTexture(controlMeshObject);
+    removeTexture(controlMeshObject, nurbsMeshObject);
   } else if(alignmentMapPattern.test(textureUrl)) {
     const size = parseInt(textureUrl.match(alignmentMapPattern)[1]);
     loadAlignmentMap(size);
@@ -298,7 +304,7 @@ function loadAlignmentMap(size) {
   image.src = dataURL;
   image.onload = () => {
     drawTexturePreview(image);
-    applyTextureToObject(image, controlMeshObject);
+    applyTextureToObjects(image, controlMeshObject, nurbsMeshObject);
   }
 }
 function getCellText(x, y, size) {
@@ -322,7 +328,7 @@ function loadTexture(textureUrl) {
   textureImage.src = textureUrl;
   textureImage.onload = () => {
     drawTexturePreview(textureImage);
-    applyTextureToObject(textureImage, controlMeshObject);
+    applyTextureToObjects(textureImage, controlMeshObject, nurbsMeshObject);
   }
 }
 function drawTexturePreview(image) {
@@ -348,7 +354,7 @@ function repeatTextureHorizontally() {
 function repeatTextureVertically() {
   skin.repeat.y = parseFloat(document.getElementById('texture-vertical-repeat').value);
 }
-function applyTextureToObject(image, object) {
+function applyTextureToObjects(image) {
   skin = new THREE.Texture(image);
   skin.wrapS = THREE.RepeatWrapping;
   skin.wrapT = THREE.RepeatWrapping;
@@ -357,20 +363,24 @@ function applyTextureToObject(image, object) {
   skin.minFilter = THREE.LinearMipmapLinearFilter;
   skin.maxFilter = THREE.LinearMipmapLinearFilter;
   skin.needsUpdate = true;
-  if(object) {
-    object.material.map = skin;
-    object.material.needsUpdate = true;
-  }
+  Array.from(arguments).slice(1).forEach(object => {
+    if(object) {
+      object.material.map = skin;
+      object.material.needsUpdate = true;
+    }
+  });
 }
-function removeTexture(object) {
+function removeTexture() {
   const texturePreview = document.getElementById('texture-preview');
   const ctx = texturePreview.getContext('2d');
   ctx.clearRect(0, 0, texturePreview.width, texturePreview.height);
   skin = null;
-  if(object) {
-    object.material.map = null;
-    object.material.needsUpdate = true;
-  }
+  Array.from(arguments).forEach(object => {
+    if(object) {
+      object.material.map = null;
+      object.material.needsUpdate = true;
+    }
+  });
 }
 function handleImageSelectorChange() {
   const imageSelector = document.getElementById('image-selector');
@@ -399,6 +409,7 @@ function handleImage2DLoad() {
   const controlVertices = readControlVertices(ctx, segments);
   drawControlVertices(controlVertices);
   drawSphericalControlMesh(controlVertices);
+  drawNurbsMesh(controlVertices);
 }
 function hideUnusedPixels(canvas, skipH, skipV) {
   if(!document.getElementById('reveal-vertices').checked) return;
@@ -495,9 +506,6 @@ function readControlVertices(ctx, segments) {
   }
   return controlVertices;
 }
-let controlVerticesObject;
-let controlMeshObject;
-
 function drawControlVertices(controlVertices) {
   if(controlVerticesObject) {
     controlVerticesObject.children.forEach(mesh => {
@@ -545,6 +553,52 @@ if(x < 0) {
   return y * (horizontalSegments + 1) + x;
 }
 
+function drawNurbsMesh(controlVertices) {
+  if(nurbsMeshObject) {
+    nurbsMeshObject.geometry.dispose();
+    nurbsMeshObject.material.dispose();
+    scene.remove(nurbsMeshObject);
+  }
+  let nsControlPoints = [];
+  for(let v = 0; v < verticalSegments + 1; v++) {
+    const row = [];
+    for(let u = 0; u < horizontalSegments + 1; u++) {
+      const index = sphericalIndex(u, v, horizontalSegments, verticalSegments);
+      const { x, y, z } = controlVertices[index];
+      row.push(new THREE.Vector4(x, y, z, 1));
+    }
+    nsControlPoints.push(row);
+  }
+
+  const degreeU = 3;
+  const degreeV = 3;
+  const knotsU = new Array(horizontalSegments + degreeU + 1);
+  const knotsV = new Array(verticalSegments + degreeV + 1);
+  for(let i = 0; i < knotsU.length; i++)
+    knotsU[i] = i / (knotsU.length - 1);
+  for(let i = 0; i < knotsV.length; i++)
+    knotsV[i] = i / (knotsV.length - 1);
+
+  const nurbsSurface = new NURBSSurface(
+    degreeU, degreeV,
+    knotsU, knotsV,
+    nsControlPoints,
+  );
+  const slices = horizontalSegments;
+  const stacks = verticalSegments;
+  const geometry = new ParametricGeometry(nurbsSurface.getPoint.bind(nurbsSurface), slices, stacks);
+
+  const material = new THREE.MeshStandardMaterial( { color: 'white' } );
+  if(skin) {
+    material.map = skin;
+  }
+  nurbsMeshObject = new THREE.Mesh(geometry, material);
+  setPositionCentered(nurbsMeshObject);
+  scene.add(nurbsMeshObject);
+  applyScale(nurbsMeshObject);
+  nurbsMeshObject.visible = document.getElementById('show-nurbs-mesh').checked;
+
+}
 function drawSphericalControlMesh(controlVertices) {
   cleanupControlMesh();
   const controlMeshGeometry = createSphericalControlGeometry(controlVertices, horizontalSegments, verticalSegments);
@@ -751,7 +805,8 @@ function applyScaleToObjects() {
   [
     cubeObject,
     controlVerticesObject,
-    controlMeshObject
+    controlMeshObject,
+    nurbsMeshObject
   ].filter(Boolean).forEach(applyScale);
 }
 function handleShowControlVerticesChange() {
@@ -759,6 +814,9 @@ function handleShowControlVerticesChange() {
 }
 function handleShowControlMeshChange() {
   controlMeshObject.visible = document.getElementById('show-control-mesh').checked;
+}
+function handleShowNurbsMeshChange() {
+  nurbsMeshObject.visible = document.getElementById('show-nurbs-mesh').checked;
 }
 function handleShowCubeChange() {
   cubeObject.visible = document.getElementById('show-cube').checked;
@@ -785,7 +843,8 @@ const rotate = () => {
   [
     cubeObject,
     controlVerticesObject,
-    controlMeshObject
+    controlMeshObject,
+    nurbsMeshObject
   ].filter(Boolean)
   .forEach(mesh => {
     mesh.rotation.set(rotation.x, rotation.y, rotation.z);

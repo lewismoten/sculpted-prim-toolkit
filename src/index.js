@@ -325,6 +325,7 @@ function applyTextureToObject(image, object) {
   skin = new THREE.Texture(image);
   skin.wrapS = THREE.RepeatWrapping;
   skin.wrapT = THREE.RepeatWrapping;
+  skin.rotation = Math.PI / -2;
   skin.needsUpdate = true;
   if(object) {
     object.material.map = skin;

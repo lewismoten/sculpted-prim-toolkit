@@ -51,6 +51,9 @@ function handleWindowLoad() {
   document.getElementById('scaleX').addEventListener('input', applyScaleToObjects);
   document.getElementById('scaleY').addEventListener('input', applyScaleToObjects);
   document.getElementById('scaleZ').addEventListener('input', applyScaleToObjects);
+  document.getElementById('texture-rotation').addEventListener('input', rotateTexture);
+  document.getElementById('texture-horizontal-offset').addEventListener('input', offsetTextureHorizontally);
+  document.getElementById('texture-vertical-offset').addEventListener('input', offsetTextureVertically);
 
   document.getElementById('no-rotation').addEventListener('click', () => {
     "xyz".split('').forEach(axis => {
@@ -325,6 +328,17 @@ function drawTexturePreview(image) {
   const ctx = texturePreview.getContext('2d');
   ctx.clearRect(0, 0, texturePreview.width, texturePreview.height);
   ctx.drawImage(image, 0, 0, texturePreview.width, texturePreview.height);
+}
+function rotateTexture() {
+  const rotation = parseFloat(document.getElementById('texture-rotation').value);
+  skin.rotation = rotation;
+  skin.needsUpdate = true;
+}
+function offsetTextureHorizontally() {
+  skin.offset.x = parseFloat(document.getElementById('texture-horizontal-offset').value);
+}
+function offsetTextureVertically() {
+  skin.offset.y = parseFloat(document.getElementById('texture-vertical-offset').value);
 }
 function applyTextureToObject(image, object) {
   skin = new THREE.Texture(image);

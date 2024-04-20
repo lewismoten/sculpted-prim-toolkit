@@ -1,8 +1,9 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 
-const defaultCameraAngle = 'iso';
-const defaultSculpturedPrim = 'tatara7 cube.png';
+const defaultCameraAngle = 'front';
+const defaultModel = 'UFO Sculpty 1.0.png';
+const defaultSkin = 'Funky UFO 1.0.png';
 
 let image2D;
 let canvas2D;
@@ -82,7 +83,7 @@ function handleWindowLoad() {
       const option = document.createElement('option');
       option.value = `images/sculpted-prims/${file}`;
       option.innerText = file;
-      if(file === defaultSculpturedPrim) {
+      if(file === defaultModel) {
         option.selected = true;
       }
       imageSelector.appendChild(option);
@@ -93,9 +94,9 @@ function handleWindowLoad() {
       const option = document.createElement('option');
       option.value = `images/textures/${file}`;
       option.innerText = file;
-      // if(file === 'mapping grid guide.png') {
-      //   option.selected = true;
-      // }
+      if(file === defaultSkin) {
+        option.selected = true;
+      }
       textureSelector.appendChild(option);
     });
     handleTextureSelectorChange();

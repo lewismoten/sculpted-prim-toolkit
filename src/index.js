@@ -331,6 +331,9 @@ function applyTextureToObject(image, object) {
   skin.wrapS = THREE.RepeatWrapping;
   skin.wrapT = THREE.RepeatWrapping;
   skin.rotation = Math.PI / -2;
+  skin.generateMipmaps = true;
+  skin.minFilter = THREE.LinearMipmapLinearFilter;
+  skin.maxFilter = THREE.LinearMipmapLinearFilter;
   skin.needsUpdate = true;
   if(object) {
     object.material.map = skin;

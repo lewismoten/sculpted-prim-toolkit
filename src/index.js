@@ -53,9 +53,6 @@ function handleWindowLoad() {
   document.getElementById('image-selector').addEventListener('change', handleImageSelectorChange);
   document.getElementById('texture-selector').addEventListener('change', handleTextureSelectorChange);
   document.getElementById('reveal-vertices').addEventListener('change', handleImageSelectorChange);
-  document.getElementById('scaleX').addEventListener('input', applyScaleToObjects);
-  document.getElementById('scaleY').addEventListener('input', applyScaleToObjects);
-  document.getElementById('scaleZ').addEventListener('input', applyScaleToObjects);
   document.getElementById('texture-rotation').addEventListener('input', rotateTexture);
   document.getElementById('texture-horizontal-offset').addEventListener('input', offsetTextureHorizontally);
   document.getElementById('texture-vertical-offset').addEventListener('input', offsetTextureVertically);
@@ -65,7 +62,16 @@ function handleWindowLoad() {
   "xyz".split('').forEach(axis => {
     const radianInput = document.getElementById(`rotation-${axis}`);
     const degreesInput = document.getElementById(`rotation-${axis}-degrees`);
+    const scaleInput = document.getElementById(`scale-${axis}-value`);
+    const scaleRangeInput = document.getElementById(`scale-${axis}-range`);
+
     const defaultDegrees = 0;
+
+    radianInput.min = -Math.PI;
+    radianInput.max = Math.PI;
+
+    setObjectScaleRange(axis, 1);
+    setObjectScaleValue(axis, 1);
     setObjectRotationRadiansInput(axis, degreesToRadians(defaultDegrees));
     setObjectRotationDegreeInput(axis, radiansToDegrees(defaultDegrees));
     degreesInput.addEventListener('input', () => {
@@ -73,7 +79,15 @@ function handleWindowLoad() {
     });
     radianInput.addEventListener('input', () => {
       setObjectRotationDegreeInput(axis, radiansToDegrees(parseFloat(radianInput.value)));
-    })
+    });
+    scaleInput.addEventListener('input', () => {
+      setObjectScaleRange(axis, parseFloat(scaleInput.value));
+      applyScaleToObjects();
+    });
+    scaleRangeInput.addEventListener('input', () => {
+      setObjectScaleValue(axis, parseFloat(scaleRangeInput.value));
+      applyScaleToObjects();
+    });
   });
   
   document.getElementById('no-rotation').addEventListener('click', () => {
@@ -93,12 +107,6 @@ function handleWindowLoad() {
   });
   document.getElementById(`camera-${defaultCameraAngle}`).click();
 
-  'xyz'.split('').forEach(axis => {
-    const rotationInput = document.getElementById(`rotation-${axis}`);
-    rotationInput.min = -Math.PI;
-    rotationInput.max = Math.PI;
-    rotationInput.value = 0;
-  });
 
   document.getElementById('ambientIntensity').addEventListener('input', handleAmbientIntensityChange);
   document.getElementById('show-control-vertices').addEventListener('change', handleShowControlVerticesChange);
@@ -130,6 +138,20 @@ function handleWindowLoad() {
     });
     handleTextureSelectorChange();
   });
+}
+function displayScaleValues() {
+  const x = parseFloat(document.getElementById('scale-x-value').value);
+  const y = parseFloat(document.getElementById('scale-y-value').value);
+  const z = parseFloat(document.getElementById('scale-z-value').value);
+  document.getElementById('scale-values').innerText = `<${x.toFixed(2)}, ${y.toFixed(2)}, ${z.toFixed(2)}>`;
+}
+function setObjectScaleRange(axis, value) {
+  document.getElementById(`scale-${axis}-range`).value = value.toFixed(2);
+  displayScaleValues();
+}
+function setObjectScaleValue(axis, value) {
+  document.getElementById(`scale-${axis}-value`).value = value.toFixed(2);
+  displayScaleValues();
 }
 function setObjectRotationDegreeInput(axis, degrees) {
   // round by 0.05
@@ -829,9 +851,9 @@ function setPositionCentered(mesh) {
 
 function applyScale(mesh) {
   mesh.scale.set(
-    document.getElementById('scaleX').value,
-    document.getElementById('scaleY').value,
-    document.getElementById('scaleZ').value
+    document.getElementById('scale-x-range').value,
+    document.getElementById('scale-y-range').value,
+    document.getElementById('scale-z-range').value
   );
 }
 function applyScaleToObjects() {
@@ -904,10 +926,8 @@ function animate() {
   if(controls) controls.update();
   rotate();
   changeDirectionalLight();
-
   // Update UI
   document.getElementById('rotation-value').innerText = `${rotation.x.toFixed(2)}, ${rotation.y.toFixed(2)}, ${rotation.z.toFixed(2)}`;
-  document.getElementById('scale-value').innerText = `${document.getElementById('scaleX').value}, ${document.getElementById('scaleY').value}, ${document.getElementById('scaleZ').value}`;
 
   renderer.render( scene, camera );
 }

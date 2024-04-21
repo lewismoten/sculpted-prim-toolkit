@@ -619,7 +619,9 @@ function sphericalIndex(x, y, horizontalSegments, verticalSegments) {
   if(y < 0) {
     y = 0;
   } else if(y >= verticalSegments) {
-    y = verticalSegments - 1;
+    // HACK: seems center pixel is not in the proper place?
+    return ((horizontalSegments + 1) * verticalSegments);
+    // y = verticalSegments - 1;
   }
 if(x < 0) {
   // stitch left to right

@@ -225,7 +225,7 @@ function displayVertexValues() {
     + b.toString(16).padStart(2, '0');
   document.getElementById('vertex-position').innerText = '0x' + data;
   document.getElementById('vertex-color').style.backgroundColor = '#' + data;
-  highlightVertex();
+  drawModelCanvas();
 }
 function drawModelCanvas() {
   const ctx = canvas2D.getContext('2d', {willReadFrequently: true});
@@ -233,23 +233,30 @@ function drawModelCanvas() {
   canvas2D.height = image2D.height;
   ctx.drawImage(image2D, 0, 0);
   hideUnusedPixels(canvas2D, segments.horizontalDownsample, segments.verticalDownsample);
+  highlightVertex();
 }
 function highlightVertex() {
+  if(!pixels) return;
   const index = sphericalIndex(
     parseInt(document.getElementById('vertex-column-range').value),
     parseInt(document.getElementById('vertex-row-range').value),
     horizontalSegments,
     verticalSegments
   );
-  drawModelCanvas();
+  const [r, g, b] = pixels[index];
+  
+  const masked = document.getElementById('reveal-vertices').checked;
+  const outlineColor = masked ? 'white' : getContrastingColor(r, g, b);
+
   const { x, y } = dataIndexToImageXY(index);
   const ctx = canvas2D.getContext('2d');
-  const gradient = ctx.createLinearGradient(x - 1, y - 1, x + 1, y + 1);
-  gradient.addColorStop(0, 'black');
-  gradient.addColorStop(1, 'white');
-  ctx.strokeStyle = gradient;
+  ctx.strokeStyle = outlineColor;
   ctx.lineWidth = 1;
   ctx.strokeRect(x-1, y-1, 3, 3);
+}
+function getContrastingColor(r, g, b) {
+  const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+  return brightness > 125 ? 'black' : 'white';
 }
 function displayScaleValues() {
   const x = parseFloat(document.getElementById('scale-x-value').value);

@@ -25,6 +25,7 @@ let camera;
 let renderer;
 let skin;
 
+let nurbsControlVertices;
 let cubeObject;
 let controlVerticesObject;
 let controlMeshObject;
@@ -90,6 +91,9 @@ function handleWindowLoad() {
     });
   });
   
+  document.getElementById('nurbs-degrees').addEventListener('input', () => {
+    drawNurbsSurfaceMesh(nurbsControlVertices);
+  });
   document.getElementById('no-rotation').addEventListener('click', () => {
     "xyz".split('').forEach(axis => {
       document.getElementById(`spin-${axis}`).checked = false;
@@ -476,10 +480,10 @@ function handleImage2DLoad() {
   document.getElementById('vertical-downsampling').innerText = segments.verticalDownsample === 0 ? '' : `(downsampled: ${segments.verticalDownsample})`;
 
   hideUnusedPixels(canvas2D, segments.horizontalDownsample, segments.verticalDownsample);
-  const controlVertices = readControlVertices(ctx, segments);
-  drawControlVertices(controlVertices);
-  drawSphericalControlMesh(controlVertices);
-  drawNurbsMesh(controlVertices);
+  nurbsControlVertices = readControlVertices(ctx, segments);
+  drawControlVertices(nurbsControlVertices);
+  drawSphericalControlMesh(nurbsControlVertices);
+  drawNurbsSurfaceMesh(nurbsControlVertices);
 }
 function hideUnusedPixels(canvas, skipH, skipV) {
   if(!document.getElementById('reveal-vertices').checked) return;
@@ -623,16 +627,24 @@ if(x < 0) {
   return y * (horizontalSegments + 1) + x;
 }
 
-function drawNurbsMesh(controlVertices) {
+function drawNurbsSurfaceMesh(controlVertices) {
   if(nurbsMeshObject) {
     nurbsMeshObject.geometry.dispose();
     nurbsMeshObject.material.dispose();
     scene.remove(nurbsMeshObject);
   }
+  // Buggy - Can only create a square mesh
+  if(horizontalSegments !== verticalSegments) return;
+
+  const degrees = parseInt(document.getElementById('nurbs-degrees').value);
+  const degreeU = degrees;
+  const degreeV = degrees;
+  const uSpans = horizontalSegments + 2 - degreeU;
+  const vSpans = verticalSegments + 1 - degreeV;
   let nsControlPoints = [];
-  for(let v = 0; v < verticalSegments + 1; v++) {
+  for(let v = 0; v < vSpans + degreeV; v++) {
     const row = [];
-    for(let u = 0; u < horizontalSegments + 1; u++) {
+    for(let u = 0; u < uSpans + degreeU; u++) {
       const index = sphericalIndex(u, v, horizontalSegments, verticalSegments);
       const { x, y, z } = controlVertices[index];
       row.push(new THREE.Vector4(x, y, z, 1));
@@ -640,22 +652,24 @@ function drawNurbsMesh(controlVertices) {
     nsControlPoints.push(row);
   }
 
-  const degreeU = 3;
-  const degreeV = 3;
-  const knotsU = new Array(horizontalSegments + degreeU + 1);
-  const knotsV = new Array(verticalSegments + degreeV + 1);
-  for(let i = 0; i < knotsU.length; i++)
-    knotsU[i] = i / (knotsU.length - 1);
-  for(let i = 0; i < knotsV.length; i++)
-    knotsV[i] = i / (knotsV.length - 1);
+  const knotsU = new Array(uSpans + degreeU);
+  const knotsV = new Array(vSpans + degreeV);
+  // make uniform list of knot integers with smooth transitions
+  for(let i = 0; i < knotsU.length; i++) {
+    knotsU[i] = i;
+  }
+  for(let i = 0; i < knotsV.length; i++) {
+    knotsV[i] = i;
+  }
 
+  // This causes errors with nets that are not square
   const nurbsSurface = new NURBSSurface(
     degreeU, degreeV,
     knotsU, knotsV,
     nsControlPoints,
   );
-  const slices = horizontalSegments;
-  const stacks = verticalSegments;
+  const slices = horizontalSegments * 4;
+  const stacks = verticalSegments * 4;
   const geometry = new ParametricGeometry(nurbsSurface.getPoint.bind(nurbsSurface), slices, stacks);
 
   const material = new THREE.MeshStandardMaterial( { color: 'white' } );

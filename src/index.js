@@ -25,6 +25,7 @@ let camera;
 let renderer;
 let skin;
 
+let pixels;
 let modelMeshObject;
 let nurbsControlVertices;
 let cubeObject;
@@ -91,6 +92,30 @@ function handleWindowLoad() {
       applyScaleToObjects();
     });
   });
+  ['row', 'column'].forEach(axis => {
+    const vertexRangeInput = document.getElementById(`vertex-${axis}-range`);
+    const vertexValueInput = document.getElementById(`vertex-${axis}-value`);
+    vertexValueInput.value = vertexRangeInput.value;
+    vertexRangeInput.addEventListener('input', () => {
+      vertexValueInput.value = vertexRangeInput.value;
+      displayIndexAfterRowOrColumnChanged();
+    });
+    vertexValueInput.addEventListener('input', () => {
+      vertexRangeInput.value = vertexValueInput.value;
+      displayIndexAfterRowOrColumnChanged();
+    });
+  });
+  const vertexIndexRangeInput = document.getElementById('vertex-index-range');
+  const vertexIndexValueInput = document.getElementById('vertex-index-value');
+  vertexIndexValueInput.value = vertexIndexRangeInput.value;
+  vertexIndexRangeInput.addEventListener('input', () => {
+    vertexIndexValueInput.value = vertexIndexRangeInput.value;
+    displayRowAndColumnAfterIndexChanged();
+  });
+  vertexIndexValueInput.addEventListener('input', () => {
+    vertexIndexRangeInput.value = vertexIndexValueInput.value;
+    displayRowAndColumnAfterIndexChanged();
+  });
   
   document.getElementById('nurbs-degrees').addEventListener('input', () => {
     drawNurbsSurfaceMesh(nurbsControlVertices);
@@ -145,6 +170,48 @@ function handleWindowLoad() {
     textureSelector.value = defaultSkin;
     handleTextureSelectorChange();
   });
+}
+function displayIndexAfterRowOrColumnChanged() {
+  const i = sphericalIndex(
+    parseInt(document.getElementById('vertex-column-range').value),
+    parseInt(document.getElementById('vertex-row-range').value),
+    horizontalSegments,
+    verticalSegments
+  );
+  document.getElementById('vertex-index-range').value = i;
+  document.getElementById('vertex-index-value').value = i;
+  displayVertexValues();
+}
+function displayRowAndColumnAfterIndexChanged(){
+  const i = parseInt(document.getElementById('vertex-index-range').value);
+  const row = Math.floor(i / (horizontalSegments + 1));
+  let column = i % (horizontalSegments + 1);
+  // hidden column for seam is first column
+  if(column === horizontalSegments) {
+    column = 0;
+  }
+  // poles only use center pixel
+  if(row === 0 || row === verticalSegments) {
+    column = Math.floor(horizontalSegments / 2);
+  }
+  document.getElementById('vertex-row-range').value = row;
+  document.getElementById('vertex-column-range').value = column;
+  document.getElementById('vertex-row-value').value = row;
+  document.getElementById('vertex-column-value').value = column;
+  displayVertexValues()
+}
+function displayVertexValues() {
+  const i = sphericalIndex(
+    parseInt(document.getElementById('vertex-column-range').value),
+    parseInt(document.getElementById('vertex-row-range').value),
+    horizontalSegments,
+    verticalSegments
+  );
+  const [r, g, b] = pixels[i];
+  const color = `rgb(${r}, ${g}, ${b})`;
+  document.getElementById('vertex-position').innerText = color;
+  document.getElementById('vertex-color').style.backgroundColor = color;
+  // drawBorderAroundVertex(i);
 }
 function displayScaleValues() {
   const x = parseFloat(document.getElementById('scale-x-value').value);
@@ -475,6 +542,23 @@ function handleImage2DLoad() {
   verticalSegments = segments.vertical;
   const canUseNurbs = horizontalSegments === verticalSegments;
 
+  const vertexColumnRangeInput = document.getElementById('vertex-column-range');
+  const vertexRowRangeInput = document.getElementById('vertex-row-range');
+  const vertexColumnValueInput = document.getElementById('vertex-column-value');
+  const vertexRowValueInput = document.getElementById('vertex-row-value');
+  vertexColumnRangeInput.max = horizontalSegments;
+  vertexRowRangeInput.max = verticalSegments;
+  vertexColumnValueInput.max = horizontalSegments;
+  vertexRowValueInput.max = verticalSegments;
+  if(vertexColumnRangeInput.value > horizontalSegments) {
+    vertexColumnRangeInput.value = horizontalSegments;
+    vertexColumnValueInput.value = horizontalSegments;
+  }
+  if(vertexRowRangeInput.value > verticalSegments) {
+    vertexRowRangeInput.value = verticalSegments;
+    vertexRowValueInput.value = verticalSegments;
+  }
+
   document.getElementById('show-nurbs-mesh-label').className =  canUseNurbs ? 'children-enabled' : 'children-disabled';
   document.getElementById('nurbs-degrees-label').className =  canUseNurbs ? 'children-enabled' : 'children-disabled';
 
@@ -484,7 +568,15 @@ function handleImage2DLoad() {
   document.getElementById('vertical-downsampling').innerText = segments.verticalDownsample === 0 ? '' : `(downsampled: ${segments.verticalDownsample})`;
 
   hideUnusedPixels(canvas2D, segments.horizontalDownsample, segments.verticalDownsample);
-  nurbsControlVertices = readControlVertices(ctx, segments);
+  pixels = readPixels(ctx, segments);
+  nurbsControlVertices = pixels.map(([r, g, b]) => convertRgbToVertex(r, g, b));
+
+  const vertexCount = nurbsControlVertices.length;
+  const vertexIndexRangeInput = document.getElementById('vertex-index-range');
+  const vertexIndexValueInput = document.getElementById('vertex-index-value');
+  vertexIndexRangeInput.max = vertexCount - 1;
+  vertexIndexValueInput.max = vertexCount - 1;
+
   drawControlVertices(nurbsControlVertices);
   drawSphericalControlMesh(nurbsControlVertices);
   drawModelMesh(nurbsControlVertices);
@@ -552,7 +644,7 @@ function downsampleSegments(width, height, verticesLimit) {
   }
   return segments;
 }
-function readControlVertices(ctx, segments) {
+function readPixels(ctx, segments) {
   const width = canvas2D.width;
   const height = canvas2D.height;
   const pixelDataBytes = 4;
@@ -573,7 +665,7 @@ function readControlVertices(ctx, segments) {
       lastRow = rowIndex;
     }
 
-    const vertex = convertRgbToVertex(...pixels.slice(i, i + 3));
+    const vertex = pixels.slice(i, i + 3);
     controlVertices.push(vertex);
     if(columnIndex === 0) firstVirtex = vertex;
     if(rowIndex === 0 || rowIndex === height - 1) {

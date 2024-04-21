@@ -43,6 +43,8 @@ body {
 .group-title {
   background-color: white;
   border-bottom: 1px solid black;
+  display: flex;
+  column-gap: 10px;
 }
 .group .group .group-title {
   background-color: lightgray;
@@ -56,4 +58,18 @@ body {
 .children-disabled {
   pointer-events: none;
   opacity: 0.5;
+}
+.last-item-right {
+  align-self: center;
+  margin-right: 3px;
+  flex-grow: 3;
+  text-align: right;
+}
+#vertex-color {
+  width: 8px;
+  height: 8px;
+  border: 1px solid black;
+  display: inline-block;
+  max-width: 8px;
+  min-width: 8px;
 }

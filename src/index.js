@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import { NURBSSurface } from 'three/examples/jsm/curves/NURBSSurface.js';
 import { ParametricGeometry } from 'three/addons/geometries/ParametricGeometry.js';
+import { mod } from 'three/examples/jsm/nodes/Nodes.js';
 
 const defaultCameraAngle = 'front';
 const defaultModel = 'UFO Sculpty 1.0.png';
@@ -25,6 +26,7 @@ let camera;
 let renderer;
 let skin;
 
+let modelMeshObject;
 let nurbsControlVertices;
 let cubeObject;
 let controlVerticesObject;
@@ -113,6 +115,7 @@ function handleWindowLoad() {
 
 
   document.getElementById('ambientIntensity').addEventListener('input', handleAmbientIntensityChange);
+  document.getElementById('show-model-mesh').addEventListener('change', handleShowModelMeshChange);
   document.getElementById('show-control-vertices').addEventListener('change', handleShowControlVerticesChange);
   document.getElementById('show-control-mesh').addEventListener('change', handleShowControlMeshChange);
   document.getElementById('show-nurbs-mesh').addEventListener('change', handleShowNurbsMeshChange);
@@ -378,7 +381,7 @@ function loadAlignmentMap(size) {
   image.src = dataURL;
   image.onload = () => {
     drawTexturePreview(image);
-    applyTextureToObjects(image, nurbsMeshObject);
+    applyTextureToObjects(image, nurbsMeshObject, modelMeshObject);
   }
 }
 function getCellText(x, y, size) {
@@ -402,7 +405,7 @@ function loadTexture(textureUrl) {
   textureImage.src = textureUrl;
   textureImage.onload = () => {
     drawTexturePreview(textureImage);
-    applyTextureToObjects(textureImage, nurbsMeshObject);
+    applyTextureToObjects(textureImage, nurbsMeshObject, modelMeshObject);
   }
 }
 function drawTexturePreview(image) {
@@ -695,8 +698,27 @@ function drawSphericalControlMesh(controlVertices) {
   scene.add(controlMeshObject);
   applyScale(controlMeshObject);
   controlMeshObject.visible = document.getElementById('show-control-mesh').checked;
+  drawModelMesh(controlMeshObject);
 }
-
+function drawModelMesh(controlMeshObject) {
+  cleanupModelMesh();
+  modelMeshObject = controlMeshObject.clone();
+  modelMeshObject.material = new THREE.MeshStandardMaterial({ color: 'white' });
+  if(skin) {
+    modelMeshObject.material.map = skin;
+  }
+  setPositionCentered(modelMeshObject);
+  scene.add(modelMeshObject);
+  applyScale(modelMeshObject);
+  modelMeshObject.visible = document.getElementById('show-model-mesh').checked;
+}
+function cleanupModelMesh() {
+  if(modelMeshObject) {
+    scene.remove(modelMeshObject);
+    modelMeshObject.geometry.dispose();
+    modelMeshObject.material.dispose();
+  }
+}
 function cleanupControlMesh() {
   if(controlMeshObject) {
     scene.remove(controlMeshObject);
@@ -887,6 +909,7 @@ function applyScale(mesh) {
 }
 function applyScaleToObjects() {
   [
+    modelMeshObject,
     cubeObject,
     controlVerticesObject,
     controlMeshObject,
@@ -898,6 +921,9 @@ function handleShowControlVerticesChange() {
 }
 function handleShowControlMeshChange() {
   controlMeshObject.visible = document.getElementById('show-control-mesh').checked;
+}
+function handleShowModelMeshChange() {
+  modelMeshObject.visible = document.getElementById('show-model-mesh').checked;
 }
 function handleShowNurbsMeshChange() {
   nurbsMeshObject.visible = document.getElementById('show-nurbs-mesh').checked;
@@ -930,7 +956,8 @@ const rotate = () => {
     cubeObject,
     controlVerticesObject,
     controlMeshObject,
-    nurbsMeshObject
+    nurbsMeshObject,
+    modelMeshObject
   ].filter(Boolean)
   .forEach(mesh => {
     mesh.rotation.set(rotation.x, rotation.y, rotation.z);

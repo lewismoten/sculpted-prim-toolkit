@@ -183,6 +183,9 @@ function handleWindowLoad() {
     handleTextureSelectorChange();
   });
 }
+function selectedTool() {
+  return document.querySelector('input[name="tool"]:checked').value;
+}
 function handle3dCanvasClick(event) {
   const rect = canvas3D.getBoundingClientRect();
   const x = event.clientX - rect.left;
@@ -383,6 +386,7 @@ function changeCameraAngle(angle, width, height) {
 
 function createCameraControls(camera, domElement) {
   if(controls) controls.dispose();
+  if(selectedTool() !== 'camera') return;
   // NOTE: Create controls after camera has been positioned and rotated
   controls = new OrbitControls( camera, domElement );
 }

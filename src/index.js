@@ -54,6 +54,14 @@ function handleWindowLoad() {
   drawCube();
 
   canvas2D = document.getElementById('image-preview');
+  let drawingCanvas2D = false;
+  canvas2D.addEventListener('click', handle2DCanvasClick);
+  canvas2D.addEventListener('mousemove', (e) => {
+    if(drawingCanvas2D) handle2DCanvasClick(e);
+  });
+  canvas2D.addEventListener('mouseout', () => { drawingCanvas2D = false });
+  canvas2D.addEventListener('mouseup', () => { drawingCanvas2D = false });
+  canvas2D.addEventListener('mousedown', () => { drawingCanvas2D = true });
   document.getElementById('image-selector').addEventListener('change', handleImageSelectorChange);
   document.getElementById('texture-selector').addEventListener('change', handleTextureSelectorChange);
   document.getElementById('reveal-vertices').addEventListener('change', handleImageSelectorChange);
@@ -211,6 +219,20 @@ function displayRowAndColumnAfterIndexChanged(){
   document.getElementById('vertex-row-value').value = row;
   document.getElementById('vertex-column-value').value = column;
   displayVertexValues()
+}
+function handle2DCanvasClick(event) {
+  const rect = canvas2D.getBoundingClientRect();
+  const x = event.clientX - rect.left;
+  const y = event.clientY - rect.top;
+  const i = sphericalIndex(
+    Math.floor(x / Math.pow(2, segments.horizontalDownsample + 1)),
+    Math.floor(y / Math.pow(2, segments.verticalDownsample + 1)),
+    horizontalSegments,
+    verticalSegments
+  );
+  document.getElementById('vertex-index-range').value = i;
+  document.getElementById('vertex-index-value').value = i;
+  displayRowAndColumnAfterIndexChanged();
 }
 function displayVertexValues() {
   const i = sphericalIndex(

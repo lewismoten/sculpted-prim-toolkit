@@ -115,11 +115,13 @@ function handleWindowLoad() {
   document.getElementById('show-cube').addEventListener('change', handleShowCubeChange);
   requestAnimationFrame( animate );
   fetch('files.json').then(response => response.json()).then(files => {
+
     const imageSelector = document.getElementById('image-selector');
-    files.sculptedPrims.forEach(file => {
+    Object.keys(files.sculptedPrimNames).forEach(name => {
+      const file = files.sculptedPrimNames[name];
       const option = document.createElement('option');
       option.value = `images/sculpted-prims/${file}`;
-      option.innerText = file;
+      option.innerText = name;
       if(file === defaultModel) {
         option.selected = true;
       }
@@ -127,10 +129,11 @@ function handleWindowLoad() {
     });
     handleImageSelectorChange();
     const textureSelector = document.getElementById('texture-selector');
-    files.textures.forEach(file => {
+    Object.keys(files.textureNames).forEach(name => {
+      const file = files.textureNames[name];
       const option = document.createElement('option');
       option.value = `images/textures/${file}`;
-      option.innerText = file;
+      option.innerText = name;
       if(file === defaultSkin) {
         option.selected = true;
       }

@@ -27,10 +27,6 @@
       <div class="group-title">Model</div>
       <select id="image-selector"></select><br />
       <label><input type="checkbox" id="show-model-mesh" checked>Visible</label><br />
-      Image Size: <span id="image-size"></span><br />
-      <label>
-        <input type="checkbox" id="reveal-vertices">Mask Unused Pixels
-      </label><br />
       <label><input type="checkbox" id="show-cube">Reference Cube</label>
     </div>
     <div class="group" id="nurbs-container">
@@ -44,7 +40,7 @@
     </div>
   <div class="group">
     <div class="group-title">
-      Position: 
+      Model Data: 
       <span id="vertex-position"></span>
       <span class="last-item-right">
         <span id="vertex-color"></span>
@@ -59,6 +55,9 @@
     <label>Idx: <input type="range" id="vertex-index-range" min="0" max="1024" step="1" value="0"></label>
     <input type="number" id="vertex-index-value" min="0" max="1024" step="1" value="0" class="vertex-index-number">
     <br />
+    <label>
+      <input type="checkbox" id="reveal-vertices">Mask Unused Pixels
+    </label>
   </div>
   <div class="group">
     <div class="group-title">Rotation: <span id="rotation-values"></span></div>
@@ -129,6 +128,7 @@
   </div>
   <div class="group">
     <div class="group-title">Details</div>
+    Model Image Size: <span id="image-size"></span><br />
     Horizontal Segments: <span id="horizontal-segments"></span><span id="horizontal-downsampling"></span><br />
     Verticle Segments: <span id="vertical-segments"></span><span id="vertical-downsampling"></span><br />
     Vertices: <span id="control-mesh-vertices"></span><br />

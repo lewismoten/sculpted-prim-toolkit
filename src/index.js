@@ -2,7 +2,6 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import { NURBSSurface } from 'three/examples/jsm/curves/NURBSSurface.js';
 import { ParametricGeometry } from 'three/addons/geometries/ParametricGeometry.js';
-import { mod } from 'three/examples/jsm/nodes/Nodes.js';
 
 const defaultCameraAngle = 'front';
 const defaultModel = 'UFO Sculpty 1.0.png';

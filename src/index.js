@@ -195,10 +195,19 @@ function handle3dCanvasClick(event) {
   const intersects = raycaster.intersectObjects(selectedVerticesObject.children);
   if(intersects.length > 0) {
     const index = intersects[0].object.userData.index;
-    document.getElementById('vertex-index-range').value = index;
-    document.getElementById('vertex-index-value').value = index;
-    displayRowAndColumnAfterIndexChanged();
+    setSelectedVertexByIndex(index);
+  } else {
+    raycaster.intersectObject(modelMeshObject).forEach(intersects => {
+      const { x, y } = intersects.uv;
+      const index = getIndexByUV(x, y);
+      setSelectedVertexByIndex(index);
+    });
   }
+}
+function setSelectedVertexByIndex(index) {
+  document.getElementById('vertex-index-range').value = index;
+  document.getElementById('vertex-index-value').value = index;
+  displayRowAndColumnAfterIndexChanged();
 }
 
 function displayIndexAfterRowOrColumnChanged() {
@@ -208,9 +217,7 @@ function displayIndexAfterRowOrColumnChanged() {
     horizontalSegments,
     verticalSegments
   );
-  document.getElementById('vertex-index-range').value = i;
-  document.getElementById('vertex-index-value').value = i;
-  displayVertexValues();
+  setSelectedVertexByIndex(i);
 }
 function dataIndexToRowAndColumn(i) {
   const row = Math.floor(i / (horizontalSegments + 1));
@@ -232,6 +239,11 @@ function dataIndexToImageXY(i) {
     y: row * Math.pow(2, segments.verticalDownsample + 1)
   };
 }
+function getIndexByUV(u, v) {
+  const column = Math.floor(u * horizontalSegments + 1);
+  const row = Math.floor((1 - v) * verticalSegments + 1);
+  return sphericalIndex(column, row, horizontalSegments, verticalSegments);
+}
 function displayRowAndColumnAfterIndexChanged(){
   const i = parseInt(document.getElementById('vertex-index-range').value);
   const { row, column } = dataIndexToRowAndColumn(i);
@@ -251,9 +263,7 @@ function handle2DCanvasClick(event) {
     horizontalSegments,
     verticalSegments
   );
-  document.getElementById('vertex-index-range').value = i;
-  document.getElementById('vertex-index-value').value = i;
-  displayRowAndColumnAfterIndexChanged();
+  setSelectedVertexByIndex(i);
 }
 function displayVertexValues() {
   const i = sphericalIndex(

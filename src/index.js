@@ -32,6 +32,7 @@ let cubeObject;
 let controlVerticesObject;
 let controlMeshObject;
 let nurbsMeshObject;
+let segments;
 
 function handleWindowLoad() {
   canvas3D = document.getElementById('image-3d');
@@ -182,8 +183,7 @@ function displayIndexAfterRowOrColumnChanged() {
   document.getElementById('vertex-index-value').value = i;
   displayVertexValues();
 }
-function displayRowAndColumnAfterIndexChanged(){
-  const i = parseInt(document.getElementById('vertex-index-range').value);
+function dataIndexToRowAndColumn(i) {
   const row = Math.floor(i / (horizontalSegments + 1));
   let column = i % (horizontalSegments + 1);
   // hidden column for seam is first column
@@ -194,6 +194,18 @@ function displayRowAndColumnAfterIndexChanged(){
   if(row === 0 || row === verticalSegments) {
     column = Math.floor(horizontalSegments / 2);
   }
+  return { row, column };
+}
+function dataIndexToImageXY(i) {
+  const { row, column } = dataIndexToRowAndColumn(i);
+  return {
+    x: column * Math.pow(2, segments.horizontalDownsample + 1),
+    y: row * Math.pow(2, segments.verticalDownsample + 1)
+  };
+}
+function displayRowAndColumnAfterIndexChanged(){
+  const i = parseInt(document.getElementById('vertex-index-range').value);
+  const { row, column } = dataIndexToRowAndColumn(i);
   document.getElementById('vertex-row-range').value = row;
   document.getElementById('vertex-column-range').value = column;
   document.getElementById('vertex-row-value').value = row;
@@ -213,7 +225,31 @@ function displayVertexValues() {
     + b.toString(16).padStart(2, '0');
   document.getElementById('vertex-position').innerText = '0x' + data;
   document.getElementById('vertex-color').style.backgroundColor = '#' + data;
-  // drawBorderAroundVertex(i);
+  highlightVertex();
+}
+function drawModelCanvas() {
+  const ctx = canvas2D.getContext('2d', {willReadFrequently: true});
+  canvas2D.width = image2D.width;
+  canvas2D.height = image2D.height;
+  ctx.drawImage(image2D, 0, 0);
+  hideUnusedPixels(canvas2D, segments.horizontalDownsample, segments.verticalDownsample);
+}
+function highlightVertex() {
+  const index = sphericalIndex(
+    parseInt(document.getElementById('vertex-column-range').value),
+    parseInt(document.getElementById('vertex-row-range').value),
+    horizontalSegments,
+    verticalSegments
+  );
+  drawModelCanvas();
+  const { x, y } = dataIndexToImageXY(index);
+  const ctx = canvas2D.getContext('2d');
+  const gradient = ctx.createLinearGradient(x - 1, y - 1, x + 1, y + 1);
+  gradient.addColorStop(0, 'black');
+  gradient.addColorStop(1, 'white');
+  ctx.strokeStyle = gradient;
+  ctx.lineWidth = 1;
+  ctx.strokeRect(x-1, y-1, 3, 3);
 }
 function displayScaleValues() {
   const x = parseFloat(document.getElementById('scale-x-value').value);
@@ -533,15 +569,14 @@ function handleImageSelectorChange() {
   image2D.onload = handleImage2DLoad
 }
 function handleImage2DLoad() {
-  const ctx = canvas2D.getContext('2d', {willReadFrequently: true});
-  canvas2D.width = image2D.width;
-  canvas2D.height = image2D.height;
-  document.getElementById('image-size').innerText = `${image2D.width}x${image2D.height}`;
-  ctx.drawImage(image2D, 0, 0);
-
-  const segments = downsampleSegments(image2D.width/2, image2D.height/2, 1024);
+  segments = downsampleSegments(image2D.width/2, image2D.height/2, 1024);
   horizontalSegments = segments.horizontal;
   verticalSegments = segments.vertical;
+
+  drawModelCanvas();
+  document.getElementById('image-size').innerText = `${image2D.width}x${image2D.height}`;
+  const ctx = canvas2D.getContext('2d', {willReadFrequently: true});
+
   const canUseNurbs = horizontalSegments === verticalSegments;
 
   const vertexColumnRangeInput = document.getElementById('vertex-column-range');
@@ -569,7 +604,6 @@ function handleImage2DLoad() {
   document.getElementById('horizontal-downsampling').innerText = segments.horizontalDownsample === 0 ? '' : `(downsampled: ${segments.horizontalDownsample})`;
   document.getElementById('vertical-downsampling').innerText = segments.verticalDownsample === 0 ? '' : `(downsampled: ${segments.verticalDownsample})`;
 
-  hideUnusedPixels(canvas2D, segments.horizontalDownsample, segments.verticalDownsample);
   pixels = readPixels(ctx, segments);
   nurbsControlVertices = pixels.map(([r, g, b]) => convertRgbToVertex(r, g, b));
 

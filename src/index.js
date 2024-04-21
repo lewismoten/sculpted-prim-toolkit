@@ -267,9 +267,8 @@ function highlightVertex() {
     verticalSegments
   );
   const [r, g, b] = pixels[index];
-  const vertex = convertRgbToVertex(r, g, b);
 
-  
+  // 2D selection
   const masked = document.getElementById('reveal-vertices').checked;
   const outlineColor = masked ? 'white' : getContrastingColor(r, g, b);
 
@@ -278,6 +277,12 @@ function highlightVertex() {
   ctx.strokeStyle = outlineColor;
   ctx.lineWidth = 1;
   ctx.strokeRect(x-1, y-1, 3, 3);
+
+  // 3D selection
+  selectedVerticesObject.children.forEach(mesh => {
+    mesh.visible = mesh.userData.index === index;
+  });
+  
 }
 function getContrastingColor(r, g, b) {
   const brightness = (r * 299 + g * 587 + b * 114) / 1000;

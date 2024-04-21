@@ -8,7 +8,6 @@
 </head>
 
 <body>
-  <canvas id="image-preview"></canvas>
   <canvas id="image-3d" width="320" height="200"></canvas><br />
   <div class="group">
     <div class="group-title">Camera: <span id="camera-angle-selected"></span></div>
@@ -46,15 +45,19 @@
         <span id="vertex-color"></span>
       </span>
     </div>
-    <label>U: <input type="range" id="vertex-column-range" min="0" max="32" step="1" value="0"></label>
-    <input type="number" id="vertex-column-value" min="0" max="32" step="1" value="0" class="vertex-column-number">
-    <br />
-    <label>V: <input type="range" id="vertex-row-range" min="0" max="32" step="1" value="0"></label>
-    <input type="number" id="vertex-row-value" min="0" max="32" step="1" value="0" class="vertex-row-number">
-    <br />
-    <label>Idx: <input type="range" id="vertex-index-range" min="0" max="1024" step="1" value="0"></label>
-    <input type="number" id="vertex-index-value" min="0" max="1024" step="1" value="0" class="vertex-index-number">
-    <br />
+    <div class="flex">
+      <canvas id="image-preview"></canvas>
+      <div>
+        <label>U: <input type="range" id="vertex-column-range" min="0" max="32" step="1" value="0"></label>
+        <input type="number" id="vertex-column-value" min="0" max="32" step="1" value="0" class="vertex-column-number">
+        <br />
+        <label>V: <input type="range" id="vertex-row-range" min="0" max="32" step="1" value="0"></label>
+        <input type="number" id="vertex-row-value" min="0" max="32" step="1" value="0" class="vertex-row-number">
+        <br />
+        <label>Idx: <input type="range" id="vertex-index-range" min="0" max="1024" step="1" value="0"></label>
+        <input type="number" id="vertex-index-value" min="0" max="1024" step="1" value="0" class="vertex-index-number">
+      </div>
+    </div>
     <label>
       <input type="checkbox" id="reveal-vertices">Mask Unused Pixels
     </label>

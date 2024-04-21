@@ -12,9 +12,11 @@ body {
   height: 200px;
 }
 #image-preview {
-  position: absolute;
-  right: 10px;
-  top: 45px;
+  width: 64px;
+  height: 64px;
+  border: 1px solid black;
+  margin-right: 5px;
+  margin-top: 5px;
 }
 .flex {
   display: flex;

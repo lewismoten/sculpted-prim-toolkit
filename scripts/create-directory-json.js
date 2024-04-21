@@ -19,6 +19,7 @@ function getDisplayName(file) {
       .replace(' Sculpty', '')
       .replace(' sculpty', '')
       .replace(' Sculpted', '')
+      .replace('sculpt ', '')
       .replace(/squaring the circle \(Scupty (.*)\)/i, '$1')
       .replace('_sculpture', '')
       .replace('[DMGS] ', '')

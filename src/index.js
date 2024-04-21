@@ -475,7 +475,8 @@ function handleImage2DLoad() {
   verticalSegments = segments.vertical;
   const canUseNurbs = horizontalSegments === verticalSegments;
 
-  document.getElementById('nurbs-enabled').className =  canUseNurbs ? 'children-enabled' : 'children-disabled';
+  document.getElementById('show-nurbs-mesh-label').className =  canUseNurbs ? 'children-enabled' : 'children-disabled';
+  document.getElementById('nurbs-degrees-label').className =  canUseNurbs ? 'children-enabled' : 'children-disabled';
 
   document.getElementById('horizontal-segments').innerText = horizontalSegments.toLocaleString() + " + 1";
   document.getElementById('vertical-segments').innerText = verticalSegments.toLocaleString() + " + 1";

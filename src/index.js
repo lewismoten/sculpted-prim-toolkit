@@ -240,8 +240,11 @@ function dataIndexToImageXY(i) {
   };
 }
 function getIndexByUV(u, v) {
-  const column = Math.floor(u * horizontalSegments + 1);
-  const row = Math.floor((1 - v) * verticalSegments + 1);
+  let column = u * horizontalSegments + 1;
+  let row = (1 - v) * verticalSegments + 1;
+
+  column = Math.floor(column - 0.5);
+  row = Math.floor(row - 0.5);
   return sphericalIndex(column, row, horizontalSegments, verticalSegments);
 }
 function displayRowAndColumnAfterIndexChanged(){

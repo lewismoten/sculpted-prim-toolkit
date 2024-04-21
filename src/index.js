@@ -3,9 +3,9 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import { NURBSSurface } from 'three/examples/jsm/curves/NURBSSurface.js';
 import { ParametricGeometry } from 'three/addons/geometries/ParametricGeometry.js';
 
-const defaultCameraAngle = 'front';
-const defaultModel = 'UFO Sculpty 1.0.png';
-const defaultSkin = 'Funky UFO 1.0.png';
+const defaultCameraAngle = 'bottom';
+const defaultModel = 'tatara7 cube.png';
+const defaultSkin = 'alignment-map-1024';
 let currentCameraAngle = defaultCameraAngle;
 
 let image2D;
@@ -140,11 +140,9 @@ function handleWindowLoad() {
       const option = document.createElement('option');
       option.value = `images/textures/${file}`;
       option.innerText = name;
-      if(file === defaultSkin) {
-        option.selected = true;
-      }
       textureSelector.appendChild(option);
     });
+    textureSelector.value = defaultSkin;
     handleTextureSelectorChange();
   });
 }
@@ -488,6 +486,7 @@ function handleImage2DLoad() {
   nurbsControlVertices = readControlVertices(ctx, segments);
   drawControlVertices(nurbsControlVertices);
   drawSphericalControlMesh(nurbsControlVertices);
+  drawModelMesh(nurbsControlVertices);
   drawNurbsSurfaceMesh(nurbsControlVertices);
 }
 function hideUnusedPixels(canvas, skipH, skipV) {
@@ -697,15 +696,29 @@ function drawSphericalControlMesh(controlVertices) {
   scene.add(controlMeshObject);
   applyScale(controlMeshObject);
   controlMeshObject.visible = document.getElementById('show-control-mesh').checked;
-  drawModelMesh(controlMeshObject);
 }
-function drawModelMesh(controlMeshObject) {
+function drawModelMesh(controlVertices) {
   cleanupModelMesh();
-  modelMeshObject = controlMeshObject.clone();
-  modelMeshObject.material = new THREE.MeshStandardMaterial({ color: 'white' });
-  if(skin) {
-    modelMeshObject.material.map = skin;
+  function getPoint(u, v, target) {
+    
+    let column = Math.floor(u * (horizontalSegments + 1));
+    let row = Math.floor((1 - v) * (verticalSegments + 1));
+    const index = sphericalIndex(
+      column, 
+      row, 
+      horizontalSegments,
+      verticalSegments
+    );
+    const { x, y, z } = controlVertices[index];
+    target.set(x, y, z);
   }
+  const geometry = new ParametricGeometry(getPoint, horizontalSegments, verticalSegments);
+  geometry.computeVertexNormals();
+  const material = new THREE.MeshStandardMaterial({ color: 'white' });
+  if(skin) {
+    material.map = skin;
+  }
+  modelMeshObject = new THREE.Mesh(geometry, material);
   setPositionCentered(modelMeshObject);
   scene.add(modelMeshObject);
   applyScale(modelMeshObject);

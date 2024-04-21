@@ -12,31 +12,52 @@ function compareCaseInsensitive(a, b) {
   const sort = a.toLowerCase().localeCompare(b.toLowerCase());
   return sort === 0 ? a.localeCompare(b) : sort;
 }
-
-files.sculptedPrims = readDirectory('./src/images/sculpted-prims');
-files.textures = readDirectory('./src/images/textures');
-if(!files.sculptedPrimNames) 
-  files.sculptedPrimNames = {};
- 
-files.sculptedPrims.forEach(file => {
-  if(files.sculptedPrimNames[file]) return;
-
-  let displayName = file
+function getDisplayName(file) {
+  return file
     .replace(/\.(png)$/, '')
       .replace('Sculpty ', '')
       .replace(' Sculpty', '')
       .replace(' sculpty', '')
+      .replace(' Sculpted', '')
       .replace(/squaring the circle \(Scupty (.*)\)/i, '$1')
       .replace('_sculpture', '')
       .replace('[DMGS] ', '')
       .replace('[Pz]', '')
-      .replace(' - ', '')
+      .replace(' - ', ' ')
       .replace('sculpt - ', '')
-      .trim();
-  files.sculptedPrimNames[displayName] = file;
+      .replace('_texture', '')
+      .replace(' Texture', '')
+      .replace(' texture', '')
+      .replace('-skin', '')
+      .trim()
+}
+files.sculptedPrims = readDirectory('./src/images/sculpted-prims');
+files.textures = readDirectory('./src/images/textures');
+if(!files.sculptedPrimNames) 
+  files.sculptedPrimNames = {};
+let mappedNames = Object.values(files.sculptedPrimNames);
+ 
+files.sculptedPrims.forEach(file => {
+  if(mappedNames.includes(file)) return;
+  files.sculptedPrimNames[getDisplayName(file)] = file;
  });
  files.sculptedPrimNames = Object.keys(files.sculptedPrimNames).sort(compareCaseInsensitive).reduce((acc, key) => {
   acc[key] = files.sculptedPrimNames[key];
+  return acc;
+}
+, {});
+
+if(!files.textureNames) 
+  files.textureNames = {};
+ 
+mappedNames = Object.values(files.textureNames);
+files.textures.forEach(file => {
+  
+  if(mappedNames.includes(file)) return;
+  files.textureNames[getDisplayName(file)] = file;
+ });
+ files.textureNames = Object.keys(files.textureNames).sort(compareCaseInsensitive).reduce((acc, key) => {
+  acc[key] = files.textureNames[key];
   return acc;
 }
 , {});

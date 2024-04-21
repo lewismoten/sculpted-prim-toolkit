@@ -72,23 +72,7 @@ function handleWindowLoad() {
   document.getElementById('texture-horizontal-repeat').addEventListener('input', repeatTextureHorizontally);
   document.getElementById('texture-vertical-repeat').addEventListener('input', repeatTextureVertically);
 
-  canvas3D.addEventListener('click', (e) => {
-    const rect = canvas3D.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    const raycaster = new THREE.Raycaster();
-    const mouse = new THREE.Vector2();
-    mouse.x = ( x / width ) * 2 - 1;
-    mouse.y = - ( y / height ) * 2 + 1;
-    raycaster.setFromCamera(mouse, camera);
-    const intersects = raycaster.intersectObjects(selectedVerticesObject.children);
-    if(intersects.length > 0) {
-      const index = intersects[0].object.userData.index;
-      document.getElementById('vertex-index-range').value = index;
-      document.getElementById('vertex-index-value').value = index;
-      displayRowAndColumnAfterIndexChanged();
-    }
-  });
+  canvas3D.addEventListener('click', handle3dCanvasClick);
 
   "xyz".split('').forEach(axis => {
     const radianInput = document.getElementById(`rotation-${axis}`);
@@ -199,6 +183,24 @@ function handleWindowLoad() {
     handleTextureSelectorChange();
   });
 }
+function handle3dCanvasClick(event) {
+  const rect = canvas3D.getBoundingClientRect();
+  const x = event.clientX - rect.left;
+  const y = event.clientY - rect.top;
+  const raycaster = new THREE.Raycaster();
+  const mouse = new THREE.Vector2();
+  mouse.x = ( x / width ) * 2 - 1;
+  mouse.y = - ( y / height ) * 2 + 1;
+  raycaster.setFromCamera(mouse, camera);
+  const intersects = raycaster.intersectObjects(selectedVerticesObject.children);
+  if(intersects.length > 0) {
+    const index = intersects[0].object.userData.index;
+    document.getElementById('vertex-index-range').value = index;
+    document.getElementById('vertex-index-value').value = index;
+    displayRowAndColumnAfterIndexChanged();
+  }
+}
+
 function displayIndexAfterRowOrColumnChanged() {
   const i = sphericalIndex(
     parseInt(document.getElementById('vertex-column-range').value),

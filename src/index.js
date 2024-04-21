@@ -208,9 +208,11 @@ function displayVertexValues() {
     verticalSegments
   );
   const [r, g, b] = pixels[i];
-  const color = `rgb(${r}, ${g}, ${b})`;
-  document.getElementById('vertex-position').innerText = color;
-  document.getElementById('vertex-color').style.backgroundColor = color;
+  const data = r.toString(16).padStart(2, '0')
+    + g.toString(16).padStart(2, '0')
+    + b.toString(16).padStart(2, '0');
+  document.getElementById('vertex-position').innerText = '0x' + data;
+  document.getElementById('vertex-color').style.backgroundColor = '#' + data;
   // drawBorderAroundVertex(i);
 }
 function displayScaleValues() {

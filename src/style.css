@@ -73,3 +73,6 @@ body {
   max-width: 8px;
   min-width: 8px;
 }
+#vertex-position {
+  font-family: monospace;
+}

@@ -145,6 +145,13 @@ function displayScaleValues() {
   const z = parseFloat(document.getElementById('scale-z-value').value);
   document.getElementById('scale-values').innerText = `<${x.toFixed(2)}, ${y.toFixed(2)}, ${z.toFixed(2)}>`;
 }
+function displayRotationValues() {
+  const x = parseFloat(document.getElementById('rotation-x').value);
+  const y = parseFloat(document.getElementById('rotation-y').value);
+  const z = parseFloat(document.getElementById('rotation-z').value);
+  document.getElementById('rotation-values').innerText = `<${x.toFixed(2)}, ${y.toFixed(2)}, ${z.toFixed(2)}>`;
+
+}
 function setObjectScaleRange(axis, value) {
   document.getElementById(`scale-${axis}-range`).value = value.toFixed(2);
   displayScaleValues();
@@ -157,9 +164,11 @@ function setObjectRotationDegreeInput(axis, degrees) {
   // round by 0.05
   degrees = Math.round(degrees * 20) / 20;
   document.getElementById(`rotation-${axis}-degrees`).value = degrees.toFixed(2);
+  displayRotationValues();
 }
 function setObjectRotationRadiansInput(axis, radians) {
   document.getElementById(`rotation-${axis}`).value = radians.toFixed(2);
+  displayRotationValues();
 }
 function radiansToDegrees(radians) {
   // -Math.PI = 180 degrees, 0 = 0 degrees, Math.PI = -180 degrees
@@ -926,8 +935,6 @@ function animate() {
   if(controls) controls.update();
   rotate();
   changeDirectionalLight();
-  // Update UI
-  document.getElementById('rotation-value').innerText = `${rotation.x.toFixed(2)}, ${rotation.y.toFixed(2)}, ${rotation.z.toFixed(2)}`;
 
   renderer.render( scene, camera );
 }

@@ -473,6 +473,9 @@ function handleImage2DLoad() {
   const segments = downsampleSegments(image2D.width/2, image2D.height/2, 1024);
   horizontalSegments = segments.horizontal;
   verticalSegments = segments.vertical;
+  const canUseNurbs = horizontalSegments === verticalSegments;
+
+  document.getElementById('nurbs-enabled').className =  canUseNurbs ? 'children-enabled' : 'children-disabled';
 
   document.getElementById('horizontal-segments').innerText = horizontalSegments.toLocaleString() + " + 1";
   document.getElementById('vertical-segments').innerText = verticalSegments.toLocaleString() + " + 1";

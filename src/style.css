@@ -53,3 +53,7 @@ body {
 .degree-input {
   width: 60px;
 }
+.children-disabled {
+  pointer-events: none;
+  opacity: 0.5;
+}

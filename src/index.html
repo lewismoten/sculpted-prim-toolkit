@@ -22,8 +22,7 @@
     <button id="camera-perspective">Perspective</button>
     <button id="camera-reset">Reset</button>
   </div>
-  <div class="group">
-    <div class="group-title">Scene</div>
+  <div class="flex">
     <div class="group">
       <div class="group-title">Model</div>
       <select id="image-selector"></select><br />
@@ -31,15 +30,14 @@
       Image Size: <span id="image-size"></span><br />
       <label>
         <input type="checkbox" id="reveal-vertices">Mask Unused Pixels
-      </label>
+      </label><br />
+      <label><input type="checkbox" id="show-cube">Reference Cube</label>
     </div>
     <div class="group">
       <div class="group-title">NURBS</div>
       <label><input type="checkbox" id="show-control-vertices">Control Vertices</label><br />
       <label><input type="checkbox" id="show-control-mesh">Control Net</label><br />
     </div>
-    <label><input type="checkbox" id="show-cube">Reference Cube</label>
-  </div>
   <div class="group">
     <div class="group-title">Rotation: <span id="rotation-values"></span></div>
     <label>X: <input type="range" id="rotation-x" min="-3.14159" max="3.14159" step="0.01" value="1"></label>
@@ -105,10 +103,15 @@
     <label>- Elevation: <input type="range" id="directional-light-elevation" min="-1" max="1" step=".01"
         value="0"></label><br />
   </div>
-  Horizontal Segments: <span id="horizontal-segments"></span><span id="horizontal-downsampling"></span><br />
-  Verticle Segments: <span id="vertical-segments"></span><span id="vertical-downsampling"></span><br />
-  Vertices: <span id="control-mesh-vertices"></span><br />
-  Faces: <span id="control-mesh-faces"></span><br />
-  Positions: <span id="control-mesh-positions"></span><br />
+  <div class="group">
+    <div class="group-title">Details</div>
+    Horizontal Segments: <span id="horizontal-segments"></span><span id="horizontal-downsampling"></span><br />
+    Verticle Segments: <span id="vertical-segments"></span><span id="vertical-downsampling"></span><br />
+    Vertices: <span id="control-mesh-vertices"></span><br />
+    Faces: <span id="control-mesh-faces"></span><br />
+    Positions: <span id="control-mesh-positions"></span><br />
+  
+</div>
+
 
 </html>

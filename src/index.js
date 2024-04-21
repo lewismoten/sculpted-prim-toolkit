@@ -33,6 +33,7 @@ let controlVerticesObject;
 let controlMeshObject;
 let nurbsMeshObject;
 let segments;
+let selectedVerticesObject;
 
 function handleWindowLoad() {
   canvas3D = document.getElementById('image-3d');
@@ -266,6 +267,8 @@ function highlightVertex() {
     verticalSegments
   );
   const [r, g, b] = pixels[index];
+  const vertex = convertRgbToVertex(r, g, b);
+
   
   const masked = document.getElementById('reveal-vertices').checked;
   const outlineColor = masked ? 'white' : getContrastingColor(r, g, b);
@@ -646,6 +649,7 @@ function handleImage2DLoad() {
   drawSphericalControlMesh(nurbsControlVertices);
   drawModelMesh(nurbsControlVertices);
   drawNurbsSurfaceMesh(nurbsControlVertices);
+  drawSelectionVertices();
 }
 function hideUnusedPixels(canvas, skipH, skipV) {
   if(!document.getElementById('reveal-vertices').checked) return;
@@ -767,6 +771,43 @@ function drawControlVertices(controlVertices) {
 
   applyScale(controlVerticesObject);
   controlVerticesObject.visible = document.getElementById('show-control-vertices').checked;
+}
+function drawSelectionVertices() {  
+  const vertices = pixels.map(([r, g, b]) => convertRgbToVertex(r, g, b));
+  if(selectedVerticesObject) {
+    selectedVerticesObject.children.forEach(mesh => {
+      mesh.geometry.dispose();
+      mesh.material.dispose();
+    });
+    scene.remove(selectedVerticesObject);
+  }
+  const selectedIndex = parseInt(document.getElementById('vertex-index-range').value);
+  const object = new THREE.Object3D();
+  vertices.forEach(({ x, y, z, color }, i) => {
+    const {row, column} = dataIndexToRowAndColumn(i);
+    if(row === 0 || row === verticalSegments) {
+      // poles only use center pixel
+      if(column != Math.floor(horizontalSegments / 2)) return;
+    }
+    if(column === horizontalSegments) {
+      // hidden column for seam is first column
+      return;
+    }
+    const geometry = new THREE.BoxGeometry( 0.02, 0.02, 0.02 );
+    const material = new THREE.MeshBasicMaterial( { color } );
+    const mesh = new THREE.Mesh( geometry, material );
+    mesh.name = 'Pixel'
+    mesh.userData.index = i;
+    mesh.userData.row = row;
+    mesh.userData.column = column;
+    mesh.position.set(x, y, z);
+    mesh.visible = selectedIndex === i;
+    object.add(mesh);
+  });
+  setPositionCentered(object);
+  scene.add( object );
+  applyScale(object);
+  selectedVerticesObject = object;
 }
 function sphericalIndex(x, y, horizontalSegments, verticalSegments) {
   if(y >= verticalSegments || y <= 0) {
@@ -1085,7 +1126,8 @@ function applyScaleToObjects() {
     cubeObject,
     controlVerticesObject,
     controlMeshObject,
-    nurbsMeshObject
+    nurbsMeshObject,
+    selectedVerticesObject
   ].filter(Boolean).forEach(applyScale);
 }
 function handleShowControlVerticesChange() {
@@ -1129,7 +1171,8 @@ const rotate = () => {
     controlVerticesObject,
     controlMeshObject,
     nurbsMeshObject,
-    modelMeshObject
+    modelMeshObject,
+    selectedVerticesObject
   ].filter(Boolean)
   .forEach(mesh => {
     mesh.rotation.set(rotation.x, rotation.y, rotation.z);

@@ -335,7 +335,7 @@ function displayRowAndColumnAfterIndexChanged(){
   document.getElementById('vertex-column-range').value = column;
   document.getElementById('vertex-row-value').value = row;
   document.getElementById('vertex-column-value').value = column;
-  displayVertexValues()
+  displayNewlySelectedVertex()
 }
 function handle2DCanvasClick(event) {
   const rect = canvas2D.getBoundingClientRect();
@@ -349,20 +349,38 @@ function handle2DCanvasClick(event) {
   );
   setSelectedVertexByIndex(i);
 }
-function displayVertexValues() {
-  const i = sphericalIndex(
-    parseInt(document.getElementById('vertex-column-range').value),
-    parseInt(document.getElementById('vertex-row-range').value),
-    horizontalSegments,
-    verticalSegments
-  );
+function displayNewlySelectedVertex() {
+  const i = getSelectedIndex();
   const [r, g, b] = pixels[i];
   const data = r.toString(16).padStart(2, '0')
     + g.toString(16).padStart(2, '0')
     + b.toString(16).padStart(2, '0');
   document.getElementById('vertex-position').innerText = '0x' + data;
   document.getElementById('vertex-color').style.backgroundColor = '#' + data;
+
+  displayVertexPosition()
   drawModelCanvas();
+}
+function getSelectedIndex() {
+  return sphericalIndex(
+    parseInt(document.getElementById('vertex-column-range').value),
+    parseInt(document.getElementById('vertex-row-range').value),
+    horizontalSegments,
+    verticalSegments
+  );
+}
+function displayVertexPosition() {
+  const i = getSelectedIndex();
+  const [r, g, b] = pixels[i];
+  const x = pixelValue('x', r, g, b);
+  const y = pixelValue('y', r, g, b);
+  const z = pixelValue('z', r, g, b);
+  document.getElementById('selected-pos-x-range').value = x;
+  document.getElementById('selected-pos-x-value').value = x;
+  document.getElementById('selected-pos-y-range').value = y;
+  document.getElementById('selected-pos-y-value').value = y;
+  document.getElementById('selected-pos-z-range').value = z;
+  document.getElementById('selected-pos-z-value').value = z;
 }
 function drawModelCanvas() {
   const ctx = canvas2D.getContext('2d', {willReadFrequently: true});
@@ -790,12 +808,17 @@ function mapByteToControlVectorValue(byteValue) {
 function rgbLong(r, g, b) {
   return (r << 16) | (g << 8) | b;
 }
+function pixelValue(axis, r, g, b) { 
+  if(axis === 'x') return g;
+  if(axis === 'y') return b;
+  return r;
+}
 function convertRgbToVertex(r, g, b) {
   return {
     color: rgbLong(r, g, b),
-    x: mapByteToControlVectorValue(g),
-    y: mapByteToControlVectorValue(b),
-    z: mapByteToControlVectorValue(r)
+    x: mapByteToControlVectorValue(pixelValue('x', r, g, b)),
+    y: mapByteToControlVectorValue(pixelValue('y', r, g, b)),
+    z: mapByteToControlVectorValue(pixelValue('z', r, g, b))
   };
 }
 

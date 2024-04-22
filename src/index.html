@@ -8,20 +8,20 @@
 </head>
 
 <body>
-  <canvas id="image-3d" width="320" height="200"></canvas><br />
-  <div class="group">
-    <div class="group-title">Camera: <span id="camera-angle-selected"></span></div>
-    <button id="camera-right">Right</button>
-    <button id="camera-left">Left</button>
-    <button id="camera-top">Top</button>
-    <button id="camera-bottom">Bottom</button>
-    <button id="camera-front">Front</button>
-    <button id="camera-back">Back</button>
-    <button id="camera-iso">Iso</button>
-    <button id="camera-perspective">Perspective</button>
-  </div>
   <div class="flex">
+    <canvas id="image-3d" width="320" height="200"></canvas><br />
     <div class="group">
+      <div class="group-title">Camera: <span id="camera-angle-selected"></span></div>
+      <button id="camera-top">Top</button>
+      <button id="camera-left">Left</button>
+      <button id="camera-front">Front</button><br />
+      <button id="camera-right">Right</button>
+      <button id="camera-bottom">Bottom</button>
+      <button id="camera-back">Back</button><br />
+      <button id="camera-iso">Iso</button>
+      <button id="camera-perspective">Perspective</button>
+    </div>
+      <div class="group">
       <div class="group-title">Toolbox</div>
       <label><input type="radio" name="tool" value="camera" checked>Camera</label><br />
       <label><input type="radio" name="tool" value="select">Selection</label><br />

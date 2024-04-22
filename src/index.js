@@ -206,7 +206,6 @@ function handle3dCanvasClick(event) {
   mouse.y = - ( y / height ) * 2 + 1;
   raycaster.setFromCamera(mouse, camera);
   raycaster.intersectObject(modelMeshObject).forEach(intersects => {
-    console.log(intersects);
     const { x, y } = intersects.uv;
     const index = getIndexByUV(x, y);
     setSelectedVertexByIndex(index);

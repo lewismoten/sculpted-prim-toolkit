@@ -423,6 +423,9 @@ function displayVertexPosition() {
   document.getElementById('selected-pos-y-value').value = y;
   document.getElementById('selected-pos-z-range').value = z;
   document.getElementById('selected-pos-z-value').value = z;
+  document.getElementById('selected-pos-vector').innerText = `<${
+    [x, y, z].map(v => mapByteToControlVectorValue(v).toFixed(3)).join(', ')
+  }>`;
 }
 function drawModelCanvas() {
   const ctx = getModelCanvasContext();

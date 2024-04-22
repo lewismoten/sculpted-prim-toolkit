@@ -78,3 +78,7 @@ body {
 #vertex-position {
   font-family: monospace;
 }
+#selected-pos-vector {
+  font-family: monospace;
+  font-size: xx-small;
+}

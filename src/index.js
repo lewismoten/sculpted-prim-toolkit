@@ -419,7 +419,7 @@ function displayVertexPosition() {
   document.getElementById('selected-pos-z-value').value = z;
 }
 function drawModelCanvas() {
-  const ctx = canvas2D.getContext('2d', {willReadFrequently: true});
+  const ctx = getModelCanvasContext();
   canvas2D.width = image2D.width;
   canvas2D.height = image2D.height;
   ctx.drawImage(image2D, 0, 0);
@@ -434,23 +434,46 @@ function highlightVertex() {
     horizontalSegments,
     verticalSegments
   );
-  const [r, g, b] = pixels[index];
 
   // 2D selection
-  const masked = document.getElementById('reveal-vertices').checked;
-  const outlineColor = masked ? 'white' : getContrastingColor(r, g, b);
-
-  const { x, y } = dataIndexToImageXY(index);
-  const ctx = canvas2D.getContext('2d');
-  ctx.strokeStyle = outlineColor;
-  ctx.lineWidth = 1;
-  ctx.strokeRect(x-1, y-1, 3, 3);
+  highlightVertexOnCanvas();
 
   // 3D selection
   selectedVerticesObject.children.forEach(mesh => {
     mesh.visible = mesh.userData.index === index;
   });
   
+}
+function highlightVertexOnCanvas() {
+  const index = sphericalIndex(
+    parseInt(document.getElementById('vertex-column-range').value),
+    parseInt(document.getElementById('vertex-row-range').value),
+    horizontalSegments,
+    verticalSegments
+  );
+  const [r, g, b] = pixels[index];
+  const masked = document.getElementById('reveal-vertices').checked;
+  const outlineColor = masked ? 'white' : getContrastingColor(r, g, b);
+
+  const { x, y } = dataIndexToImageXY(index);
+  const value = outlineColor === 'black' ? 0 : 255;
+  for(let xx = x - 1; xx <= x + 1; xx++) {
+    for(let yy = y - 1; yy <= y + 1; yy++) {
+      if(xx === x && yy === y) continue;
+      setModelCanvasPixel(xx, yy, value, value, value);
+    }
+  }
+}
+function setModelCanvasPixel(x, y, r, g, b) {
+  const ctx = getModelCanvasContext();
+  const imageData = ctx.getImageData(x, y, 1, 1);
+  imageData.data[0] = r;
+  imageData.data[1] = g;
+  imageData.data[2] = b;
+  ctx.putImageData(imageData, x, y);
+}
+function getModelCanvasContext() {
+  return canvas2D.getContext('2d', {willReadFrequently: true});
 }
 function getContrastingColor(r, g, b) {
   const brightness = (r * 299 + g * 587 + b * 114) / 1000;
@@ -782,7 +805,7 @@ function handleImage2DLoad() {
 
   drawModelCanvas();
   document.getElementById('image-size').innerText = `${image2D.width}x${image2D.height}`;
-  const ctx = canvas2D.getContext('2d', {willReadFrequently: true});
+  const ctx = getModelCanvasContext();
 
   const canUseNurbs = horizontalSegments === verticalSegments;
 
@@ -811,8 +834,12 @@ function handleImage2DLoad() {
   document.getElementById('horizontal-downsampling').innerText = segments.horizontalDownsample === 0 ? '' : `(downsampled: ${segments.horizontalDownsample})`;
   document.getElementById('vertical-downsampling').innerText = segments.verticalDownsample === 0 ? '' : `(downsampled: ${segments.verticalDownsample})`;
 
-  pixels = readPixels(ctx, segments);
+  const imageData = ctx.getImageData(0, 0, image2D.width, image2D.height).data;
+  pixels = getModelPixels(imageData, segments);
   nurbsControlVertices = pixels.map(([r, g, b]) => convertRgbToVertex(r, g, b));
+
+  // Draw frame around selected pixel
+  highlightVertexOnCanvas();
 
   const vertexCount = nurbsControlVertices.length;
   const vertexIndexRangeInput = document.getElementById('vertex-index-range');
@@ -832,14 +859,12 @@ function drawObjects(nurbsControlVertices) {
 }
 function hideUnusedPixels(canvas, skipH, skipV) {
   if(!document.getElementById('reveal-vertices').checked) return;
-  const ctx = canvas.getContext('2d', {willReadFrequently: true});
   const width = canvas.width;
   const height = canvas.height;
-  ctx.fillStyle = 'black';
   for(let x = 0; x < width; x++) {
     for(let y = 0; y < height; y++) {
       if(canReadControlVertex(x, y, width, height, skipH, skipV)) continue;
-      ctx.fillRect(x, y, 1, 1);
+      setModelCanvasPixel(x, y, 0, 0, 0);
     }
   }
 }
@@ -900,18 +925,17 @@ function downsampleSegments(width, height, verticesLimit) {
   }
   return segments;
 }
-function readPixels(ctx, segments) {
+function getModelPixels(imageData, segments) {
   const width = canvas2D.width;
   const height = canvas2D.height;
   const pixelDataBytes = 4;
   // get pixels in row major order, top to bottom, left to right as (r, g, b, a)
-  const pixels = ctx.getImageData(0, 0, width, height).data;
   const controlVertices = [];
 
   let lastRow = -1;
   let firstVirtex = null;
 
-  for(let i = 0; i < pixels.length; i += pixelDataBytes) {
+  for(let i = 0; i < imageData.length; i += pixelDataBytes) {
     const columnIndex = (i / pixelDataBytes) % width;
     const rowIndex = Math.floor((i / pixelDataBytes) / width);
     if(!canReadControlVertex(columnIndex, rowIndex, width, height, segments.horizontalDownsample, segments.verticalDownsample)) continue;
@@ -921,7 +945,7 @@ function readPixels(ctx, segments) {
       lastRow = rowIndex;
     }
 
-    const vertex = pixels.slice(i, i + 3);
+    const vertex = imageData.slice(i, i + 3);
     controlVertices.push(vertex);
     if(columnIndex === 0) firstVirtex = vertex;
     if(rowIndex === 0 || rowIndex === height - 1) {

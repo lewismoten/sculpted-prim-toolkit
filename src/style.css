@@ -83,3 +83,6 @@ body {
   font-family: monospace;
   font-size: xx-small;
 }
+[title] {
+  cursor: help;
+}

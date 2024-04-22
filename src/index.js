@@ -57,6 +57,8 @@ function handleWindowLoad() {
   ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
   scene.add(ambientLight);
 
+  scene.background = new THREE.Color(0x000040);
+
   drawCube();
 
   canvas2D = document.getElementById('image-preview');

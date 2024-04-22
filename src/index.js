@@ -196,6 +196,7 @@ function selectedTool() {
   return document.querySelector('input[name="tool"]:checked').value;
 }
 function handle3dCanvasClick(event) {
+  if(selectedTool() !== 'select') return;
   const rect = canvas3D.getBoundingClientRect();
   const x = event.clientX - rect.left;
   const y = event.clientY - rect.top;

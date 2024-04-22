@@ -834,9 +834,6 @@ function handleImage2DLoad() {
     vertexRowValueInput.value = verticalSegments;
   }
 
-  document.getElementById('show-nurbs-mesh-label').className =  canUseNurbs ? 'children-enabled' : 'children-disabled';
-  document.getElementById('nurbs-degrees-label').className =  canUseNurbs ? 'children-enabled' : 'children-disabled';
-
   document.getElementById('horizontal-segments').innerText = horizontalSegments.toLocaleString() + " + 1";
   document.getElementById('vertical-segments').innerText = verticalSegments.toLocaleString() + " + 1";
   document.getElementById('horizontal-downsampling').innerText = segments.horizontalDownsample === 0 ? '' : `(downsampled: ${segments.horizontalDownsample})`;
@@ -1056,9 +1053,6 @@ function drawNurbsSurfaceMesh(controlVertices) {
     nurbsMeshObject.material.dispose();
     scene.remove(nurbsMeshObject);
   }
-  // Buggy - Can only create a square mesh
-  // if(horizontalSegments !== verticalSegments) return;
-
   let degrees = parseInt(document.getElementById('nurbs-degrees').value);
 
   const degreeU = degrees;
@@ -1075,12 +1069,12 @@ function drawNurbsSurfaceMesh(controlVertices) {
   const net = [];
   // with nurbs surfaces, we need to duplicate the first and last row and column
   // to keep the surface closed
-  for(let row = 0; row < verticalSegments+1; row++) {
+  for(let column = 0; column < horizontalSegments+1; column++) {
     const vPoints = [];
-    for(let column = 0; column < horizontalSegments+1; column++) {
+    for(let row = 0; row < verticalSegments+1; row++) {
       const index = sphericalIndex(column, row, horizontalSegments, verticalSegments);
       const { x, y, z } = controlVertices[index];
-      vPoints.push(new THREE.Vector4(x, y, z, 1));
+      vPoints.unshift(new THREE.Vector4(x, y, z, 1));
     }
     net.push(vPoints);
   }

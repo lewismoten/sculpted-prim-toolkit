@@ -88,7 +88,7 @@ function handleWindowLoad() {
   document.getElementById('texture-vertical-offset').addEventListener('input', offsetTextureVertically);
   document.getElementById('texture-horizontal-repeat').addEventListener('input', repeatTextureHorizontally);
   document.getElementById('texture-vertical-repeat').addEventListener('input', repeatTextureVertically);
-
+  document.getElementById('show-texture-emissive').addEventListener('change', handleTextureEmissiveChange);
   document.getElementsByName('tool').forEach(input => {
     input.addEventListener('change', () => {
       const tool = selectedTool();
@@ -779,10 +779,19 @@ function offsetTextureVertically() {
 function repeatTextureHorizontally() {
   skin.repeat.x = parseFloat(document.getElementById('texture-horizontal-repeat').value);
 }
+function handleTextureEmissiveChange() {
+  const isEmissive = document.getElementById('show-texture-emissive').checked;
+  [nurbsMeshObject, modelMeshObject].forEach(object => {
+    if(object) {
+      object.material.emissive = new THREE.Color(isEmissive ? 0xffffff : 0x000000);
+    }
+  });
+}
 function repeatTextureVertically() {
   skin.repeat.y = parseFloat(document.getElementById('texture-vertical-repeat').value);
 }
 function applyTextureToObjects(image) {
+  const isEmissive = document.getElementById('show-texture-emissive').checked;
   skin = new THREE.Texture(image);
   skin.wrapS = THREE.RepeatWrapping;
   skin.wrapT = THREE.RepeatWrapping;
@@ -794,6 +803,8 @@ function applyTextureToObjects(image) {
   Array.from(arguments).slice(1).forEach(object => {
     if(object) {
       object.material.map = skin;
+      object.material.emissive = new THREE.Color(isEmissive ? 0xffffff : 0x000000);
+      object.material.emissiveMap = skin;
       object.material.needsUpdate = true;
     }
   });
@@ -825,8 +836,6 @@ function handleImage2DLoad() {
   drawModelCanvas();
   document.getElementById('image-size').innerText = `${image2D.width}x${image2D.height}`;
   const ctx = getModelCanvasContext();
-
-  const canUseNurbs = horizontalSegments === verticalSegments;
 
   const vertexColumnRangeInput = document.getElementById('vertex-column-range');
   const vertexRowRangeInput = document.getElementById('vertex-row-range');
@@ -1101,11 +1110,14 @@ function drawNurbsSurfaceMesh(controlVertices) {
     (verticalSegments + 1) * degreeV
   );
 
-  const material = new THREE.MeshStandardMaterial( { color: 'white' } );
+  const isEmissive = document.getElementById('show-texture-emissive').checked;
+  const material = new THREE.MeshStandardMaterial( { color: 'white', emissive: isEmissive ? 0xFFFFFF : 0x000000 } );
   if(skin) {
     material.map = skin;
+    material.emissiveMap = skin;
   }
   nurbsMeshObject = new THREE.Mesh(geometry, material);
+  nurbsMeshObject.name = 'NURBS Surface';
   setPositionCentered(nurbsMeshObject);
   scene.add(nurbsMeshObject);
   applyScale(nurbsMeshObject);
@@ -1149,11 +1161,14 @@ function drawModelMesh(controlVertices) {
   }
   const geometry = new ParametricGeometry(getPoint, horizontalSegments, verticalSegments);
   geometry.computeVertexNormals();
-  const material = new THREE.MeshStandardMaterial({ color: 'white' });
+  const isEmissive = document.getElementById('show-texture-emissive').checked;
+  const material = new THREE.MeshStandardMaterial({ color: 'white', emissive: isEmissive ? 0xFFFFFF : 0x000000});
   if(skin) {
     material.map = skin;
+    material.emissiveMap = skin;
   }
   modelMeshObject = new THREE.Mesh(geometry, material);
+  modelMeshObject.name = 'Model Mesh';
   setPositionCentered(modelMeshObject);
   scene.add(modelMeshObject);
   applyScale(modelMeshObject);

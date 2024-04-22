@@ -367,13 +367,25 @@ function displayRowAndColumnAfterIndexChanged(){
   document.getElementById('vertex-column-value').value = column;
   displayNewlySelectedVertex()
 }
+function translatePointerCoordinates({clientX, clientY}, canvas, image) {
+  const border = 1;
+  const rect = canvas.getBoundingClientRect();
+  const x = (clientX - (rect.left + border));
+  const y = (clientY - (rect.top + border));
+  const scaleX = image.width / (rect.width - (border * 2));
+  const scaleY = image.height / (rect.height - (border * 2));;
+  return {
+    x: x * scaleX,
+    y: y * scaleY
+  };
+}
 function handle2DCanvasClick(event) {
-  const rect = canvas2D.getBoundingClientRect();
-  const x = event.clientX - rect.left;
-  const y = event.clientY - rect.top;
+  let {x, y} = translatePointerCoordinates(event, canvas2D, image2D);
+  const column = Math.floor(x / Math.pow(2, segments.horizontalDownsample + 1));
+  const row = Math.floor(y / Math.pow(2, segments.verticalDownsample + 1));
   const i = sphericalIndex(
-    Math.floor(x / Math.pow(2, segments.horizontalDownsample + 1)),
-    Math.floor(y / Math.pow(2, segments.verticalDownsample + 1)),
+    column,
+    row,
     horizontalSegments,
     verticalSegments
   );

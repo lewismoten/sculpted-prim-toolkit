@@ -3,8 +3,8 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import { NURBSSurface } from 'three/examples/jsm/curves/NURBSSurface.js';
 import { ParametricGeometry } from 'three/addons/geometries/ParametricGeometry.js';
 
-const defaultCameraAngle = 'perspective';
-const defaultModel = 'tatara7 cube.png';
+const defaultCameraAngle = 'iso';
+const defaultModel = 'UFO Sculpty 1.0.png';
 const defaultSkin = 'alignment-map-1024';
 let currentCameraAngle = defaultCameraAngle;
 let image2D;

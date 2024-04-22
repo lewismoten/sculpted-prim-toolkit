@@ -19,6 +19,12 @@ let rotation = {x: 0, y: 0, z: 0};
 let horizontalSegments = 32;
 let verticalSegments = 32;
 let cameraOrbitControls;
+let selectToolDown = false;
+let pointer = {
+  x: undefined,
+  y: undefined,
+  moved: false
+};
 
 const scene = new THREE.Scene();
 let camera;
@@ -79,6 +85,8 @@ function handleWindowLoad() {
       enableSelection(tool === 'select');
     });
   });
+  trackPointer(canvas3D, pointer);
+
   canvas3D.addEventListener('click', handle3dCanvasClick);
 
   "xyz".split('').forEach(axis => {
@@ -190,6 +198,32 @@ function handleWindowLoad() {
     handleTextureSelectorChange();
   });
 }
+function handlePointerMove(event) {
+  this.x = event.clientX;
+  this.y = event.clientY;
+  if(this.down && !this.moved) {
+    this.moved = this.xDown !== this.x || this.yDown !== this.y;
+  }
+}
+function handlePointerUp(event) {
+  this.down = false;
+}
+function handlePointerDown(event) {
+  this.down = true;
+  this.xDown = event.clientX;
+  this.yDown = event.clientY;
+  this.moved = false;
+}
+function trackPointer(domElement, pointer) {
+  const onMove = handlePointerMove.bind(pointer);
+  const onUp = handlePointerUp.bind(pointer);
+  const onDown = handlePointerDown.bind(pointer);
+  domElement.addEventListener('click', onMove);
+  domElement.addEventListener('mousemove',onMove);
+  domElement.addEventListener('mouseout', onUp);
+  domElement.addEventListener('mouseup', onUp);
+  domElement.addEventListener('mousedown', onDown);
+}
 function enableCameraOrbit(enable) {
   if(enable) {
     createCameraControls(camera, renderer.domElement);
@@ -197,7 +231,6 @@ function enableCameraOrbit(enable) {
     cameraOrbitControls.dispose();
   }
 }
-let selectToolDown = false;
 function handleSelectDown() {
   selectToolDown = true;
 }
@@ -225,7 +258,9 @@ function selectedTool() {
   return document.querySelector('input[name="tool"]:checked').value;
 }
 function handle3dCanvasClick(event) {
-  if(selectedTool() !== 'select') return;
+  if(selectedTool() !== 'select') {
+    if(pointer.moved) return;
+  }
   const rect = canvas3D.getBoundingClientRect();
   const x = event.clientX - rect.left;
   const y = event.clientY - rect.top;

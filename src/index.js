@@ -904,7 +904,7 @@ function drawSelectionVertices() {
       return;
     }
     const geometry = new THREE.BoxGeometry( 0.02, 0.02, 0.02 );
-    const material = new THREE.MeshBasicMaterial( { color, emissive: color } );
+    const material = new THREE.MeshStandardMaterial( { color, emissive: color } );
     const mesh = new THREE.Mesh( geometry, material );
     mesh.name = 'Pixel'
     mesh.userData.index = i;

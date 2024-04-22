@@ -3,7 +3,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import { NURBSSurface } from 'three/examples/jsm/curves/NURBSSurface.js';
 import { ParametricGeometry } from 'three/addons/geometries/ParametricGeometry.js';
 
-const defaultCameraAngle = 'bottom';
+const defaultCameraAngle = 'perspective';
 const defaultModel = 'tatara7 cube.png';
 const defaultSkin = 'alignment-map-1024';
 let currentCameraAngle = defaultCameraAngle;
@@ -558,6 +558,7 @@ function createCameraControls(camera, domElement) {
 function createCamera(angle, size, canvasWidth, canvasHeight) {
   if(camera) scene.remove(camera);
   const canvasRatio = canvasWidth / canvasHeight;
+  let max = Math.max(size.x, size.y, size.z);
   switch(angle) {
     case 'front':
     case 'back':
@@ -566,7 +567,7 @@ function createCamera(angle, size, canvasWidth, canvasHeight) {
     case 'top':
     case 'bottom':
     case 'iso':
-      const max = Math.max(size.x, size.y, size.z);
+      if(angle === 'iso') max *= 1.6666;
       const frustumWidth = max * canvasRatio;
       const frustumHeight = max;
       camera = new THREE.OrthographicCamera(
@@ -579,7 +580,7 @@ function createCamera(angle, size, canvasWidth, canvasHeight) {
       );
       break;
     case 'perspective':
-      camera = new THREE.PerspectiveCamera(75, canvasRatio, 0.1, 1000);
+      camera = new THREE.PerspectiveCamera(60, canvasRatio, 0.1, 1000);
       break;
   }
   return camera;

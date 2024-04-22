@@ -95,10 +95,20 @@ function handleWindowLoad() {
     const scaleInput = document.getElementById(`scale-${axis}-value`);
     const scaleRangeInput = document.getElementById(`scale-${axis}-range`);
 
+    const selectedPosRange = document.getElementById(`selected-pos-${axis}-range`);
+    const selectedPosValue = document.getElementById(`selected-pos-${axis}-value`);
+
     const defaultDegrees = 0;
 
     radianInput.min = -Math.PI;
     radianInput.max = Math.PI;
+
+    selectedPosRange.addEventListener('input', () => {
+      selectedPosValue.value = selectedPosRange.value;
+    });
+    selectedPosValue.addEventListener('input', () => {
+      selectedPosRange.value = selectedPosValue.value;
+    });
 
     setObjectScaleRange(axis, 1);
     setObjectScaleValue(axis, 1);

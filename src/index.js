@@ -170,9 +170,6 @@ function handleWindowLoad() {
     document.getElementById(`camera-${angle}`)
       .addEventListener('click', changeCameraAngle.bind(this, angle, width, height));
   });
-  document.getElementById('camera-reset').addEventListener('click', () => {
-    document.getElementById(`camera-${currentCameraAngle}`).click();
-  });
   document.getElementById(`camera-${defaultCameraAngle}`).click();
 
 

@@ -212,18 +212,20 @@ function handleWindowLoad() {
 }
 function updateModelVertexPosition() {
   const i = getSelectedIndex();
-  const x = parseFloat(document.getElementById('selected-pos-x-value').value);
-  const y = parseFloat(document.getElementById('selected-pos-y-value').value);
-  const z = parseFloat(document.getElementById('selected-pos-z-value').value);
-  const rgb = pixelsFromAxis(x, y, z);
-  const vertex = convertRgbToVertex(rgb.r, rgb.g, rgb.b);
+  const x = parseInt(document.getElementById('selected-pos-x-value').value);
+  const y = parseInt(document.getElementById('selected-pos-y-value').value);
+  const z = parseInt(document.getElementById('selected-pos-z-value').value);
 
-  // move selected vertex
-  selectedVerticesObject.children.forEach(mesh => {
-    if(mesh.userData.index === i) {
-      mesh.position.set(vertex.x, vertex.y, vertex.z);
-    }
-  });
+  // update pixel values
+  const rgb = pixelsFromAxis(x, y, z);
+  pixels[i] = [rgb.r, rgb.g, rgb.b];
+
+  // update vertex values
+  const vertex = convertRgbToVertex(rgb.r, rgb.g, rgb.b);
+  nurbsControlVertices[i] = vertex;
+
+  // update mesh objects
+  drawObjects(nurbsControlVertices);
 }
 function handlePointerMove(event) {
   this.x = event.clientX;
@@ -799,7 +801,9 @@ function handleImage2DLoad() {
   const vertexIndexValueInput = document.getElementById('vertex-index-value');
   vertexIndexRangeInput.max = vertexCount - 1;
   vertexIndexValueInput.max = vertexCount - 1;
-
+  drawObjects(nurbsControlVertices);
+}
+function drawObjects(nurbsControlVertices) {
   drawControlVertices(nurbsControlVertices);
   drawSphericalControlMesh(nurbsControlVertices);
   drawModelMesh(nurbsControlVertices);

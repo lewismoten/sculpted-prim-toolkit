@@ -7,7 +7,6 @@ const defaultCameraAngle = 'bottom';
 const defaultModel = 'tatara7 cube.png';
 const defaultSkin = 'alignment-map-1024';
 let currentCameraAngle = defaultCameraAngle;
-let isLoadingImage = false;
 let image2D;
 let canvas2D;
 let canvas3D;
@@ -218,11 +217,6 @@ function getPositionAsBytes() {
   return { x, y, z };
 }
 function updateModelVertexPosition() {
-  if(isLoadingImage) {
-    window.setTimeout(updateModelVertexPosition, 100);
-    return;
-  }
-  isLoadingImage = true;
   const pos = getPositionAsBytes();
   const rgb = bytePositionAsPixelRgb(pos.x, pos.y, pos.z);
 
@@ -794,7 +788,6 @@ function handleImageSelectorChange() {
   const imageSelector = document.getElementById('image-selector');
   const imageUrl = imageSelector.value;
   image2D = new Image();
-  isLoadingImage = true;
   image2D.src = imageUrl;
   image2D.onload = handleImage2DLoad
 }
@@ -847,7 +840,6 @@ function handleImage2DLoad() {
   vertexIndexRangeInput.max = vertexCount - 1;
   vertexIndexValueInput.max = vertexCount - 1;
   drawObjects(nurbsControlVertices);
-  isLoadingImage = false;
 }
 function drawObjects(nurbsControlVertices) {
   drawControlVertices(nurbsControlVertices);

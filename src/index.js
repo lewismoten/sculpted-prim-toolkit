@@ -1057,42 +1057,43 @@ function drawNurbsSurfaceMesh(controlVertices) {
     scene.remove(nurbsMeshObject);
   }
   // Buggy - Can only create a square mesh
-  if(horizontalSegments !== verticalSegments) return;
+  // if(horizontalSegments !== verticalSegments) return;
 
   let degrees = parseInt(document.getElementById('nurbs-degrees').value);
-  if(degrees < 2) degrees = 2; // first/last knots need to repeat
 
   const degreeU = degrees;
   const degreeV = degrees;
 
-  const knotsU = makeClosedUniformKnots(horizontalSegments + 1, degreeU);
-  const knotsV = makeClosedUniformKnots(verticalSegments + 1, degreeV);
+  const knotsU = makeClosedUniformKnots(horizontalSegments, degreeU);
+  const knotsV = makeClosedUniformKnots(verticalSegments, degreeV);
 
-  let nsControlPoints = [];
+  document.getElementById('nurbs-knots-u').innerText = knotsU.length.toLocaleString();
+  document.getElementById('nurbs-knots-u').title = knotsU.map(v => v.toLocaleString()).join(", ");
+  document.getElementById('nurbs-knots-v').innerText = knotsV.length.toLocaleString();
+  document.getElementById('nurbs-knots-v').title = knotsV.map(v => v.toLocaleString()).join(", ");
+
+  const net = [];
   // with nurbs surfaces, we need to duplicate the first and last row and column
   // to keep the surface closed
-  for(let v = 0; v < knotsV.length; v++) {
+  for(let row = 0; row < verticalSegments+1; row++) {
     const vPoints = [];
-    for(let u = 0; u < knotsU.length; u++) {
-      const row = knotsV[v];
-      const column = knotsU[u];
+    for(let column = 0; column < horizontalSegments+1; column++) {
       const index = sphericalIndex(column, row, horizontalSegments, verticalSegments);
       const { x, y, z } = controlVertices[index];
-      vPoints.push(new THREE.Vector4(x, y, z, 1))
+      vPoints.push(new THREE.Vector4(x, y, z, 1));
     }
-    nsControlPoints.push(vPoints);
+    net.push(vPoints);
   }
 
-  // This causes errors with nets that are not square
   const nurbsSurface = new NURBSSurface(
     degreeU, degreeV,
     knotsU, knotsV,
-    nsControlPoints,
+    net,
   );
   const geometry = new ParametricGeometry(
     nurbsSurface.getPoint.bind(nurbsSurface),
-    horizontalSegments,
-    verticalSegments
+    (horizontalSegments + 1) * degreeU,
+    (verticalSegments + 1) * degreeV
   );
 
   const material = new THREE.MeshStandardMaterial( { color: 'white' } );
@@ -1107,22 +1108,12 @@ function drawNurbsSurfaceMesh(controlVertices) {
 
 }
 function makeClosedUniformKnots(spans, degreeOfRepeat) {
-  // make uniform list of knot integers with smooth transitions
-
-  // knots are repeated at the start and end
-  if(degreeOfRepeat < 2) degreeOfRepeat = 2;
-  const knots = new Array(spans + degreeOfRepeat + 1);
-  for(let i = 0; i < knots.length; i++) {
-    if(i === 0) {
-      // first knot is zero
-      knots[i] = 0;
-    } else if(i === knots.length - 1) {
-      // last knot is repeated
-      knots[i] = knots[i - 1];
-    } else {
-      // smooth transition repeating the first knot
-      knots[i] = i - 1;
-    }
+  const count = spans + degreeOfRepeat + 1;
+  const knots = new Array(count);
+  for(let i = 0; i < count; i++) {
+    if(i < degreeOfRepeat) knots[i] = 0;
+    else if(i > count - degreeOfRepeat - 1) knots[i] = count - (degreeOfRepeat * 2) + 1;
+    else knots[i] = i - degreeOfRepeat + 1;
   }
   return knots;
 }

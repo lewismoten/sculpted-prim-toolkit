@@ -462,7 +462,7 @@ function handleTextureSelectorChange() {
   const textureUrl = textureSelector.value;
   skin?.dispose();
   if(textureUrl === '') {
-    removeTexture(nurbsMeshObject);
+    removeTexture(nurbsMeshObject, modelMeshObject);
   } else if(alignmentMapPattern.test(textureUrl)) {
     const size = parseInt(textureUrl.match(alignmentMapPattern)[1]);
     loadAlignmentMap(size);

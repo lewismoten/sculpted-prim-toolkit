@@ -204,17 +204,12 @@ function handle3dCanvasClick(event) {
   mouse.x = ( x / width ) * 2 - 1;
   mouse.y = - ( y / height ) * 2 + 1;
   raycaster.setFromCamera(mouse, camera);
-  const intersects = raycaster.intersectObjects(selectedVerticesObject.children);
-  if(intersects.length > 0) {
-    const index = intersects[0].object.userData.index;
+  raycaster.intersectObject(modelMeshObject).forEach(intersects => {
+    console.log(intersects);
+    const { x, y } = intersects.uv;
+    const index = getIndexByUV(x, y);
     setSelectedVertexByIndex(index);
-  } else {
-    raycaster.intersectObject(modelMeshObject).forEach(intersects => {
-      const { x, y } = intersects.uv;
-      const index = getIndexByUV(x, y);
-      setSelectedVertexByIndex(index);
-    });
-  }
+  });
 }
 function setSelectedVertexByIndex(index) {
   document.getElementById('vertex-index-range').value = index;

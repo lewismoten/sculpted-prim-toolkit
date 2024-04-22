@@ -39,6 +39,7 @@ let controlMeshObject;
 let nurbsMeshObject;
 let segments;
 let selectedVerticesObject;
+let axesHelper;
 
 function handleWindowLoad() {
   canvas3D = document.getElementById('image-3d');
@@ -59,7 +60,14 @@ function handleWindowLoad() {
 
   scene.background = new THREE.Color(0x000040);
 
+  axesHelper = new THREE.AxesHelper(5);
+  scene.add(axesHelper);
+
   drawCube();
+
+  document.getElementById('axis-helper').addEventListener('change', () => {
+    axesHelper.visible = document.getElementById('axis-helper').checked;
+  });
 
   canvas2D = document.getElementById('image-preview');
   let drawingCanvas2D = false;

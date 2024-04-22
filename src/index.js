@@ -18,7 +18,7 @@ let directionalLight;
 let rotation = {x: 0, y: 0, z: 0};
 let horizontalSegments = 32;
 let verticalSegments = 32;
-let controls;
+let cameraOrbitControls;
 
 const scene = new THREE.Scene();
 let camera;
@@ -72,6 +72,15 @@ function handleWindowLoad() {
   document.getElementById('texture-horizontal-repeat').addEventListener('input', repeatTextureHorizontally);
   document.getElementById('texture-vertical-repeat').addEventListener('input', repeatTextureVertically);
 
+  document.getElementsByName('tool').forEach(input => {
+    input.addEventListener('change', () => {
+      if(selectedTool() === 'camera') {
+        createCameraControls(camera, renderer.domElement);
+      } else {
+        cameraOrbitControls.dispose();
+      }
+    });
+  });
   canvas3D.addEventListener('click', handle3dCanvasClick);
 
   "xyz".split('').forEach(axis => {
@@ -385,10 +394,10 @@ function changeCameraAngle(angle, width, height) {
 }
 
 function createCameraControls(camera, domElement) {
-  if(controls) controls.dispose();
+  if(cameraOrbitControls) cameraOrbitControls.dispose();
   if(selectedTool() !== 'camera') return;
   // NOTE: Create controls after camera has been positioned and rotated
-  controls = new OrbitControls( camera, domElement );
+  cameraOrbitControls = new OrbitControls( camera, domElement );
 }
 
 function createCamera(angle, size, canvasWidth, canvasHeight) {
@@ -1236,7 +1245,7 @@ function changeDirectionalLight() {
 }
 function animate() {
 	requestAnimationFrame( animate );
-  if(controls) controls.update();
+  if(cameraOrbitControls) cameraOrbitControls.update();
   rotate();
   changeDirectionalLight();
 

@@ -54,7 +54,8 @@ function handleWindowLoad() {
   directionalLight.lookAt(0, 0, 0);
   scene.add(directionalLight);
 
-  ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+
+  ambientLight = new THREE.AmbientLight(0xffffff, parseFloat(document.getElementById('ambientIntensity').value));
   scene.add(ambientLight);
 
   scene.background = new THREE.Color(0x000040);

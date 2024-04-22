@@ -1337,7 +1337,7 @@ function textMaterial(text) {
   ctx.fillText(text, canvas.width / 2, canvas.height / 2);
   const url = canvas.toDataURL();
   const map = new THREE.TextureLoader().load(url);
-  return new THREE.MeshStandardMaterial({ map, emissive: 0xffffff, emissiveMap: map })
+  return new THREE.MeshStandardMaterial({ map, emissive: 0xffffff, emissiveMap: map,  transparent: true, opacity: 0.5 })
 }
 function drawCube() {
   if(cubeObject) {

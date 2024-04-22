@@ -7,7 +7,7 @@ const defaultCameraAngle = 'bottom';
 const defaultModel = 'tatara7 cube.png';
 const defaultSkin = 'alignment-map-1024';
 let currentCameraAngle = defaultCameraAngle;
-
+let isLoadingImage = false;
 let image2D;
 let canvas2D;
 let canvas3D;
@@ -210,22 +210,35 @@ function handleWindowLoad() {
     handleTextureSelectorChange();
   });
 }
+
 function updateModelVertexPosition() {
+  if(isLoadingImage) {
+    window.setTimeout(updateModelVertexPosition, 100);
+    return;
+  }
+  isLoadingImage = true;
   const i = getSelectedIndex();
   const x = parseInt(document.getElementById('selected-pos-x-value').value);
   const y = parseInt(document.getElementById('selected-pos-y-value').value);
   const z = parseInt(document.getElementById('selected-pos-z-value').value);
 
-  // update pixel values
   const rgb = pixelsFromAxis(x, y, z);
-  pixels[i] = [rgb.r, rgb.g, rgb.b];
+  const xy = dataIndexToImageXY(i);
 
-  // update vertex values
-  const vertex = convertRgbToVertex(rgb.r, rgb.g, rgb.b);
-  nurbsControlVertices[i] = vertex;
+  const tempCanvas = document.createElement('canvas');
+  tempCanvas.width = image2D.width;
+  tempCanvas.height = image2D.height;
+  const tempCtx = tempCanvas.getContext('2d');
+  tempCtx.drawImage(image2D, 0, 0);
 
-  // update mesh objects
-  drawObjects(nurbsControlVertices);
+  // Update the pixel data
+  const imageData = tempCtx.getImageData(xy.x, xy.y, image2D.width, image2D.height);
+  imageData.data[0] = rgb.r;
+  imageData.data[1] = rgb.g;
+  imageData.data[2] = rgb.b;
+  tempCtx.putImageData(imageData, xy.x, xy.y);
+
+  image2D.src = tempCanvas.toDataURL();
 }
 function handlePointerMove(event) {
   this.x = event.clientX;
@@ -754,6 +767,7 @@ function handleImageSelectorChange() {
   const imageSelector = document.getElementById('image-selector');
   const imageUrl = imageSelector.value;
   image2D = new Image();
+  isLoadingImage = true;
   image2D.src = imageUrl;
   image2D.onload = handleImage2DLoad
 }
@@ -802,6 +816,7 @@ function handleImage2DLoad() {
   vertexIndexRangeInput.max = vertexCount - 1;
   vertexIndexValueInput.max = vertexCount - 1;
   drawObjects(nurbsControlVertices);
+  isLoadingImage = false;
 }
 function drawObjects(nurbsControlVertices) {
   drawControlVertices(nurbsControlVertices);

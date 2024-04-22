@@ -74,11 +74,9 @@ function handleWindowLoad() {
 
   document.getElementsByName('tool').forEach(input => {
     input.addEventListener('change', () => {
-      if(selectedTool() === 'camera') {
-        createCameraControls(camera, renderer.domElement);
-      } else {
-        cameraOrbitControls.dispose();
-      }
+      const tool = selectedTool();
+      enableCameraOrbit(tool === 'camera');
+      enableSelection(tool === 'select');
     });
   });
   canvas3D.addEventListener('click', handle3dCanvasClick);
@@ -191,6 +189,37 @@ function handleWindowLoad() {
     textureSelector.value = defaultSkin;
     handleTextureSelectorChange();
   });
+}
+function enableCameraOrbit(enable) {
+  if(enable) {
+    createCameraControls(camera, renderer.domElement);
+  } else {
+    cameraOrbitControls.dispose();
+  }
+}
+let selectToolDown = false;
+function handleSelectDown() {
+  selectToolDown = true;
+}
+function handleSelectMove(event) {
+  if(selectToolDown) handle3dCanvasClick(event);
+}
+function handleSelectUp() {
+  selectToolDown = false;
+}
+function enableSelection(enable) {
+  selectToolDown = false;
+  if(enable) {
+    canvas3D.addEventListener('mousedown', handleSelectDown);
+    canvas3D.addEventListener('mousemove', handleSelectMove);
+    canvas3D.addEventListener('mouseup', handleSelectUp);
+    canvas3D.addEventListener('mouseout', handleSelectUp);
+  } else {
+    canvas3D.removeEventListener('mousedown', handleSelectDown);
+    canvas3D.removeEventListener('mousemove', handleSelectMove);
+    canvas3D.removeEventListener('mouseup', handleSelectUp);
+    canvas3D.removeEventListener('mouseout', handleSelectUp);
+  }
 }
 function selectedTool() {
   return document.querySelector('input[name="tool"]:checked').value;

@@ -34,6 +34,7 @@ let pixels;
 let modelMeshObject;
 let nurbsControlVertices;
 let cubeObject;
+let boundariesObject;
 let controlVerticesObject;
 let controlMeshObject;
 let nurbsMeshObject;
@@ -64,6 +65,7 @@ function handleWindowLoad() {
   scene.add(axesHelper);
 
   drawCube();
+  drawBoundaries();
 
   document.getElementById('axis-helper').addEventListener('change', () => {
     axesHelper.visible = document.getElementById('axis-helper').checked;
@@ -189,6 +191,7 @@ function handleWindowLoad() {
   document.getElementById('show-control-mesh').addEventListener('change', handleShowControlMeshChange);
   document.getElementById('show-nurbs-mesh').addEventListener('change', handleShowNurbsMeshChange);
   document.getElementById('show-cube').addEventListener('change', handleShowCubeChange);
+  document.getElementById('show-model-boundaries').addEventListener('change', handleShowGhostChange);
   requestAnimationFrame( animate );
   fetch('files.json').then(response => response.json()).then(files => {
 
@@ -1268,13 +1271,13 @@ function faceColor(face) {
   switch(face.toLowerCase()) {
     case 'top':
     case 'bottom':
-      return 'red';
+      return 'green';
     case 'front':
     case 'back':
-      return 'green';
+      return 'blue';
     case 'left':
     case 'right':
-      return 'blue';
+      return 'red';
     default:
       return 'white';
   }
@@ -1341,6 +1344,57 @@ function drawCube() {
   applyScale(cubeObject);
   cubeObject.visible = document.getElementById('show-cube').checked;
 }
+function drawBoundaries() {
+  if(boundariesObject) {
+    boundariesObject.geometry.dispose();
+    boundariesObject.material.dispose();
+    scene.remove(boundariesObject);
+  }
+  const geometry = new THREE.BoxGeometry(1, 1, 1);
+  const material = new THREE.MeshStandardMaterial({side: THREE.BackSide, color: 'white'});
+  boundariesObject = new THREE.Mesh(geometry, material);
+
+  const materials = ['Right', 'Left', 'Top', 'Bottom', 'Front', 'Back'].map(gridTexture.bind(this, 16, 16));
+  boundariesObject.material = materials;
+
+  setPositionCentered(boundariesObject);
+
+  scene.add(boundariesObject);
+  applyScale(boundariesObject);
+  boundariesObject.visible = document.getElementById('show-model-boundaries').checked;
+}
+function gridTexture(columns, rows, face) {
+  const color = faceColor(face);
+
+  const canvas = document.createElement('canvas');
+  canvas.width = 512;
+  canvas.height = 512;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = 'rgb(127, 127, 255)';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 5;
+  for(let x = 0; x <= columns; x++) {
+    ctx.beginPath();
+    ctx.moveTo(0, x * canvas.height / rows);
+    ctx.lineTo(canvas.width, x * canvas.height / rows);
+    ctx.stroke();
+    for(let y = 0; y <= rows; y++) {
+      ctx.beginPath();
+      ctx.moveTo(x * canvas.width / columns, 0);
+      ctx.lineTo(x * canvas.width / columns, canvas.height);
+      ctx.stroke();
+    }
+  }
+  const map = new THREE.TextureLoader().load(canvas.toDataURL());
+  const material = new THREE.MeshStandardMaterial( { 
+    side: THREE.BackSide, 
+    map,
+    emissive: 0xffffff,
+    emissiveMap: map
+  } );
+  return material;
+}
 function setPositionCentered(mesh) {
   mesh.position.set(0,0,0);
 }
@@ -1356,6 +1410,7 @@ function applyScaleToObjects() {
   [
     modelMeshObject,
     cubeObject,
+    boundariesObject,
     controlVerticesObject,
     controlMeshObject,
     nurbsMeshObject,
@@ -1376,6 +1431,9 @@ function handleShowNurbsMeshChange() {
 }
 function handleShowCubeChange() {
   cubeObject.visible = document.getElementById('show-cube').checked;
+}
+function handleShowGhostChange() {
+  boundariesObject.visible = document.getElementById('show-model-boundaries').checked;
 }
 
 const rotateWrap = (value, offset) => {
@@ -1400,6 +1458,7 @@ const rotate = () => {
 
   [
     cubeObject,
+    boundariesObject,
     controlVerticesObject,
     controlMeshObject,
     nurbsMeshObject,

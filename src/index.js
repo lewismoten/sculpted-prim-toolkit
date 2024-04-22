@@ -788,6 +788,7 @@ function handleImage2DLoad() {
   drawModelMesh(nurbsControlVertices);
   drawNurbsSurfaceMesh(nurbsControlVertices);
   drawSelectionVertices();
+  displayNewlySelectedVertex();
 }
 function hideUnusedPixels(canvas, skipH, skipV) {
   if(!document.getElementById('reveal-vertices').checked) return;

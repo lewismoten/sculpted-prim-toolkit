@@ -1318,7 +1318,8 @@ function textMaterial(text) {
   ctx.textBaseline = 'middle';
   ctx.fillText(text, canvas.width / 2, canvas.height / 2);
   const url = canvas.toDataURL();
-  return new THREE.MeshStandardMaterial({ map: new THREE.TextureLoader().load(url) })
+  const map = new THREE.TextureLoader().load(url);
+  return new THREE.MeshStandardMaterial({ map, emissive: 0xffffff, emissiveMap: map })
 }
 function drawCube() {
   if(cubeObject) {

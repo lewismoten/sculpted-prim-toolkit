@@ -105,9 +105,11 @@ function handleWindowLoad() {
 
     selectedPosRange.addEventListener('input', () => {
       selectedPosValue.value = selectedPosRange.value;
+      updateModelVertexPosition();
     });
     selectedPosValue.addEventListener('input', () => {
       selectedPosRange.value = selectedPosValue.value;
+      updateModelVertexPosition();
     });
 
     setObjectScaleRange(axis, 1);
@@ -206,6 +208,21 @@ function handleWindowLoad() {
     });
     textureSelector.value = defaultSkin;
     handleTextureSelectorChange();
+  });
+}
+function updateModelVertexPosition() {
+  const i = getSelectedIndex();
+  const x = parseFloat(document.getElementById('selected-pos-x-value').value);
+  const y = parseFloat(document.getElementById('selected-pos-y-value').value);
+  const z = parseFloat(document.getElementById('selected-pos-z-value').value);
+  const rgb = pixelsFromAxis(x, y, z);
+  const vertex = convertRgbToVertex(rgb.r, rgb.g, rgb.b);
+
+  // move selected vertex
+  selectedVerticesObject.children.forEach(mesh => {
+    if(mesh.userData.index === i) {
+      mesh.position.set(vertex.x, vertex.y, vertex.z);
+    }
   });
 }
 function handlePointerMove(event) {
@@ -372,9 +389,9 @@ function getSelectedIndex() {
 function displayVertexPosition() {
   const i = getSelectedIndex();
   const [r, g, b] = pixels[i];
-  const x = pixelValue('x', r, g, b);
-  const y = pixelValue('y', r, g, b);
-  const z = pixelValue('z', r, g, b);
+  const x = pixelValueForAxis('x', r, g, b);
+  const y = pixelValueForAxis('y', r, g, b);
+  const z = pixelValueForAxis('z', r, g, b);
   document.getElementById('selected-pos-x-range').value = x;
   document.getElementById('selected-pos-x-value').value = x;
   document.getElementById('selected-pos-y-range').value = y;
@@ -809,7 +826,10 @@ function mapByteToControlVectorValue(byteValue) {
 function rgbLong(r, g, b) {
   return (r << 16) | (g << 8) | b;
 }
-function pixelValue(axis, r, g, b) { 
+function pixelsFromAxis(x, y, z) {
+  return { r: z, g: x, b: y };
+}
+function pixelValueForAxis(axis, r, g, b) { 
   if(axis === 'x') return g;
   if(axis === 'y') return b;
   return r;
@@ -817,9 +837,9 @@ function pixelValue(axis, r, g, b) {
 function convertRgbToVertex(r, g, b) {
   return {
     color: rgbLong(r, g, b),
-    x: mapByteToControlVectorValue(pixelValue('x', r, g, b)),
-    y: mapByteToControlVectorValue(pixelValue('y', r, g, b)),
-    z: mapByteToControlVectorValue(pixelValue('z', r, g, b))
+    x: mapByteToControlVectorValue(pixelValueForAxis('x', r, g, b)),
+    y: mapByteToControlVectorValue(pixelValueForAxis('y', r, g, b)),
+    z: mapByteToControlVectorValue(pixelValueForAxis('z', r, g, b))
   };
 }
 

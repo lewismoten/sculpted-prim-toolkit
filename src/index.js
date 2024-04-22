@@ -211,19 +211,23 @@ function handleWindowLoad() {
   });
 }
 
+function getPositionAsBytes() {
+  const x = parseInt(document.getElementById('selected-pos-x-value').value);
+  const y = parseInt(document.getElementById('selected-pos-y-value').value);
+  const z = parseInt(document.getElementById('selected-pos-z-value').value);
+  return { x, y, z };
+}
 function updateModelVertexPosition() {
   if(isLoadingImage) {
     window.setTimeout(updateModelVertexPosition, 100);
     return;
   }
   isLoadingImage = true;
-  const i = getSelectedIndex();
-  const x = parseInt(document.getElementById('selected-pos-x-value').value);
-  const y = parseInt(document.getElementById('selected-pos-y-value').value);
-  const z = parseInt(document.getElementById('selected-pos-z-value').value);
+  const pos = getPositionAsBytes();
+  const rgb = bytePositionAsPixelRgb(pos.x, pos.y, pos.z);
 
-  const rgb = pixelsFromAxis(x, y, z);
-  const xy = dataIndexToImageXY(i);
+  const i = getSelectedIndex();
+  const point = dataIndexToImageXY(i);
 
   const tempCanvas = document.createElement('canvas');
   tempCanvas.width = image2D.width;
@@ -232,11 +236,11 @@ function updateModelVertexPosition() {
   tempCtx.drawImage(image2D, 0, 0);
 
   // Update the pixel data
-  const imageData = tempCtx.getImageData(xy.x, xy.y, image2D.width, image2D.height);
+  const imageData = tempCtx.getImageData(point.x, point.y, image2D.width, image2D.height);
   imageData.data[0] = rgb.r;
   imageData.data[1] = rgb.g;
   imageData.data[2] = rgb.b;
-  tempCtx.putImageData(imageData, xy.x, xy.y);
+  tempCtx.putImageData(imageData, point.x, point.y);
 
   image2D.src = tempCanvas.toDataURL();
 }
@@ -845,7 +849,7 @@ function mapByteToControlVectorValue(byteValue) {
 function rgbLong(r, g, b) {
   return (r << 16) | (g << 8) | b;
 }
-function pixelsFromAxis(x, y, z) {
+function bytePositionAsPixelRgb(x, y, z) {
   return { r: z, g: x, b: y };
 }
 function pixelValueForAxis(axis, r, g, b) { 

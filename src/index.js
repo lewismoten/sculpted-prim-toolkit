@@ -89,6 +89,7 @@ function handleWindowLoad() {
   document.getElementById('texture-horizontal-repeat').addEventListener('input', repeatTextureHorizontally);
   document.getElementById('texture-vertical-repeat').addEventListener('input', repeatTextureVertically);
   document.getElementById('show-texture-emissive').addEventListener('change', handleTextureEmissiveChange);
+  document.getElementById('texture-opacity').addEventListener('input', handleTextureOpacityChange);
   document.getElementsByName('tool').forEach(input => {
     input.addEventListener('change', () => {
       const tool = selectedTool();
@@ -779,6 +780,17 @@ function offsetTextureVertically() {
 function repeatTextureHorizontally() {
   skin.repeat.x = parseFloat(document.getElementById('texture-horizontal-repeat').value);
 }
+function handleTextureOpacityChange() {
+  const opacity = parseFloat(document.getElementById('texture-opacity').value);
+  [nurbsMeshObject, modelMeshObject].forEach(object => {
+    if(object) {
+      object.material.transparent = opacity < 1;
+      object.material.opacity = opacity;
+      object.material.needsUpdate = true;
+    }
+  });
+
+}
 function handleTextureEmissiveChange() {
   const isEmissive = document.getElementById('show-texture-emissive').checked;
   [nurbsMeshObject, modelMeshObject].forEach(object => {
@@ -792,6 +804,7 @@ function repeatTextureVertically() {
 }
 function applyTextureToObjects(image) {
   const isEmissive = document.getElementById('show-texture-emissive').checked;
+  const opacity = parseFloat(document.getElementById('texture-opacity').value);
   skin = new THREE.Texture(image);
   skin.wrapS = THREE.RepeatWrapping;
   skin.wrapT = THREE.RepeatWrapping;
@@ -805,6 +818,8 @@ function applyTextureToObjects(image) {
       object.material.map = skin;
       object.material.emissive = new THREE.Color(isEmissive ? 0xffffff : 0x000000);
       object.material.emissiveMap = skin;
+      object.material.transparent = opacity < 1;
+      object.material.opacity = opacity;
       object.material.needsUpdate = true;
     }
   });
@@ -1111,7 +1126,13 @@ function drawNurbsSurfaceMesh(controlVertices) {
   );
 
   const isEmissive = document.getElementById('show-texture-emissive').checked;
-  const material = new THREE.MeshStandardMaterial( { color: 'white', emissive: isEmissive ? 0xFFFFFF : 0x000000 } );
+  const opacity = parseFloat(document.getElementById('texture-opacity').value);
+  const material = new THREE.MeshStandardMaterial( { 
+    color: 'white',
+    emissive: isEmissive ? 0xFFFFFF : 0x000000,
+    transparent: opacity < 1,
+    opacity
+  });
   if(skin) {
     material.map = skin;
     material.emissiveMap = skin;
@@ -1162,7 +1183,13 @@ function drawModelMesh(controlVertices) {
   const geometry = new ParametricGeometry(getPoint, horizontalSegments, verticalSegments);
   geometry.computeVertexNormals();
   const isEmissive = document.getElementById('show-texture-emissive').checked;
-  const material = new THREE.MeshStandardMaterial({ color: 'white', emissive: isEmissive ? 0xFFFFFF : 0x000000});
+  const opacity = parseFloat(document.getElementById('texture-opacity').value);
+  const material = new THREE.MeshStandardMaterial({
+    color: 'white',
+    emissive: isEmissive ? 0xFFFFFF : 0x000000,
+    transparent: opacity < 1,
+    opacity
+  });
   if(skin) {
     material.map = skin;
     material.emissiveMap = skin;

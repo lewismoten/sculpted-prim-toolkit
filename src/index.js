@@ -311,14 +311,14 @@ function setupTransformControls(camera) {
   transformControls.setSize(transformControls.size * 3);
   transformControls.addEventListener('change', (e) => {
     if(modelMeshObject) {
-      synchronizeInputsAndModels(transformControls.object);
+      clampDimensions(transformControls.object);
     }
     render();
   });
   transformControls.addEventListener('dragging-changed', event => {
     if(cameraOrbitControls) cameraOrbitControls.enabled = !event.value;
     if(!event.value) {
-      synchronizeInputsAndModels(transformControls.object);
+      clampDimensions(transformControls.object);
     }
   });
   attachTransformControls(modelMeshObject);
@@ -329,11 +329,41 @@ function setupTransformControls(camera) {
   else attachTransformControls(modelMeshObject);
   synchronizeTransformControlsMode();
 }
-function synchronizeInputsAndModels(source) {
+function clampDimensions(source) {
   if(!source) return;
+  const maxLength = 1; // 1x1x1 cube
+
+  let boundingBox = new THREE.Box3().setFromObject(source);
+  let size = boundingBox.getSize(new THREE.Vector3());
+
+  const maxXyz = "xyz".split('')
+    .map(axis => boundingBox.max[axis] - boundingBox.min[axis])
+    .reduce((max, v)=> Math.max(max, v), 0);
+
+  // Clamp Scale
+  if(maxXyz > maxLength) {
+    const scaleDown = maxLength / maxXyz;
+    source.scale.set(scaleDown, scaleDown, scaleDown);
+    //transformControls.object.scale.set(scaleDown, scaleDown, scaleDown);
+    boundingBox = new THREE.Box3().setFromObject(source);
+    size = boundingBox.getSize(new THREE.Vector3());
+  }
+  // Clamp position inside cube
+  function clampAxis(axis) {
+    const half = size[axis] / 2;
+    source.position[axis] =THREE.MathUtils.clamp(source.position[axis], -0.5 + half, 0.5 - half);
+  }
+  "xyz".split('').forEach(clampAxis);
+  // NOTE: we may still be too big
+  // Rotated 1x1x1 cuboid extends
+  // out of 1x1x1 boundaries
+
   modelPosition.copy(source.position);
   modelScale.copy(source.scale);
   modelRotation.copy(source.rotation);
+  synchronizeInputsAndModels(source);
+}
+function synchronizeInputsAndModels() {  
   "xyz".split('').forEach(axis => {
     // Scale
     const scale = modelScale[axis];
@@ -1552,6 +1582,7 @@ function gridTexture(columns, rows, face) {
 }
 function setTranslationToObject(object) {
   object.position.set(modelPosition.x, modelPosition.y, modelPosition.z);
+  //object.position.copy(object.worldToLocal(modelPosition));
   object.rotation.set(modelRotation.x, modelRotation.y, modelRotation.z);
   object.scale.set(modelScale.x, modelScale.y, modelScale.z);
 }

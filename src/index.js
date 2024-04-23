@@ -61,8 +61,12 @@ function handleWindowLoad() {
   const bounds = renderer.domElement.getBoundingClientRect();
   stats = new Stats();
   stats.domElement.style.position = 'absolute';
+  stats.domElement.style.display = document.getElementById('show-stats').checked ? 'block' : 'none';
   updateStatsLocation();
   document.body.appendChild(stats.domElement);
+  document.getElementById('show-stats').addEventListener('change', () => {
+    stats.domElement.style.display = document.getElementById('show-stats').checked ? 'block' : 'none';
+  });
 
   window.addEventListener('resize', () => {
     updateStatsLocation();

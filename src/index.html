@@ -10,6 +10,13 @@
 <body>
   <div class="flex">
     <div class="group">
+      <div class="group-title">Scene</div>
+      <label><input type="checkbox" id="axis-helper" checked>Axis</label><br>
+      <label><input type="checkbox" id="show-cube">Reference Cube</label><br>
+      <label><input type="checkbox" id="show-model-boundaries" checked>Boundaries</label><br />
+      <label><input type="checkbox" id="show-stats" checked>Stats</label><br>
+    </div>
+    <div class="group">
       <div class="group-title">Camera: <span id="camera-angle-selected"></span></div>
       <button id="camera-top">Top</button>
       <button id="camera-left">Left</button>
@@ -19,9 +26,6 @@
       <button id="camera-back">Back</button><br />
       <button id="camera-iso">Iso</button>
       <button id="camera-perspective">Perspective</button><br />
-      <label><input type="checkbox" id="axis-helper" checked>Axis</label><br>
-      <label><input type="checkbox" id="show-cube">Reference Cube</label><br>
-      <label><input type="checkbox" id="show-model-boundaries" checked>Boundaries</label><br />
     </div>
     <canvas id="image-3d" width="320" height="200"></canvas><br />
     <div class="group">

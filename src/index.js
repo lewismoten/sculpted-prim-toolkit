@@ -54,7 +54,7 @@ function handleWindowLoad() {
   width = rect.width;
   height = rect.height;
   camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
-  renderer = new THREE.WebGLRenderer({ canvas: canvas3D});
+  renderer = new THREE.WebGLRenderer({ canvas: canvas3D, preserveDrawingBuffer: true});
   renderer.setSize( width, height );
 
   const bounds = renderer.domElement.getBoundingClientRect();
@@ -292,11 +292,13 @@ function updateVerticyPositions() {
   tempCanvas.width = width;
   tempCanvas.height = height;
   const ctx = tempCanvas.getContext('2d', {willReadFrequently: true});
-  ctx.drawImage(image2D, 0, 0);
-  ctx.fillStyle = 'black';
-  ctx.fillRect(0, 0, width, height);
+
+  // ctx.fillStyle = 'black';
+  // ctx.fillRect(0, 0, width, height);
+
+  ctx.drawImage(canvas3D, 0, 0, canvas3D.width, canvas3D.height, 0, 0, width, height);
+
   let outOfBounds = false;
-  const p = [];
   selectedVerticesObject.children.forEach(object => {
     const i = object.userData.index;
     const worldPosition = object.getWorldPosition(object.position);
@@ -309,23 +311,12 @@ function updateVerticyPositions() {
     }
     const rgb = bytePositionAsPixelRgb(...xyz);
     const point = dataIndexToImageXY(i);
-    if(!p.includes(point.x)) p.push(point.x);
-    if(!p.includes(point.y)) p.push(point.y);
     const imageData = ctx.getImageData(point.x, point.y, 1, 1);
     imageData.data[0] = rgb.r;
     imageData.data[1] = rgb.g;
     imageData.data[2] = rgb.b;
-    const hMax = Math.pow(2, segments.horizontalDownsample + 1);
-    const vMax = Math.pow(2, segments.verticalDownsample + 1);
-    ctx.putImageData(imageData, point.x, point.y+1);
-    // for(let h = 0; h < hMax; h++) {
-    //   for(let v = 0; v < vMax; v++) {
-    //     ctx.putImageData(imageData, point.x + h, point.y + v);
-    //   }
-    // }
+    ctx.putImageData(imageData, point.x, point.y);
   });
-  p.sort((a,b) => a-b);
-  console.log(p.join(', '));
   // if(outOfBounds) {
   //   console.error('out of bounds');
   //   return;
@@ -613,7 +604,7 @@ function dataIndexToImageXY(i) {
   const { row, column } = dataIndexToRowAndColumn(i);
   return {
     x: column * Math.pow(2, segments.horizontalDownsample + 1),
-    y: row * Math.pow(2, segments.verticalDownsample + 1)
+    y: 1 + (row * Math.pow(2, segments.verticalDownsample + 1))
   };
 }
 function getIndexByUV(u, v) {
@@ -1200,8 +1191,10 @@ function surviveDownsampling(value, amount) {
   return true;
 }
 function canReadControlVertex(columnIndex, rowIndex, width, height, skipH, skipV) {
+  // verticalOffset
+  rowIndex++;
   // Top pole
-  if(rowIndex === 0 || rowIndex === height - 1) return columnIndex === Math.floor(width / 2);  
+  if(rowIndex === 1 || rowIndex === height) return columnIndex === Math.floor(width / 2);  
   if(columnIndex % 2 === 1 || rowIndex % 2 === 1) return false;
   if(!surviveDownsampling(columnIndex, skipH)) return false;
   if(!surviveDownsampling(rowIndex, skipV)) return false;

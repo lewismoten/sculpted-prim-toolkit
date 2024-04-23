@@ -5,8 +5,8 @@ import { ParametricGeometry } from 'three/addons/geometries/ParametricGeometry.j
 import { TransformControls } from 'three/addons/controls/TransformControls.js';
 import Stats from 'three/examples/jsm/libs/stats.module';
 
-const defaultCameraAngle = 'iso';
-const defaultModel = 'UFO Sculpty 1.0.png';
+const defaultCameraAngle = 'front';
+const defaultModel = 'tatara7 cube.png';
 const defaultSkin = 'alignment-map-1024';
 
 let image2D;
@@ -16,7 +16,6 @@ let width;
 let height;
 let ambientLight;
 let directionalLight;
-let rotation = {x: 0, y: 0, z: 0};
 let horizontalSegments = 32;
 let verticalSegments = 32;
 let cameraOrbitControls;
@@ -92,6 +91,7 @@ function handleWindowLoad() {
   drawBoundaries();
 
   document.getElementById('center-model').addEventListener('click', moveModelToCenter);
+  document.getElementById('scale-to-bounding-volume').addEventListener('click', scaleModelToBoundingVolume);
   document.getElementById('axis-helper').addEventListener('change', () => {
     axesHelper.visible = document.getElementById('axis-helper').checked;
   });
@@ -261,7 +261,86 @@ function moveModelToCenter() {
   modelMeshObject.position.set(0, 0, 0);
   modelPosition.set(0, 0, 0);
   synchronizeInputsAndModels();
+  updateVerticyPositions();
 }
+function scaleModelToBoundingVolume() {
+  const maxLength = 1; // 1x1x1 cube
+
+  updateVerticyPositions();
+  let boundingBox = new THREE.Box3().setFromObject(modelMeshObject);
+  let size = boundingBox.getSize(new THREE.Vector3());
+
+  "xyz".split('')
+    .forEach(axis => {
+      const length = size[axis];
+      if(length === 1) return;
+      // 0.5 should be multipled by 2 (1 / 0.5 = 2)
+      // 1 should be multipled by 1 ( 1 / 1 = 1)
+      // 0.1 should be multipled by 10 (1 / 0.1 = 10)
+      // 2 should be multipled by 0.5 (1 / 2 = 0.5)
+      const scale = maxLength / length;
+      modelMeshObject.scale[axis] = scale * modelScale[axis];
+      modelScale[axis] = scale;
+    })
+  synchronizeInputsAndModels();
+  updateVerticyPositions();
+};
+function updateVerticyPositions() {
+  const tempCanvas = document.createElement('canvas');
+  const width = image2D.width;
+  const height = image2D.height;
+  tempCanvas.width = width;
+  tempCanvas.height = height;
+  const ctx = tempCanvas.getContext('2d', {willReadFrequently: true});
+  ctx.drawImage(image2D, 0, 0);
+  ctx.fillStyle = 'black';
+  ctx.fillRect(0, 0, width, height);
+  let outOfBounds = false;
+  const p = [];
+  selectedVerticesObject.children.forEach(object => {
+    const i = object.userData.index;
+    const worldPosition = object.getWorldPosition(object.position);
+    let xyz = "xyz".split('').map(axis => mapControlVectorValueAsByte(worldPosition[axis]))
+    if(xyz.some(v => v < 0 || v > 255)) {
+      outOfBounds = true;
+      // console.log('out of bounds', object.userData, worldPosition, xyz);
+      xyz = xyz.map(mapClamp(0, 255));
+      // return;
+    }
+    const rgb = bytePositionAsPixelRgb(...xyz);
+    const point = dataIndexToImageXY(i);
+    if(!p.includes(point.x)) p.push(point.x);
+    if(!p.includes(point.y)) p.push(point.y);
+    const imageData = ctx.getImageData(point.x, point.y, 1, 1);
+    imageData.data[0] = rgb.r;
+    imageData.data[1] = rgb.g;
+    imageData.data[2] = rgb.b;
+    const hMax = Math.pow(2, segments.horizontalDownsample + 1);
+    const vMax = Math.pow(2, segments.verticalDownsample + 1);
+    ctx.putImageData(imageData, point.x, point.y+1);
+    // for(let h = 0; h < hMax; h++) {
+    //   for(let v = 0; v < vMax; v++) {
+    //     ctx.putImageData(imageData, point.x + h, point.y + v);
+    //   }
+    // }
+  });
+  p.sort((a,b) => a-b);
+  console.log(p.join(', '));
+  // if(outOfBounds) {
+  //   console.error('out of bounds');
+  //   return;
+  // }
+  // reset scale/position/rotation
+  modelScale.set(1, 1, 1);
+  modelRotation.set(0, 0, 0);
+  modelPosition.set(0, 0, 0);
+  synchronizeInputsAndModels();
+  image2D.src = tempCanvas.toDataURL();
+}
+function mapClamp(min, max) {
+  return (value) => Math.min(max, Math.max(min, value));
+}
+
 function updateStatsLocation() {
   const bounds = renderer.domElement.getBoundingClientRect();
   stats.domElement.style.top = `${bounds.top}px`;
@@ -1090,6 +1169,9 @@ function hideUnusedPixels(canvas, skipH, skipV) {
 }
 function mapByteToControlVectorValue(byteValue) {
   return (byteValue / 255) - 0.5;
+}
+function mapControlVectorValueAsByte(position) {
+  return Math.round((position + 0.5) * 255);
 }
 function rgbLong(r, g, b) {
   return (r << 16) | (g << 8) | b;

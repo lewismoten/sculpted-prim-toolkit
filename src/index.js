@@ -4,12 +4,15 @@ import { NURBSSurface } from 'three/examples/jsm/curves/NURBSSurface.js';
 import { ParametricGeometry } from 'three/addons/geometries/ParametricGeometry.js';
 import { TransformControls } from 'three/addons/controls/TransformControls.js';
 import Stats from 'three/examples/jsm/libs/stats.module';
+import { update } from 'three/examples/jsm/libs/tween.module.js';
 
 const defaultCameraAngle = 'front';
 const defaultModel = 'tatara7 cube.png';
 const defaultSkin = 'alignment-map-1024';
 
 let image2D;
+let original2D;
+let snapshot3D;
 let canvas2D;
 let canvas3D;
 let width;
@@ -107,7 +110,12 @@ function handleWindowLoad() {
   canvas2D.addEventListener('mousedown', () => { drawingCanvas2D = true });
   document.getElementById('image-selector').addEventListener('change', handleImageSelectorChange);
   document.getElementById('texture-selector').addEventListener('change', handleTextureSelectorChange);
-  document.getElementById('reveal-vertices').addEventListener('change', handleImageSelectorChange);
+
+  document.getElementById('take-snapshot').addEventListener('click', takeSnapshot);
+  document.getElementsByName('unused-pixels').forEach(input => {
+    input.addEventListener('change', updateVerticyPositions);
+  });
+
   document.getElementById('texture-rotation').addEventListener('input', rotateTexture);
   document.getElementById('texture-horizontal-offset').addEventListener('input', offsetTextureHorizontally);
   document.getElementById('texture-vertical-offset').addEventListener('input', offsetTextureVertically);
@@ -274,10 +282,6 @@ function scaleModelToBoundingVolume() {
     .forEach(axis => {
       const length = size[axis];
       if(length === 1) return;
-      // 0.5 should be multipled by 2 (1 / 0.5 = 2)
-      // 1 should be multipled by 1 ( 1 / 1 = 1)
-      // 0.1 should be multipled by 10 (1 / 0.1 = 10)
-      // 2 should be multipled by 0.5 (1 / 2 = 0.5)
       const scale = maxLength / length;
       modelMeshObject.scale[axis] = scale * modelScale[axis];
       modelScale[axis] = scale;
@@ -285,19 +289,83 @@ function scaleModelToBoundingVolume() {
   synchronizeInputsAndModels();
   updateVerticyPositions();
 };
-function updateVerticyPositions() {
+function takeSnapshot() {
   const tempCanvas = document.createElement('canvas');
+  tempCanvas.width = image2D.width;
+  tempCanvas.height = image2D.height;
+  const ctx = tempCanvas.getContext('2d', {willReadFrequently: true});
+  ctx.drawImage(canvas3D, 0, 0, canvas3D.width, canvas3D.height, 0, 0, image2D.width, image2D.height);
+  snapshot3D = new Image();
+  snapshot3D.src = tempCanvas.toDataURL();
+  snapshot3D.onload = () => {
+    const unusedPixels = document.querySelector('input[name="unused-pixels"]:checked').value;
+    if(unusedPixels === 'snapshot') updateVerticyPositions();
+  }
+}
+function drawModel2DBackground() {
   const width = image2D.width;
   const height = image2D.height;
-  tempCanvas.width = width;
-  tempCanvas.height = height;
-  const ctx = tempCanvas.getContext('2d', {willReadFrequently: true});
-
-  // ctx.fillStyle = 'black';
-  // ctx.fillRect(0, 0, width, height);
-
-  ctx.drawImage(canvas3D, 0, 0, canvas3D.width, canvas3D.height, 0, 0, width, height);
-
+  canvas2D.width = width;
+  canvas2D.height = height;
+  const ctx = getModelCanvasContext();
+  const unusedPixels = document.querySelector('input[name="unused-pixels"]:checked').value;
+  switch(unusedPixels) {
+    case 'black':
+      ctx.fillStyle = 'black';
+      ctx.fillRect(0, 0, width, height);
+      break;
+    case 'camera':
+      ctx.drawImage(canvas3D, 0, 0, canvas3D.width, canvas3D.height, 0, 0, width, height);
+      break;
+    case 'original':
+      ctx.drawImage(original2D, 0, 0); 
+      break;
+    case 'snapshot':
+      if(snapshot3D)
+        ctx.drawImage(snapshot3D, 0, 0, snapshot3D.width, snapshot3D.height, 0, 0, width, height);
+      else 
+        ctx.drawImage(canvas2D, 0, 0);
+      break;
+    case 'blocks':
+      ctx.drawImage(image2D, 0, 0); 
+      break;
+    default:
+      ctx.fillStyle = 'red';
+      ctx.fillRect(0, 0, width, height);
+  }
+}
+function originalImageContext() {
+  const ctx = document.createElement('canvas').getContext('2d', { willReadFrequently: true });
+  ctx.imageSmoothingEnabled = false;
+  ctx.width = original2D.width;
+  ctx.height = original2D.height;
+  ctx.drawImage(original2D, 0, 0);
+  return ctx;
+}
+function drawModel2DPixelsFromImage() {
+  const unusedPixels = document.querySelector('input[name="unused-pixels"]:checked').value;
+  const source = originalImageContext();
+  const ctx = getModelCanvasContext();
+  for(let x = 0; x < image2D.width; x++) {
+    for(let y = 0; y < image2D.height; y++) {
+      const isUsed = canReadControlVertex(x, y, image2D.width, image2D.height);
+      if(!isUsed) continue;
+      const pixel = source.getImageData(x, y, 1, 1);
+      if(unusedPixels === 'blocks') {
+        for(let h = 0; h < Math.pow(2, segments.horizontalDownsample + 1); h++) {
+          for(let v = 0; v < Math.pow(2, segments.verticalDownsample + 1); v++) {
+            ctx.putImageData(pixel, x + h, y + v);
+          }
+        }
+      } else {
+        ctx.putImageData(pixel, x, y);
+      }
+    }
+  }
+}
+function drawModel2DPixelsFromVectors() {
+  const drawBlocks = document.querySelector('input[name="unused-pixels"]:checked').value === 'blocks';
+  const ctx = getModelCanvasContext();
   let outOfBounds = false;
   selectedVerticesObject.children.forEach(object => {
     const i = object.userData.index;
@@ -305,9 +373,7 @@ function updateVerticyPositions() {
     let xyz = "xyz".split('').map(axis => mapControlVectorValueAsByte(worldPosition[axis]))
     if(xyz.some(v => v < 0 || v > 255)) {
       outOfBounds = true;
-      // console.log('out of bounds', object.userData, worldPosition, xyz);
       xyz = xyz.map(mapClamp(0, 255));
-      // return;
     }
     const rgb = bytePositionAsPixelRgb(...xyz);
     const point = dataIndexToImageXY(i);
@@ -315,18 +381,29 @@ function updateVerticyPositions() {
     imageData.data[0] = rgb.r;
     imageData.data[1] = rgb.g;
     imageData.data[2] = rgb.b;
-    ctx.putImageData(imageData, point.x, point.y);
+    if(drawBlocks) {
+      for(let h = 0; h < Math.pow(2, segments.horizontalDownsample + 1); h++) {
+        for(let v = 0; v < Math.pow(2, segments.verticalDownsample + 1); v++) {
+          ctx.putImageData(imageData, point.x + h, point.y + v);
+        }
+      }
+    } else {
+      ctx.putImageData(imageData, point.x, point.y);
+    }
   });
-  // if(outOfBounds) {
-  //   console.error('out of bounds');
-  //   return;
-  // }
+}
+
+function updateVerticyPositions() {
+  drawModel2DBackground();
+  drawModel2DPixelsFromVectors();
+  // rebuild models
+  image2D.src = canvas2D.toDataURL();
+
   // reset scale/position/rotation
   modelScale.set(1, 1, 1);
   modelRotation.set(0, 0, 0);
   modelPosition.set(0, 0, 0);
   synchronizeInputsAndModels();
-  image2D.src = tempCanvas.toDataURL();
 }
 function mapClamp(min, max) {
   return (value) => Math.min(max, Math.max(min, value));
@@ -688,11 +765,10 @@ function displayVertexPosition() {
   }>`;
 }
 function drawModelCanvas() {
-  const ctx = getModelCanvasContext();
   canvas2D.width = image2D.width;
   canvas2D.height = image2D.height;
-  ctx.drawImage(image2D, 0, 0);
-  hideUnusedPixels(canvas2D, segments.horizontalDownsample, segments.verticalDownsample);
+  drawModel2DBackground();
+  drawModel2DPixelsFromImage();
   highlightVertex();
 }
 function highlightVertex() {
@@ -721,8 +797,8 @@ function highlightVertexOnCanvas() {
     verticalSegments
   );
   const [r, g, b] = pixels[index];
-  const masked = document.getElementById('reveal-vertices').checked;
-  const outlineColor = masked ? 'white' : getContrastingColor(r, g, b);
+  const isBlackBg = document.querySelector('input[name="unused-pixels"]:checked').value === 'black';
+  const outlineColor = isBlackBg ? 'white' : getContrastingColor(r, g, b);
 
   const { x, y } = dataIndexToImageXY(index);
   const value = outlineColor === 'black' ? 0 : 255;
@@ -1093,7 +1169,9 @@ function handleImageSelectorChange() {
   const imageUrl = imageSelector.value;
   image2D = new Image();
   image2D.src = imageUrl;
-  image2D.onload = handleImage2DLoad
+  image2D.onload = handleImage2DLoad;
+  original2D = new Image();
+  original2D.src = imageUrl;
 }
 function handleImage2DLoad() {
   segments = downsampleSegments(image2D.width/2, image2D.height/2, 1024);
@@ -1147,17 +1225,6 @@ function drawObjects(nurbsControlVertices) {
   drawNurbsSurfaceMesh(nurbsControlVertices);
   drawSelectionVertices();
   displayNewlySelectedVertex();
-}
-function hideUnusedPixels(canvas, skipH, skipV) {
-  if(!document.getElementById('reveal-vertices').checked) return;
-  const width = canvas.width;
-  const height = canvas.height;
-  for(let x = 0; x < width; x++) {
-    for(let y = 0; y < height; y++) {
-      if(canReadControlVertex(x, y, width, height, skipH, skipV)) continue;
-      setModelCanvasPixel(x, y, 0, 0, 0);
-    }
-  }
 }
 function mapByteToControlVectorValue(byteValue) {
   return (byteValue / 255) - 0.5;
@@ -1768,6 +1835,11 @@ function animate() {
 }
 function render() {
   renderer.render( scene, camera );
+  const unusedPixels = document.querySelector('input[name="unused-pixels"]:checked').value;
+  if(unusedPixels === 'camera') {
+    updateVerticyPositions();
+  };
+
   stats.update();
 }
 

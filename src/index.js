@@ -2,11 +2,12 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import { NURBSSurface } from 'three/examples/jsm/curves/NURBSSurface.js';
 import { ParametricGeometry } from 'three/addons/geometries/ParametricGeometry.js';
+import { TransformControls } from 'three/addons/controls/TransformControls.js';
 
 const defaultCameraAngle = 'iso';
 const defaultModel = 'UFO Sculpty 1.0.png';
 const defaultSkin = 'alignment-map-1024';
-let currentCameraAngle = defaultCameraAngle;
+
 let image2D;
 let canvas2D;
 let canvas3D;
@@ -29,6 +30,7 @@ const scene = new THREE.Scene();
 let camera;
 let renderer;
 let skin;
+let transformControls;
 
 let pixels;
 let modelMeshObject;
@@ -63,6 +65,8 @@ function handleWindowLoad() {
 
   const axesHelper = new THREE.AxesHelper(.75);
   scene.add(axesHelper);
+
+  setupTransformControls(camera);
 
   drawCube();
   drawBoundaries();
@@ -220,7 +224,34 @@ function handleWindowLoad() {
     handleTextureSelectorChange();
   });
 }
+function setupTransformControls(camera) {
+  if(transformControls) {
+    scene.remove(transformControls);
+    transformControls.dispose();
+  }
 
+  transformControls = new TransformControls(camera, renderer.domElement);
+  transformControls.setSize(transformControls.size * 3);
+  transformControls.addEventListener('change', render);
+  transformControls.addEventListener('dragging-changed', event => {
+    if(cameraOrbitControls) cameraOrbitControls.enabled = !event.value;
+  });
+  window.addEventListener('keydown', event => {
+    switch(event.key) {
+      case 'r':
+        transformControls.setMode('rotate');
+        break;
+      case 's':
+        transformControls.setMode('scale');
+        break;
+      case 't':
+        transformControls.setMode('translate');
+        break;
+    }
+  });
+  transformControls.attach(modelMeshObject);
+  scene.add(transformControls);
+}
 function getPositionAsBytes() {
   const x = parseInt(document.getElementById('selected-pos-x-value').value);
   const y = parseInt(document.getElementById('selected-pos-y-value').value);
@@ -276,11 +307,7 @@ function trackPointer(domElement, pointer) {
   domElement.addEventListener('mousedown', onDown);
 }
 function enableCameraOrbit(enable) {
-  if(enable) {
-    createCameraControls(camera, renderer.domElement);
-  } else {
-    cameraOrbitControls.dispose();
-  }
+  cameraOrbitControls.enabled = enable;
 }
 function handleSelectDown() {
   selectToolDown = true;
@@ -545,7 +572,6 @@ function degreesToRadians(degrees) {
   return scale * Math.PI * 2;
 }
 function changeCameraAngle(angle, width, height) {
-  currentCameraAngle = angle;
   document.getElementById('camera-angle-selected').innerText = angle;
   const bounds = new THREE.Box3().setFromObject(cubeObject);
   const center = bounds.getCenter(new THREE.Vector3());
@@ -557,6 +583,7 @@ function changeCameraAngle(angle, width, height) {
   camera.position.set(pos.x, pos.y, pos.z);
   camera.lookAt(0, 0, 0);
   createCameraControls(camera, renderer.domElement);
+  setupTransformControls(camera);
 }
 
 function createCameraControls(camera, domElement) {
@@ -1200,6 +1227,7 @@ function drawModelMesh(controlVertices) {
   scene.add(modelMeshObject);
   applyScale(modelMeshObject);
   modelMeshObject.visible = document.getElementById('show-model-mesh').checked;
+  transformControls.attach(modelMeshObject);
 }
 function cleanupModelMesh() {
   if(modelMeshObject) {
@@ -1530,7 +1558,9 @@ function animate() {
   if(cameraOrbitControls) cameraOrbitControls.update();
   rotate();
   changeDirectionalLight();
-
+  render();
+}
+function render() {
   renderer.render( scene, camera );
 }
 

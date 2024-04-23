@@ -91,6 +91,7 @@ function handleWindowLoad() {
   drawCube();
   drawBoundaries();
 
+  document.getElementById('center-model').addEventListener('click', moveModelToCenter);
   document.getElementById('axis-helper').addEventListener('change', () => {
     axesHelper.visible = document.getElementById('axis-helper').checked;
   });
@@ -255,6 +256,11 @@ function handleWindowLoad() {
     textureSelector.value = defaultSkin;
     handleTextureSelectorChange();
   });
+}
+function moveModelToCenter() {
+  modelMeshObject.position.set(0, 0, 0);
+  modelPosition.set(0, 0, 0);
+  synchronizeInputsAndModels();
 }
 function updateStatsLocation() {
   const bounds = renderer.domElement.getBoundingClientRect();

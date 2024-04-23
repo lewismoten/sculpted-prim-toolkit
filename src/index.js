@@ -43,6 +43,9 @@ let nurbsMeshObject;
 let segments;
 let selectedVerticesObject;
 let objectList = [];
+const modelPosition = new THREE.Vector3(0, 0, 0);
+const modelScale = new THREE.Vector3(1, 1, 1);
+const modelRotation = new THREE.Vector3(0, 0, 0);
 
 function handleWindowLoad() {
   canvas3D = document.getElementById('image-3d');
@@ -306,9 +309,17 @@ function setupTransformControls(camera) {
   }
   transformControls = new TransformControls(camera, renderer.domElement);
   transformControls.setSize(transformControls.size * 3);
-  transformControls.addEventListener('change', render);
+  transformControls.addEventListener('change', (e) => {
+    if(modelMeshObject) {
+      synchronizeInputsAndModels(transformControls.object);
+    }
+    render();
+  });
   transformControls.addEventListener('dragging-changed', event => {
     if(cameraOrbitControls) cameraOrbitControls.enabled = !event.value;
+    if(!event.value) {
+      synchronizeInputsAndModels(transformControls.object);
+    }
   });
   attachTransformControls(modelMeshObject);
   window.addEventListener('keydown', handleTranslationKeyDown);
@@ -317,6 +328,27 @@ function setupTransformControls(camera) {
   if(object) attachTransformControls(object);
   else attachTransformControls(modelMeshObject);
   synchronizeTransformControlsMode();
+}
+function synchronizeInputsAndModels(source) {
+  if(!source) return;
+  modelPosition.copy(source.position);
+  modelScale.copy(source.scale);
+  modelRotation.copy(source.rotation);
+  "xyz".split('').forEach(axis => {
+    // Scale
+    const scale = modelScale[axis];
+    document.getElementById(`scale-${axis}-range`).value = scale.toFixed(2);
+    document.getElementById(`scale-${axis}-value`).value = scale.toFixed(2);
+    // Rotation
+    const rotation = modelRotation[axis];
+    let degrees = radiansToDegrees(rotation);
+    degrees = Math.round(degrees * 20) / 20;
+    document.getElementById(`rotation-${axis}-degrees`).value = degrees.toFixed(2);
+    document.getElementById(`rotation-${axis}`).value = rotation.toFixed(2);
+  });
+  applyTransformationToObects();
+  displayScaleValues();
+  displayRotationValues();
 }
 function getPositionAsBytes() {
   const x = parseInt(document.getElementById('selected-pos-x-value').value);
@@ -607,10 +639,12 @@ function displayRotationValues() {
 }
 function setObjectScaleRange(axis, value) {
   document.getElementById(`scale-${axis}-range`).value = value.toFixed(2);
+  modelScale[axis] = value;
   displayScaleValues();
 }
 function setObjectScaleValue(axis, value) {
   document.getElementById(`scale-${axis}-value`).value = value.toFixed(2);
+  modelScale[axis] = value;
   displayScaleValues();
 }
 function setObjectRotationDegreeInput(axis, degrees) {
@@ -1104,10 +1138,9 @@ function drawControlVertices(controlVertices) {
     mesh.position.set(x, y, z);
     controlVerticesObject.add(mesh);
   });
-  setPositionCentered(controlVerticesObject);
+  setTranslationToObject(controlVerticesObject);
   scene.add( controlVerticesObject );
 
-  applyScale(controlVerticesObject);
   controlVerticesObject.visible = document.getElementById('show-control-vertices').checked;
   addObjectToList(controlVerticesObject);
 }
@@ -1138,9 +1171,8 @@ function drawSelectionVertices() {
     mesh.visible = selectedIndex === i;
     object.add(mesh);
   });
-  setPositionCentered(object);
+  setTranslationToObject(object);
   scene.add( object );
-  applyScale(object);
   selectedVerticesObject = object;
   addObjectToList(object);
 }
@@ -1168,11 +1200,7 @@ if(x < 0) {
 }
 
 function drawNurbsSurfaceMesh(controlVertices) {
-  if(nurbsMeshObject) {
-    nurbsMeshObject.geometry.dispose();
-    nurbsMeshObject.material.dispose();
-    scene.remove(nurbsMeshObject);
-  }
+  removeObjectFromList(nurbsMeshObject);
   let degrees = parseInt(document.getElementById('nurbs-degrees').value);
 
   const degreeU = degrees;
@@ -1224,11 +1252,10 @@ function drawNurbsSurfaceMesh(controlVertices) {
   }
   nurbsMeshObject = new THREE.Mesh(geometry, material);
   nurbsMeshObject.name = 'NURBS Surface';
-  setPositionCentered(nurbsMeshObject);
+  setTranslationToObject(nurbsMeshObject);
   scene.add(nurbsMeshObject);
-  applyScale(nurbsMeshObject);
   nurbsMeshObject.visible = document.getElementById('show-nurbs-mesh').checked;
-
+  addObjectToList(nurbsMeshObject);
 }
 function makeClosedUniformKnots(spans, degreeOfRepeat) {
   const count = spans + degreeOfRepeat + 1;
@@ -1246,9 +1273,8 @@ function drawSphericalControlMesh(controlVertices) {
   const controlMeshMaterial = new THREE.MeshStandardMaterial( { color: 0xFFFFFF, wireframe: true } );
   controlMeshObject = new THREE.Mesh(controlMeshGeometry, controlMeshMaterial);
   controlMeshObject.name = 'Control Mesh/Wireframe';
-  setPositionCentered(controlMeshObject);
+  setTranslationToObject(controlMeshObject);
   scene.add(controlMeshObject);
-  applyScale(controlMeshObject);
   controlMeshObject.visible = document.getElementById('show-control-mesh').checked;
   addObjectToList(controlMeshObject);
 }
@@ -1283,9 +1309,9 @@ function drawModelMesh(controlVertices) {
   }
   modelMeshObject = new THREE.Mesh(geometry, material);
   modelMeshObject.name = 'Model';
-  setPositionCentered(modelMeshObject);
+
+  setTranslationToObject(modelMeshObject);
   scene.add(modelMeshObject);
-  applyScale(modelMeshObject);
   modelMeshObject.visible = document.getElementById('show-model-mesh').checked;
   attachTransformControls(modelMeshObject);
   addObjectToList(modelMeshObject);
@@ -1450,7 +1476,7 @@ function drawCube() {
   const geometry = new THREE.BoxGeometry(1, 1, 1);
   const material = new THREE.MeshBasicMaterial( { color: 'white' } );
   cubeObject = new THREE.Mesh(geometry, material);
-  setPositionCentered(cubeObject);
+  setTranslationToObject(cubeObject);
 
   // Add materials in the order of the cubes faces
   // (this is the standard order for a cuboid in most 3d modeling programs)
@@ -1458,32 +1484,27 @@ function drawCube() {
   cubeObject.material = materials;
 
   scene.add(cubeObject);
-  applyScale(cubeObject);
+  cubeObject.scale.set(1, 1, 1);
   cubeObject.visible = document.getElementById('show-cube').checked;
 }
 
 function addObjectToList(object) {
   if(!object) return;
-  if(!object.name) {
-    console.log('Added object without a name!');
-  }
   objectList.push(object);
 }
 function removeObjectFromList(object) {
   objectList = objectList.filter(obj => obj !== object);
-  if(object) {
-    scene.remove(object);
-    if(object.geometry) object.geometry.dispose();
-    if(object.material) object.material.dispose();
-    if(object.dispose) object.dispose();
-  }
+  removeFromScene(object);
+}
+function removeFromScene(object) {
+  if(!object) return;
+  scene.remove(object);
+  if(object.geometry) object.geometry.dispose();
+  if(object.material) object.material.dispose();
+  if(object.dispose) object.dispose();
 }
 function drawBoundaries() {
-  if(boundariesObject) {
-    boundariesObject.geometry.dispose();
-    boundariesObject.material.dispose();
-    scene.remove(boundariesObject);
-  }
+  removeFromScene(boundariesObject);
   const geometry = new THREE.BoxGeometry(1, 1, 1);
   const material = new THREE.MeshStandardMaterial({side: THREE.BackSide, color: 'white'});
   boundariesObject = new THREE.Mesh(geometry, material);
@@ -1491,10 +1512,10 @@ function drawBoundaries() {
   const materials = ['Right', 'Left', 'Top', 'Bottom', 'Front', 'Back'].map(gridTexture.bind(this, 16, 16));
   boundariesObject.material = materials;
 
-  setPositionCentered(boundariesObject);
+  setTranslationToObject(boundariesObject);
 
   scene.add(boundariesObject);
-  applyScale(boundariesObject);
+  boundariesObject.scale.set(1, 1, 1);
   boundariesObject.visible = document.getElementById('show-model-boundaries').checked;
 }
 function gridTexture(columns, rows, face) {
@@ -1529,19 +1550,26 @@ function gridTexture(columns, rows, face) {
   } );
   return material;
 }
-function setPositionCentered(mesh) {
-  mesh.position.set(0,0,0);
+function setTranslationToObject(object) {
+  object.position.set(modelPosition.x, modelPosition.y, modelPosition.z);
+  object.rotation.set(modelRotation.x, modelRotation.y, modelRotation.z);
+  object.scale.set(modelScale.x, modelScale.y, modelScale.z);
 }
-
-function applyScale(mesh) {
-  mesh.scale.set(
-    document.getElementById('scale-x-range').value,
-    document.getElementById('scale-y-range').value,
-    document.getElementById('scale-z-range').value
-  );
+function applyTransformationToObects() {
+  objectList.filter(Boolean).forEach(setTranslationToObject);
 }
 function applyScaleToObjects() {
-  objectList.filter(Boolean).forEach(applyScale);
+  objectList.filter(Boolean).forEach(object => {
+    object.scale.set(modelScale.x, modelScale.y, modelScale.z);
+  });
+}
+function applyRotationToObects(rotation) {
+  modelRotation.set(rotation.x, rotation.y, rotation.z);
+  objectList
+    .filter(Boolean)
+    .forEach(mesh => {
+      mesh.rotation.set(modelRotation.x, modelRotation.y, modelRotation.z);
+    });
 }
 function handleShowControlVerticesChange() {
   controlVerticesObject.visible = document.getElementById('show-control-vertices').checked;
@@ -1572,13 +1600,6 @@ const rotateWrap = (value, offset) => {
   return value;
 }
 
-function applyRotationToObects(rotation) {
-  objectList
-    .filter(Boolean)
-    .forEach(mesh => {
-      mesh.rotation.set(rotation.x, rotation.y, rotation.z);
-    });
-}
 const rotate = () => {
   if(!modelMeshObject) return;
   const rotation = modelMeshObject.rotation.clone();

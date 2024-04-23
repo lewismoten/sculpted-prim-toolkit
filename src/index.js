@@ -99,6 +99,7 @@ function handleWindowLoad() {
       const tool = selectedTool();
       enableCameraOrbit(tool === 'camera');
       enableSelection(tool === 'select');
+      updateTransformControls(tool);
     });
   });
   trackPointer(canvas3D, pointer);
@@ -223,6 +224,15 @@ function handleWindowLoad() {
     textureSelector.value = defaultSkin;
     handleTextureSelectorChange();
   });
+}
+function updateTransformControls(tool) {
+  if(tool === 'rotate') {
+    transformControls.setMode('rotate');
+  } else if(tool === 'scale') {
+    transformControls.setMode('scale');
+  } else if(tool === 'move') {
+    transformControls.setMode('translate');
+  }
 }
 function setupTransformControls(camera) {
   if(transformControls) {

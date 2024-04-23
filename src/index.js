@@ -1083,6 +1083,7 @@ function removeTexture() {
   Array.from(arguments).forEach(object => {
     if(object) {
       object.material.map = null;
+      object.material.emissiveMap = null;
       object.material.needsUpdate = true;
     }
   });

@@ -42,6 +42,7 @@ let controlMeshObject;
 let nurbsMeshObject;
 let segments;
 let selectedVerticesObject;
+let objectList = [];
 
 function handleWindowLoad() {
   canvas3D = document.getElementById('image-3d');
@@ -99,7 +100,7 @@ function handleWindowLoad() {
       const tool = selectedTool();
       enableCameraOrbit(tool === 'camera');
       enableSelection(tool === 'select');
-      updateTransformControls(tool);
+      synchronizeTransformControlsMode();
     });
   });
   trackPointer(canvas3D, pointer);
@@ -135,9 +136,19 @@ function handleWindowLoad() {
     setObjectRotationDegreeInput(axis, radiansToDegrees(defaultDegrees));
     degreesInput.addEventListener('input', () => {
       setObjectRotationRadiansInput(axis, degreesToRadians(parseFloat(degreesInput.value)));
+      applyRotationToObects(new THREE.Vector3(
+        parseFloat(document.getElementById('rotation-x').value),
+        parseFloat(document.getElementById('rotation-y').value),
+        parseFloat(document.getElementById('rotation-z').value)
+      ))
     });
     radianInput.addEventListener('input', () => {
       setObjectRotationDegreeInput(axis, radiansToDegrees(parseFloat(radianInput.value)));
+      applyRotationToObects(new THREE.Vector3(
+        parseFloat(document.getElementById('rotation-x').value),
+        parseFloat(document.getElementById('rotation-y').value),
+        parseFloat(document.getElementById('rotation-z').value)
+      ))
     });
     scaleInput.addEventListener('input', () => {
       setObjectScaleRange(axis, parseFloat(scaleInput.value));
@@ -182,6 +193,7 @@ function handleWindowLoad() {
       document.getElementById(`rotation-${axis}`).value = 0;
       setObjectRotationDegreeInput(axis, radiansToDegrees(0))
     });
+    applyRotationToObects(new THREE.Vector3(0, 0, 0));
   });
   const cameras = ['front', 'back', 'left', 'right', 'top', 'bottom', 'iso', 'perspective'];
   cameras.forEach(angle => {
@@ -225,42 +237,86 @@ function handleWindowLoad() {
     handleTextureSelectorChange();
   });
 }
-function updateTransformControls(tool) {
-  if(tool === 'rotate') {
-    transformControls.setMode('rotate');
-  } else if(tool === 'scale') {
-    transformControls.setMode('scale');
-  } else if(tool === 'move') {
-    transformControls.setMode('translate');
+function synchronizeTransformControlsMode() {
+  const tool = selectedTool();
+  let enabled = ['rotate', 'scale', 'move'].includes(tool);
+  if(transformControls) {
+    if(!transformControls.object) {
+      enabled = false;
+    }
+    transformControls.enabled = enabled;
+    transformControls.visible = enabled;
+    switch(tool) {
+      case 'rotate':
+        transformControls.setMode('rotate');
+        break;
+      case 'scale':
+        transformControls.setMode('scale');
+        break;
+      case 'move':
+        transformControls.setMode('translate');
+        break;
+    }
   }
 }
-function setupTransformControls(camera) {
+function attachTransformControls(object) {
   if(transformControls) {
+    if(transformControls.object) {
+      transformControls.detach();
+    }
+    transformControls.attach(object);
+  }
+  synchronizeTransformControlsMode();
+}
+const SHIFT_KEY = 'Shift';
+function handleTranslationKeyDown(event) {
+  console.log('keyDown', event.key);
+  if(!transformControls) return;
+  if(event.key === SHIFT_KEY) {
+    const movement = 0.1; // mapByteToControlVectorValue(255) - mapByteToControlVectorValue(254);
+    transformControls.setTranslationSnap(movement);
+    transformControls.setRotationSnap(THREE.MathUtils.degToRad(15));
+    transformControls.setScaleSnap(movement);
+  }
+}
+function handleTranslationKeyUp(event) {
+  if(!transformControls) return;
+  if(event.key === SHIFT_KEY) {
+    console.log('keyUp', event.key);
+    transformControls.setTranslationSnap(null);
+    transformControls.setRotationSnap(null);
+    transformControls.setScaleSnap(null);
+  }
+}
+function cleanupTransformControls() {
+  if(transformControls) {
+    transformControls.detach();
     scene.remove(transformControls);
     transformControls.dispose();
+    transformControls = null;
+    window.removeEventListener('keydown', handleTranslationKeyDown);
+    window.removeEventListener('keyup', handleTranslationKeyUp);
   }
-
+};
+function setupTransformControls(camera) {
+  let object;
+  if(transformControls){ 
+    object = transformControls.object;
+    cleanupTransformControls();
+  }
   transformControls = new TransformControls(camera, renderer.domElement);
   transformControls.setSize(transformControls.size * 3);
   transformControls.addEventListener('change', render);
   transformControls.addEventListener('dragging-changed', event => {
     if(cameraOrbitControls) cameraOrbitControls.enabled = !event.value;
   });
-  window.addEventListener('keydown', event => {
-    switch(event.key) {
-      case 'r':
-        transformControls.setMode('rotate');
-        break;
-      case 's':
-        transformControls.setMode('scale');
-        break;
-      case 't':
-        transformControls.setMode('translate');
-        break;
-    }
-  });
-  transformControls.attach(modelMeshObject);
+  attachTransformControls(modelMeshObject);
+  window.addEventListener('keydown', handleTranslationKeyDown);
+  window.addEventListener('keyup', handleTranslationKeyUp);
   scene.add(transformControls);
+  if(object) attachTransformControls(object);
+  else attachTransformControls(modelMeshObject);
+  synchronizeTransformControlsMode();
 }
 function getPositionAsBytes() {
   const x = parseInt(document.getElementById('selected-pos-x-value').value);
@@ -1034,14 +1090,9 @@ function getModelPixels(imageData, segments) {
   return controlVertices;
 }
 function drawControlVertices(controlVertices) {
-  if(controlVerticesObject) {
-    controlVerticesObject.children.forEach(mesh => {
-      mesh.geometry.dispose();
-      mesh.material.dispose();
-    });
-    scene.remove(controlVerticesObject);
-  }
+  removeObjectFromList(controlVerticesObject);
   controlVerticesObject = new THREE.Object3D();
+  controlVerticesObject.name = 'Wirerame';
   const exists = [];
   controlVertices.forEach(({ x, y, z, color }) => {
     const tag = `${x},${y},${z}`;
@@ -1058,18 +1109,14 @@ function drawControlVertices(controlVertices) {
 
   applyScale(controlVerticesObject);
   controlVerticesObject.visible = document.getElementById('show-control-vertices').checked;
+  addObjectToList(controlVerticesObject);
 }
 function drawSelectionVertices() {  
   const vertices = pixels.map(([r, g, b]) => convertRgbToVertex(r, g, b));
-  if(selectedVerticesObject) {
-    selectedVerticesObject.children.forEach(mesh => {
-      mesh.geometry.dispose();
-      mesh.material.dispose();
-    });
-    scene.remove(selectedVerticesObject);
-  }
+  removeObjectFromList(selectedVerticesObject);
   const selectedIndex = parseInt(document.getElementById('vertex-index-range').value);
   const object = new THREE.Object3D();
+  object.name = 'Vertices';
   vertices.forEach(({ x, y, z, color }, i) => {
     const {row, column} = dataIndexToRowAndColumn(i);
     if(row === 0 || row === verticalSegments) {
@@ -1095,6 +1142,7 @@ function drawSelectionVertices() {
   scene.add( object );
   applyScale(object);
   selectedVerticesObject = object;
+  addObjectToList(object);
 }
 function sphericalIndex(x, y, horizontalSegments, verticalSegments) {
   if(y >= verticalSegments || y <= 0) {
@@ -1193,17 +1241,19 @@ function makeClosedUniformKnots(spans, degreeOfRepeat) {
   return knots;
 }
 function drawSphericalControlMesh(controlVertices) {
-  cleanupControlMesh();
+  removeObjectFromList(controlMeshObject);
   const controlMeshGeometry = createSphericalControlGeometry(controlVertices, horizontalSegments, verticalSegments);
   const controlMeshMaterial = new THREE.MeshStandardMaterial( { color: 0xFFFFFF, wireframe: true } );
   controlMeshObject = new THREE.Mesh(controlMeshGeometry, controlMeshMaterial);
+  controlMeshObject.name = 'Control Mesh/Wireframe';
   setPositionCentered(controlMeshObject);
   scene.add(controlMeshObject);
   applyScale(controlMeshObject);
   controlMeshObject.visible = document.getElementById('show-control-mesh').checked;
+  addObjectToList(controlMeshObject);
 }
 function drawModelMesh(controlVertices) {
-  cleanupModelMesh();
+  removeObjectFromList(modelMeshObject);
   function getPoint(u, v, target) {
     
     let column = Math.floor(u * (horizontalSegments + 1));
@@ -1232,26 +1282,13 @@ function drawModelMesh(controlVertices) {
     material.emissiveMap = skin;
   }
   modelMeshObject = new THREE.Mesh(geometry, material);
-  modelMeshObject.name = 'Model Mesh';
+  modelMeshObject.name = 'Model';
   setPositionCentered(modelMeshObject);
   scene.add(modelMeshObject);
   applyScale(modelMeshObject);
   modelMeshObject.visible = document.getElementById('show-model-mesh').checked;
-  transformControls.attach(modelMeshObject);
-}
-function cleanupModelMesh() {
-  if(modelMeshObject) {
-    scene.remove(modelMeshObject);
-    modelMeshObject.geometry.dispose();
-    modelMeshObject.material.dispose();
-  }
-}
-function cleanupControlMesh() {
-  if(controlMeshObject) {
-    scene.remove(controlMeshObject);
-    controlMeshObject.geometry.dispose();
-    controlMeshObject.material.dispose();
-  }
+  attachTransformControls(modelMeshObject);
+  addObjectToList(modelMeshObject);
 }
 function createSphericalControlGeometry(controlVertices, horizontalSegments, verticalSegments) {
   const controlMeshGeometry = new THREE.BufferGeometry();
@@ -1424,6 +1461,23 @@ function drawCube() {
   applyScale(cubeObject);
   cubeObject.visible = document.getElementById('show-cube').checked;
 }
+
+function addObjectToList(object) {
+  if(!object) return;
+  if(!object.name) {
+    console.log('Added object without a name!');
+  }
+  objectList.push(object);
+}
+function removeObjectFromList(object) {
+  objectList = objectList.filter(obj => obj !== object);
+  if(object) {
+    scene.remove(object);
+    if(object.geometry) object.geometry.dispose();
+    if(object.material) object.material.dispose();
+    if(object.dispose) object.dispose();
+  }
+}
 function drawBoundaries() {
   if(boundariesObject) {
     boundariesObject.geometry.dispose();
@@ -1487,15 +1541,7 @@ function applyScale(mesh) {
   );
 }
 function applyScaleToObjects() {
-  [
-    modelMeshObject,
-    cubeObject,
-    boundariesObject,
-    controlVerticesObject,
-    controlMeshObject,
-    nurbsMeshObject,
-    selectedVerticesObject
-  ].filter(Boolean).forEach(applyScale);
+  objectList.filter(Boolean).forEach(applyScale);
 }
 function handleShowControlVerticesChange() {
   controlVerticesObject.visible = document.getElementById('show-control-vertices').checked;
@@ -1525,29 +1571,27 @@ const rotateWrap = (value, offset) => {
   }
   return value;
 }
-const rotate = () => {
-  "xyz".split('').forEach(axis => {
-    rotation[axis] = parseFloat(document.getElementById(`rotation-${axis}`).value);
 
+function applyRotationToObects(rotation) {
+  objectList
+    .filter(Boolean)
+    .forEach(mesh => {
+      mesh.rotation.set(rotation.x, rotation.y, rotation.z);
+    });
+}
+const rotate = () => {
+  if(!modelMeshObject) return;
+  const rotation = modelMeshObject.rotation.clone();
+  let changed = false;
+  "xyz".split('').forEach(axis => {
     if(document.getElementById(`spin-${axis}`).checked) {
       rotation[axis] = rotateWrap(rotation[axis], 0.02);
+      changed = true;
       setObjectRotationRadiansInput(axis, rotation[axis]);
       setObjectRotationDegreeInput(axis, radiansToDegrees(rotation[axis]));
     }
   });
-
-  [
-    cubeObject,
-    boundariesObject,
-    controlVerticesObject,
-    controlMeshObject,
-    nurbsMeshObject,
-    modelMeshObject,
-    selectedVerticesObject
-  ].filter(Boolean)
-  .forEach(mesh => {
-    mesh.rotation.set(rotation.x, rotation.y, rotation.z);
-  });
+  if(changed) applyRotationToObects(rotation);
 };
 function handleAmbientIntensityChange() {
   ambientLight.intensity = document.getElementById('ambientIntensity').value;

@@ -74,9 +74,6 @@
         <input type="number" id="vertex-index-value" min="0" max="1024" step="1" value="0" class="vertex-index-number">
       </div>
     </div>
-    <label>
-      <input type="checkbox" id="reveal-vertices">Mask Unused Pixels
-    </label>
   </div>
   <div class="group">
     <div class="group-title">Actions</div>
@@ -169,6 +166,24 @@
         value="0"></label><br />
     <label>- Elevation: <input type="range" id="directional-light-elevation" min="-1" max="1" step=".01"
         value="0"></label><br />
+  </div>
+  <div class="group">
+    <div class="group-title">Unused Pixels</div>
+    <label>
+      <input type="radio" name="unused-pixels" value="original">Original
+    </label><br>
+    <label>
+      <input type="radio" name="unused-pixels" value="blocks">Blocks
+    </label><br>
+    <label>
+      <input type="radio" name="unused-pixels" value="black" checked id="reveal-vertices">Black
+    </label><br>
+    <label>
+      <input type="radio" name="unused-pixels" value="camera">Live Camera
+    </label><br>
+    <input type="radio" name="unused-pixels" value="snapshot"><button>Snapshot</button>
+    <br>
+
   </div>
   <div class="group">
     <div class="group-title">Details</div>

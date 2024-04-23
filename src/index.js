@@ -344,7 +344,6 @@ function clampDimensions(source) {
   if(maxXyz > maxLength) {
     const scaleDown = maxLength / maxXyz;
     source.scale.set(scaleDown, scaleDown, scaleDown);
-    //transformControls.object.scale.set(scaleDown, scaleDown, scaleDown);
     boundingBox = new THREE.Box3().setFromObject(source);
     size = boundingBox.getSize(new THREE.Vector3());
   }
@@ -354,9 +353,6 @@ function clampDimensions(source) {
     source.position[axis] =THREE.MathUtils.clamp(source.position[axis], -0.5 + half, 0.5 - half);
   }
   "xyz".split('').forEach(clampAxis);
-  // NOTE: we may still be too big
-  // Rotated 1x1x1 cuboid extends
-  // out of 1x1x1 boundaries
 
   modelPosition.copy(source.position);
   modelScale.copy(source.scale);

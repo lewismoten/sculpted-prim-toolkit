@@ -273,7 +273,6 @@ function attachTransformControls(object) {
 }
 const SHIFT_KEY = 'Shift';
 function handleTranslationKeyDown(event) {
-  console.log('keyDown', event.key);
   if(!transformControls) return;
   if(event.key === SHIFT_KEY) {
     const movement = 0.1; // mapByteToControlVectorValue(255) - mapByteToControlVectorValue(254);
@@ -285,7 +284,6 @@ function handleTranslationKeyDown(event) {
 function handleTranslationKeyUp(event) {
   if(!transformControls) return;
   if(event.key === SHIFT_KEY) {
-    console.log('keyUp', event.key);
     transformControls.setTranslationSnap(null);
     transformControls.setRotationSnap(null);
     transformControls.setScaleSnap(null);

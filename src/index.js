@@ -3,6 +3,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import { NURBSSurface } from 'three/examples/jsm/curves/NURBSSurface.js';
 import { ParametricGeometry } from 'three/addons/geometries/ParametricGeometry.js';
 import { TransformControls } from 'three/addons/controls/TransformControls.js';
+import Stats from 'three/examples/jsm/libs/stats.module';
 
 const defaultCameraAngle = 'iso';
 const defaultModel = 'UFO Sculpty 1.0.png';
@@ -46,6 +47,7 @@ let objectList = [];
 const modelPosition = new THREE.Vector3(0, 0, 0);
 const modelScale = new THREE.Vector3(1, 1, 1);
 const modelRotation = new THREE.Vector3(0, 0, 0);
+let stats;
 
 function handleWindowLoad() {
   canvas3D = document.getElementById('image-3d');
@@ -55,6 +57,16 @@ function handleWindowLoad() {
   camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
   renderer = new THREE.WebGLRenderer({ canvas: canvas3D});
   renderer.setSize( width, height );
+
+  const bounds = renderer.domElement.getBoundingClientRect();
+  stats = new Stats();
+  stats.domElement.style.position = 'absolute';
+  updateStatsLocation();
+  document.body.appendChild(stats.domElement);
+
+  window.addEventListener('resize', () => {
+    updateStatsLocation();
+  });
 
   directionalLight = new THREE.DirectionalLight(0xffffff, 1);
   directionalLight.position.set(1.5, 1.5, 1.5);
@@ -239,6 +251,11 @@ function handleWindowLoad() {
     textureSelector.value = defaultSkin;
     handleTextureSelectorChange();
   });
+}
+function updateStatsLocation() {
+  const bounds = renderer.domElement.getBoundingClientRect();
+  stats.domElement.style.top = `${bounds.top}px`;
+  stats.domElement.style.left = `${bounds.left}px`;
 }
 function synchronizeTransformControlsMode() {
   const tool = selectedTool();
@@ -1665,6 +1682,7 @@ function animate() {
 }
 function render() {
   renderer.render( scene, camera );
+  stats.update();
 }
 
 window.addEventListener('load', handleWindowLoad);

@@ -559,7 +559,10 @@ function displayNewlySelectedVertex() {
   const data = r.toString(16).padStart(2, '0')
     + g.toString(16).padStart(2, '0')
     + b.toString(16).padStart(2, '0');
-  document.getElementById('vertex-position').innerText = '0x' + data;
+  "rgb".split('').forEach((channel, idx) => {
+    const hex = pixels[i][idx].toString(16).padStart(2, '0');
+    document.getElementById(`model-data-${channel}`).innerText = hex;
+  });
   document.getElementById('vertex-color').style.backgroundColor = '#' + data;
 
   displayVertexPosition()

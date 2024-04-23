@@ -76,7 +76,7 @@ body {
   max-width: 8px;
   min-width: 8px;
 }
-#vertex-position {
+.code {
   font-family: monospace;
 }
 #selected-pos-vector {
@@ -103,4 +103,16 @@ body {
 }
 [title]:hover::after {
   display: block;
+}
+.axis-x {
+  color: #800000;
+  text-transform: uppercase;
+}
+.axis-y {
+  color: #008000;
+  text-transform: uppercase;
+}
+.axis-z {
+  color: #000080;
+  text-transform: uppercase;
 }

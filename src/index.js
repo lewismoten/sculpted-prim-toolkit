@@ -496,11 +496,11 @@ function updateModelVertexPosition() {
   const tempCanvas = document.createElement('canvas');
   tempCanvas.width = image2D.width;
   tempCanvas.height = image2D.height;
-  const tempCtx = tempCanvas.getContext('2d');
+  const tempCtx = tempCanvas.getContext('2d', {willReadFrequently: true});
   tempCtx.drawImage(image2D, 0, 0);
 
   // Update the pixel data
-  const imageData = tempCtx.getImageData(point.x, point.y, image2D.width, image2D.height);
+  const imageData = tempCtx.getImageData(point.x, point.y, 1, 1);
   imageData.data[0] = rgb.r;
   imageData.data[1] = rgb.g;
   imageData.data[2] = rgb.b;

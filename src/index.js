@@ -1273,7 +1273,8 @@ function surviveDownsampling(value, amount) {
 }
 function canReadControlVertex(columnIndex, rowIndex, width, height, skipH, skipV) {
   // verticalOffset
-  rowIndex += VERTICAL_OFFSET;
+  rowIndex -= VERTICAL_OFFSET;
+  if(rowIndex < 0) return false;
   // Top pole
   if(rowIndex === 1 || rowIndex === height) return columnIndex === Math.floor(width / 2);  
   if(columnIndex % 2 === 1 || rowIndex % 2 === 1) return false;

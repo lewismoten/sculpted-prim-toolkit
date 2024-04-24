@@ -680,9 +680,9 @@ function setSelectedVertexByIndex(index) {
 }
 
 function displayIndexAfterRowOrColumnChanged() {
-  const i = sphericalIndex(
-    parseInt(document.getElementById('vertex-column-range').value),
+  const i = rowColumnToIndexOfVertex(
     parseInt(document.getElementById('vertex-row-range').value),
+    parseInt(document.getElementById('vertex-column-range').value),
     horizontalSegments,
     verticalSegments
   );
@@ -714,7 +714,7 @@ function getIndexByUV(u, v) {
 
   column = Math.floor(column - 0.5);
   row = Math.floor(row - 0.5);
-  return sphericalIndex(column, row, horizontalSegments, verticalSegments);
+  return rowColumnToIndexOfVertex(row, column, horizontalSegments, verticalSegments);
 }
 function displayRowAndColumnAfterIndexChanged(){
   const i = parseInt(document.getElementById('vertex-index-range').value);
@@ -741,9 +741,9 @@ function handle2DCanvasClick(event) {
   let {x, y} = translatePointerCoordinates(event, canvas2D, image2D);
   const column = Math.floor(x / Math.pow(2, segments.horizontalDownsample + 1));
   const row = Math.floor(y / Math.pow(2, segments.verticalDownsample + 1));
-  const i = sphericalIndex(
-    column,
+  const i = rowColumnToIndexOfVertex(
     row,
+    column,
     horizontalSegments,
     verticalSegments
   );
@@ -765,9 +765,9 @@ function displayNewlySelectedVertex() {
   drawModelCanvas();
 }
 function getSelectedIndex() {
-  return sphericalIndex(
-    parseInt(document.getElementById('vertex-column-range').value),
+  return rowColumnToIndexOfVertex(
     parseInt(document.getElementById('vertex-row-range').value),
+    parseInt(document.getElementById('vertex-column-range').value),
     horizontalSegments,
     verticalSegments
   );
@@ -797,9 +797,9 @@ function drawModelCanvas() {
 }
 function highlightVertex() {
   if(!pixels) return;
-  const index = sphericalIndex(
-    parseInt(document.getElementById('vertex-column-range').value),
+  const index = rowColumnToIndexOfVertex(
     parseInt(document.getElementById('vertex-row-range').value),
+    parseInt(document.getElementById('vertex-column-range').value),
     horizontalSegments,
     verticalSegments
   );
@@ -814,9 +814,9 @@ function highlightVertex() {
   
 }
 function highlightVertexOnCanvas() {
-  const index = sphericalIndex(
-    parseInt(document.getElementById('vertex-column-range').value),
+  const index = rowColumnToIndexOfVertex(
     parseInt(document.getElementById('vertex-row-range').value),
+    parseInt(document.getElementById('vertex-column-range').value),
     horizontalSegments,
     verticalSegments
   );
@@ -1410,7 +1410,7 @@ function drawSelectionVertices() {
   selectedVerticesObject = object;
   addObjectToList(object);
 }
-function sphericalIndex(column, row, horizontalSegments, verticalSegments) {
+function rowColumnToIndexOfVertex(row, column, horizontalSegments, verticalSegments) {
   if(row >= verticalSegments || row <= 0) {
     // poles of top and bottom are centered
     column = Math.floor(horizontalSegments / 2);
@@ -1454,7 +1454,7 @@ function drawNurbsSurfaceMesh(controlVertices) {
   for(let column = 0; column < horizontalSegments+1; column++) {
     const vPoints = [];
     for(let row = 0; row < verticalSegments+1; row++) {
-      const index = sphericalIndex(column, row, horizontalSegments, verticalSegments);
+      const index = rowColumnToIndexOfVertex(row, column, horizontalSegments, verticalSegments);
       const { x, y, z } = controlVertices[index];
       vPoints.unshift(new THREE.Vector4(x, y, z, 1));
     }
@@ -1518,9 +1518,9 @@ function drawModelMesh(controlVertices) {
     
     let column = Math.floor(u * (horizontalSegments + 1));
     let row = Math.floor((1 - v) * (verticalSegments + 1));
-    const index = sphericalIndex(
+    const index = rowColumnToIndexOfVertex(
+      row,
       column, 
-      row, 
       horizontalSegments,
       verticalSegments
     );
@@ -1624,10 +1624,10 @@ function createSphericalControlTriangles(horizontalSegments, verticalSegments) {
   var indexedTriangles = [];
   for(let column = 0; column < horizontalSegments; column++) {
     for(let row = 0; row < verticalSegments; row++) {
-      const centerIndex = sphericalIndex(column, row, horizontalSegments, verticalSegments);
-      const bottomRightIndex = sphericalIndex(column + 1, row + 1, horizontalSegments, verticalSegments);
-      const bottomIndex = sphericalIndex(column, row + 1, horizontalSegments, verticalSegments);
-      const rightIndex = sphericalIndex(column + 1, row, horizontalSegments, verticalSegments);
+      const centerIndex = rowColumnToIndexOfVertex(row, column, horizontalSegments, verticalSegments);
+      const bottomRightIndex = rowColumnToIndexOfVertex(row + 1, column + 1, horizontalSegments, verticalSegments);
+      const bottomIndex = rowColumnToIndexOfVertex(row + 1, column, horizontalSegments, verticalSegments);
+      const rightIndex = rowColumnToIndexOfVertex(row, column + 1, horizontalSegments, verticalSegments);
       // Add triangles in counter-clockwise order
       if(row === 0) {
         // triangles at top pole

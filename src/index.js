@@ -305,15 +305,14 @@ function takeSnapshot() {
   }
 }
 function overwriteUnusedPixelsWithContext(source) {
-  const target = getModelCanvasContext();
   const width = image2D.width;
   const height = image2D.height;
   for(let x = 0; x < width; x++) {
     for(let y = 0; y < height; y++) {
       const isUsed = isImageXyVertex(x, y, width, height);
       if(isUsed) continue;
-      const imageData = source.getImageData(x, y, 1, 1);
-      target.putImageData(imageData, x, y);
+      const [r, g, b] = source.getImageData(x, y, 1, 1).data;
+      setPixelColorOnImageOfData(x, y, r, g, b);
     }
   }
 }

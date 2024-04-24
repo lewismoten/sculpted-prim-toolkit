@@ -308,11 +308,9 @@ function overwriteUnusedPixelsWithContext(source) {
   const target = getModelCanvasContext();
   const width = image2D.width;
   const height = image2D.height;
-  const hDown = segments.horizontalDownsample;
-  const vDown = segments.verticalDownsample;
   for(let x = 0; x < width; x++) {
     for(let y = 0; y < height; y++) {
-      const isUsed = isVertexPixel(x, y, width, height, hDown, vDown);
+      const isUsed = isVertexPixel(x, y, width, height);
       if(isUsed) continue;
       const imageData = source.getImageData(x, y, 1, 1);
       target.putImageData(imageData, x, y);
@@ -369,7 +367,7 @@ function drawModel2DPixelsFromImage() {
   const ctx = getModelCanvasContext();
   for(let x = 0; x < image2D.width; x++) {
     for(let y = 0; y < image2D.height; y++) {
-      const isUsed = isVertexPixel(x, y, image2D.width, image2D.height, segments.horizontalDownsample, segments.verticalDownsample);
+      const isUsed = isVertexPixel(x, y, image2D.width, image2D.height);
       if(!isUsed) continue;
       const pixel = source.getImageData(x, y, 1, 1);
       if(unusedPixels === 'blocks') {
@@ -398,7 +396,7 @@ function drawModel2DPixelsFromVectors() {
     }
     const rgb = bytePositionAsPixelRgb(...xyz);
     const point = dataIndexToImageXY(i);
-    const canRead = isVertexPixel(point.x, point.y, image2D.width, image2D.height, segments.horizontalDownsample, segments.verticalDownsample);
+    const canRead = isVertexPixel(point.x, point.y, image2D.width, image2D.height);
     if(!canRead) {
       console.log('About to update a pixel that should not be updated');
     }
@@ -827,7 +825,7 @@ function highlightVertexOnCanvas() {
   const outlineColor = isBlackBg ? 'white' : getContrastingColor(r, g, b);
 
   const { x, y } = dataIndexToImageXY(index);
-  const canRead = isVertexPixel(x, y, image2D.width, image2D.height, segments.horizontalDownsample, segments.verticalDownsample);
+  const canRead = isVertexPixel(x, y, image2D.width, image2D.height);
   if(!canRead) {
     console.log('About to update a pixel that should not be updated');
   }
@@ -1293,7 +1291,11 @@ function surviveDownsampling(value, amount) {
   }
   return true;
 }
-function isVertexPixel(x, y, width, height, skipH, skipV) {
+function isVertexPixel(x, y, width, height) {
+  const {
+    horizontalDownsample: skipH,
+    verticalDownsample: skipV
+  } = downsampleSegments(width/2, height/2, MAX_VERTECES);
   // verticalOffset
   y -= VERTICAL_OFFSET;
   if(y < 0) return false;
@@ -1337,7 +1339,7 @@ function getModelPixels(imageData, segments) {
   for(let i = 0; i < imageData.length; i += pixelDataBytes) {
     const columnIndex = (i / pixelDataBytes) % width;
     const rowIndex = Math.floor((i / pixelDataBytes) / width);
-    if(!isVertexPixel(columnIndex, rowIndex, width, height, segments.horizontalDownsample, segments.verticalDownsample)) continue;
+    if(!isVertexPixel(columnIndex, rowIndex, width, height)) continue;
 
     if(rowIndex !== lastRow) {
       if(firstVirtex) controlVertices.push(firstVirtex);

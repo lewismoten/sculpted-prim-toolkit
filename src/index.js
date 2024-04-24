@@ -1337,19 +1337,19 @@ function getModelPixels(imageData, segments) {
   let firstVirtex = null;
 
   for(let i = 0; i < imageData.length; i += pixelDataBytes) {
-    const columnIndex = (i / pixelDataBytes) % width;
-    const rowIndex = Math.floor((i / pixelDataBytes) / width);
-    if(!isVertexPixel(columnIndex, rowIndex, width, height)) continue;
+    const x = (i / pixelDataBytes) % width;
+    const y = Math.floor((i / pixelDataBytes) / width);
+    if(!isVertexPixel(x, y, width, height)) continue;
 
-    if(rowIndex !== lastRow) {
+    if(y !== lastRow) {
       if(firstVirtex) controlVertices.push(firstVirtex);
-      lastRow = rowIndex;
+      lastRow = y;
     }
 
     const vertex = imageData.slice(i, i + 3);
     controlVertices.push(vertex);
-    if(columnIndex === 0) firstVirtex = vertex;
-    if(rowIndex === 0 || rowIndex === height - 1) {
+    if(x === 0) firstVirtex = vertex;
+    if(y === 0 || y === height - 1) {
       // repeat vector for all segments at the poles
       for(let j = 0; j < segments.horizontal; j++) {
         controlVertices.push(vertex);

@@ -316,7 +316,27 @@ function overwriteUnusedPixelsWithContext(source) {
     }
   }
 }
-function drawModel2DBackground() {
+function updateModelDataPixel(x, y, r, g, b) {
+  const canRead = isImageXyVertex(x, y, image2D.width, image2D.height);
+  if(!canRead) {
+    console.log('Pixel %sx%s is not a vector.', x, y);
+    return;
+  }
+
+  const drawBlocks = document.querySelector('input[name="unused-pixels"]:checked').value === 'blocks';
+  const blockWidth = Math.pow(2, segments.horizontalDownsample + 1);
+  const blockHeight = Math.pow(2, segments.verticalDownsample + 1);
+  if(drawBlocks) {
+    for(let h = 0; h < blockWidth; h++) {
+      for(let v = 0; v < blockHeight; v++) {
+        setPixelColorOnImageOfData(x + h, y + v, r, g, b);
+      }
+    }
+  } else {
+    setPixelColorOnImageOfData(x, y, r, g, b);
+  }
+}
+function updateModelDataUnusedPixels() {
   const width = image2D.width;
   const height = image2D.height;
   const tempCanvas = document.createElement('canvas');
@@ -358,32 +378,18 @@ function originalImageContext() {
   ctx.drawImage(original2D, 0, 0);
   return ctx;
 }
-function drawModel2DPixelsFromImage() {
-  const unusedPixels = document.querySelector('input[name="unused-pixels"]:checked').value;
+function applyOriginalVectorsToModelDataImage() {
   const source = originalImageContext();
-  const ctx = getModelCanvasContext();
-  const blockWidth = Math.pow(2, segments.horizontalDownsample + 1);
-  const blockHeight = Math.pow(2, segments.verticalDownsample + 1);
   for(let x = 0; x < image2D.width; x++) {
     for(let y = 0; y < image2D.height; y++) {
       const isUsed = isImageXyVertex(x, y, image2D.width, image2D.height);
       if(!isUsed) continue;
-      const pixel = source.getImageData(x, y, 1, 1);
-      if(unusedPixels === 'blocks') {
-        for(let h = 0; h < blockHeight; h++) {
-          for(let v = 0; v < blockWidth; v++) {
-            ctx.putImageData(pixel, x + h, y + v);
-          }
-        }
-      } else {
-        ctx.putImageData(pixel, x, y);
-      }
+      const [r, g, b] = source.getImageData(x, y, 1, 1).data;
+      updateModelDataPixel(x, y, r, g, b);
     }
   }
 }
-function drawModel2DPixelsFromVectors() {
-  const drawBlocks = document.querySelector('input[name="unused-pixels"]:checked').value === 'blocks';
-  const ctx = getModelCanvasContext();
+function applyVectorsToModelDataImage() {
   let outOfBounds = false;
   selectedVerticesObject.children.forEach(object => {
     const i = object.userData.index;
@@ -395,30 +401,12 @@ function drawModel2DPixelsFromVectors() {
     }
     const rgb = bytePositionAsPixelRgb(...xyz);
     const point = indexOfVertexToImageXy(i);
-    const canRead = isImageXyVertex(point.x, point.y, image2D.width, image2D.height);
-    if(!canRead) {
-      console.log('About to update a pixel that should not be updated');
-    }
-  
-    const imageData = ctx.getImageData(point.x, point.y, 1, 1);
-    imageData.data[0] = rgb.r;
-    imageData.data[1] = rgb.g;
-    imageData.data[2] = rgb.b;
-    if(drawBlocks) {
-      for(let h = 0; h < Math.pow(2, segments.horizontalDownsample + 1); h++) {
-        for(let v = 0; v < Math.pow(2, segments.verticalDownsample + 1); v++) {
-          ctx.putImageData(imageData, point.x + h, point.y + v);
-        }
-      }
-    } else {
-      ctx.putImageData(imageData, point.x, point.y);
-    }
+    updateModelDataPixel(point.x, point.y, rgb.r, rgb.g, rgb.b);
   });
 }
-
 function updateVerticyPositions() {
-  drawModel2DBackground();
-  drawModel2DPixelsFromVectors();
+  updateModelDataUnusedPixels();
+  applyVectorsToModelDataImage();
   // rebuild models
   image2D.src = canvas2D.toDataURL();
 
@@ -788,10 +776,8 @@ function displayVertexPosition() {
   }>`;
 }
 function drawModelCanvas() {
-  canvas2D.width = image2D.width;
-  canvas2D.height = image2D.height;
-  drawModel2DBackground();
-  drawModel2DPixelsFromImage();
+  updateModelDataUnusedPixels();
+  applyVectorsToModelDataImage();
   highlightVertex();
 }
 function highlightVertex() {
@@ -848,9 +834,11 @@ function highlightSelectedVertexOnImageOfData() {
 function setPixelColorOnImageOfData(x, y, r, g, b) {
   const ctx = getModelCanvasContext();
   const imageData = ctx.getImageData(x, y, 1, 1);
+  // Preserve transparency
   imageData.data[0] = r;
   imageData.data[1] = g;
   imageData.data[2] = b;
+  // imageData.data[2] = 255; // Opaque
   ctx.putImageData(imageData, x, y);
 }
 function getModelCanvasContext() {
@@ -1204,21 +1192,28 @@ function removeTexture() {
 }
 function handleImageSelectorChange() {
   const imageSelector = document.getElementById('image-selector');
-  const imageUrl = imageSelector.value;
-  image2D = new Image();
-  image2D.src = imageUrl;
-  image2D.onload = handleImage2DLoad;
-  original2D = new Image();
-  original2D.src = imageUrl;
+  loadImageOfModelData(imageSelector.value);
 }
-function handleImage2DLoad() {
+function loadImageOfModelData(url) {
+  original2D = new Image();
+  original2D.src = url;
+  original2D.onload = () => {
+    image2D = new Image();
+    image2D.src = url;
+    image2D.onload = imageOfModelDataLoaded;
+  };
+}
+function imageOfModelDataLoaded() {
+  canvas2D.width = image2D.width;
+  canvas2D.height = image2D.height;
+  const ctx = getModelCanvasContext();
+  ctx.drawImage(image2D, 0, 0);
+
   segments = downsampleSegments(image2D.width/2, image2D.height/2, MAX_VERTECES);
   horizontalSegments = segments.horizontal;
   verticalSegments = segments.vertical;
 
-  drawModelCanvas();
   document.getElementById('image-size').innerText = `${image2D.width}x${image2D.height}`;
-  const ctx = getModelCanvasContext();
 
   const vertexColumnRangeInput = document.getElementById('vertex-column-range');
   const vertexRowRangeInput = document.getElementById('vertex-row-range');

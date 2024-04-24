@@ -830,6 +830,8 @@ function highlightVertexOnCanvas() {
   if(!canRead) {
     console.log('About to update a pixel that should not be updated');
   }
+  document.getElementById('selected-pixel-xy').innerText = `${x}x${y}`;
+  document.getElementById('selected-pixel-color').innerText = `rgb(${r}, ${g}, ${b})`;
 
   const value = outlineColor === 'black' ? 0 : 255;
   for(let xx = x - 1; xx <= x + 1; xx++) {

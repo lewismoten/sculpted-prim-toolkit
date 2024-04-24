@@ -349,7 +349,7 @@ function drawModel2DPixelsFromImage() {
   const ctx = getModelCanvasContext();
   for(let x = 0; x < image2D.width; x++) {
     for(let y = 0; y < image2D.height; y++) {
-      const isUsed = canReadControlVertex(x, y, image2D.width, image2D.height);
+      const isUsed = canReadControlVertex(x, y, image2D.width, image2D.height, segments.horizontalDownsample, segments.verticalDownsample);
       if(!isUsed) continue;
       const pixel = source.getImageData(x, y, 1, 1);
       if(unusedPixels === 'blocks') {

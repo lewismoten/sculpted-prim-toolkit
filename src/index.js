@@ -4,7 +4,6 @@ import { NURBSSurface } from 'three/examples/jsm/curves/NURBSSurface.js';
 import { ParametricGeometry } from 'three/addons/geometries/ParametricGeometry.js';
 import { TransformControls } from 'three/addons/controls/TransformControls.js';
 import Stats from 'three/examples/jsm/libs/stats.module';
-import { update } from 'three/examples/jsm/libs/tween.module.js';
 
 const defaultCameraAngle = 'front';
 const defaultModel = 'tatara7 cube.png';

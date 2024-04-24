@@ -378,6 +378,11 @@ function drawModel2DPixelsFromVectors() {
     }
     const rgb = bytePositionAsPixelRgb(...xyz);
     const point = dataIndexToImageXY(i);
+    const canRead = canReadControlVertex(point.x, point.y, image2D.width, image2D.height, segments.horizontalDownsample, segments.verticalDownsample);
+    if(!canRead) {
+      console.log('About to update a pixel that should not be updated');
+    }
+  
     const imageData = ctx.getImageData(point.x, point.y, 1, 1);
     imageData.data[0] = rgb.r;
     imageData.data[1] = rgb.g;
@@ -802,6 +807,11 @@ function highlightVertexOnCanvas() {
   const outlineColor = isBlackBg ? 'white' : getContrastingColor(r, g, b);
 
   const { x, y } = dataIndexToImageXY(index);
+  const canRead = canReadControlVertex(x, y, image2D.width, image2D.height, segments.horizontalDownsample, segments.verticalDownsample);
+  if(!canRead) {
+    console.log('About to update a pixel that should not be updated');
+  }
+
   const value = outlineColor === 'black' ? 0 : 255;
   for(let xx = x - 1; xx <= x + 1; xx++) {
     for(let yy = y - 1; yy <= y + 1; yy++) {

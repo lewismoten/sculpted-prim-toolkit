@@ -365,14 +365,16 @@ function drawModel2DPixelsFromImage() {
   const unusedPixels = document.querySelector('input[name="unused-pixels"]:checked').value;
   const source = originalImageContext();
   const ctx = getModelCanvasContext();
+  const blockWidth = Math.pow(2, segments.horizontalDownsample + 1);
+  const blockHeight = Math.pow(2, segments.verticalDownsample + 1);
   for(let x = 0; x < image2D.width; x++) {
     for(let y = 0; y < image2D.height; y++) {
       const isUsed = isImageXyVertex(x, y, image2D.width, image2D.height);
       if(!isUsed) continue;
       const pixel = source.getImageData(x, y, 1, 1);
       if(unusedPixels === 'blocks') {
-        for(let h = 0; h < Math.pow(2, segments.horizontalDownsample + 1); h++) {
-          for(let v = 0; v < Math.pow(2, segments.verticalDownsample + 1); v++) {
+        for(let h = 0; h < blockHeight; h++) {
+          for(let v = 0; v < blockWidth; v++) {
             ctx.putImageData(pixel, x + h, y + v);
           }
         }

@@ -1410,29 +1410,27 @@ function drawSelectionVertices() {
   selectedVerticesObject = object;
   addObjectToList(object);
 }
-function sphericalIndex(x, y, horizontalSegments, verticalSegments) {
-  if(y >= verticalSegments || y <= 0) {
+function sphericalIndex(column, row, horizontalSegments, verticalSegments) {
+  if(row >= verticalSegments || row <= 0) {
     // poles of top and bottom are centered
-    x = Math.floor(horizontalSegments / 2);
-  } else {
-    y += VERTICAL_OFFSET;
+    column = Math.floor(horizontalSegments / 2);
   }
-  // keep y within bounds
-  if(y < 0) {
-    y = 0;
-  } else if(y >= verticalSegments) {
+  // keep row within bounds
+  if(row < 0) {
+    row = 0;
+  } else if(row >= verticalSegments) {
     // HACK: seems center pixel is not in the proper place?
     return ((horizontalSegments + 1) * verticalSegments);
-    // y = verticalSegments - 1;
+    // row = verticalSegments - 1;
   }
-if(x < 0) {
+if(column < 0) {
   // stitch left to right
-  x += horizontalSegments + 1;
-} else if(x >= horizontalSegments) {
+  column += horizontalSegments + 1;
+} else if(column >= horizontalSegments) {
   // stitch right to left
-  x -= horizontalSegments + 1;
+  column -= horizontalSegments + 1;
 }
-  return y * (horizontalSegments + 1) + x;
+  return row * (horizontalSegments + 1) + column;
 }
 
 function drawNurbsSurfaceMesh(controlVertices) {
@@ -1624,17 +1622,17 @@ function createSphericalControlVertices(controlVertices, horizontalSegments, ver
 
 function createSphericalControlTriangles(horizontalSegments, verticalSegments) {
   var indexedTriangles = [];
-  for(let x = 0; x < horizontalSegments; x++) {
-    for(let y = 0; y < verticalSegments; y++) {
-      const centerIndex = sphericalIndex(x, y, horizontalSegments, verticalSegments);
-      const bottomRightIndex = sphericalIndex(x + 1, y + 1, horizontalSegments, verticalSegments);
-      const bottomIndex = sphericalIndex(x, y + 1, horizontalSegments, verticalSegments);
-      const rightIndex = sphericalIndex(x + 1, y, horizontalSegments, verticalSegments);
+  for(let column = 0; column < horizontalSegments; column++) {
+    for(let row = 0; row < verticalSegments; row++) {
+      const centerIndex = sphericalIndex(column, row, horizontalSegments, verticalSegments);
+      const bottomRightIndex = sphericalIndex(column + 1, row + 1, horizontalSegments, verticalSegments);
+      const bottomIndex = sphericalIndex(column, row + 1, horizontalSegments, verticalSegments);
+      const rightIndex = sphericalIndex(column + 1, row, horizontalSegments, verticalSegments);
       // Add triangles in counter-clockwise order
-      if(y === 0) {
+      if(row === 0) {
         // triangles at top pole
         indexedTriangles.push(centerIndex, bottomIndex, bottomRightIndex);
-      } else if(y === verticalSegments - 1) {
+      } else if(row === verticalSegments - 1) {
         // triangles at bottom pole
         indexedTriangles.push(centerIndex, bottomRightIndex, rightIndex);
       } else {

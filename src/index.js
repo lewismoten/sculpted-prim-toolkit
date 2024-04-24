@@ -319,8 +319,6 @@ function overwriteUnusedPixelsWithContext(source) {
 function drawModel2DBackground() {
   const width = image2D.width;
   const height = image2D.height;
-  canvas2D.width = width;
-  canvas2D.height = height;
   const tempCanvas = document.createElement('canvas');
   tempCanvas.width = width;
   tempCanvas.height = height;

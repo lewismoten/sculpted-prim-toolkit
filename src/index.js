@@ -10,6 +10,8 @@ const defaultCameraAngle = 'front';
 const defaultModel = 'tatara7 cube.png';
 const defaultSkin = 'alignment-map-1024';
 
+const VERTICAL_OFFSET = 1; // Y starts at 1, not zero as in the technicial documentation
+
 let image2D;
 let original2D;
 let snapshot3D;
@@ -681,7 +683,7 @@ function dataIndexToImageXY(i) {
   const { row, column } = dataIndexToRowAndColumn(i);
   return {
     x: column * Math.pow(2, segments.horizontalDownsample + 1),
-    y: 1 + (row * Math.pow(2, segments.verticalDownsample + 1))
+    y: (row * Math.pow(2, segments.verticalDownsample + 1)) + VERTICAL_OFFSET
   };
 }
 function getIndexByUV(u, v) {

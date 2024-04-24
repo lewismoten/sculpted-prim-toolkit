@@ -303,12 +303,30 @@ function takeSnapshot() {
     if(unusedPixels === 'snapshot') updateVerticyPositions();
   }
 }
+function overwriteUnusedPixelsWithContext(source) {
+  const target = getModelCanvasContext();
+  const width = image2D.width;
+  const height = image2D.height;
+  const hDown = segments.horizontalDownsample;
+  const vDown = segments.verticalDownsample;
+  for(let x = 0; x < width; x++) {
+    for(let y = 0; y < height; y++) {
+      const isUsed = canReadControlVertex(x, y, width, height, hDown, vDown);
+      if(isUsed) continue;
+      const imageData = source.getImageData(x, y, 1, 1);
+      target.putImageData(imageData, x, y);
+    }
+  }
+}
 function drawModel2DBackground() {
   const width = image2D.width;
   const height = image2D.height;
   canvas2D.width = width;
   canvas2D.height = height;
-  const ctx = getModelCanvasContext();
+  const tempCanvas = document.createElement('canvas');
+  tempCanvas.width = width;
+  tempCanvas.height = height;
+  const ctx = tempCanvas.getContext('2d', {willReadFrequently: true});
   const unusedPixels = document.querySelector('input[name="unused-pixels"]:checked').value;
   switch(unusedPixels) {
     case 'black':
@@ -334,6 +352,7 @@ function drawModel2DBackground() {
       ctx.fillStyle = 'red';
       ctx.fillRect(0, 0, width, height);
   }
+  overwriteUnusedPixelsWithContext(ctx);
 }
 function originalImageContext() {
   const ctx = document.createElement('canvas').getContext('2d', { willReadFrequently: true });

@@ -195,11 +195,11 @@ function handleWindowLoad() {
     vertexValueInput.value = vertexRangeInput.value;
     vertexRangeInput.addEventListener('input', () => {
       vertexValueInput.value = vertexRangeInput.value;
-      displayIndexAfterRowOrColumnChanged();
+      displayIndexOfVertexAfterRowOrColumnChanged();
     });
     vertexValueInput.addEventListener('input', () => {
       vertexRangeInput.value = vertexValueInput.value;
-      displayIndexAfterRowOrColumnChanged();
+      displayIndexOfVertexAfterRowOrColumnChanged();
     });
   });
   const vertexIndexRangeInput = document.getElementById('vertex-index-range');
@@ -207,11 +207,11 @@ function handleWindowLoad() {
   vertexIndexValueInput.value = vertexIndexRangeInput.value;
   vertexIndexRangeInput.addEventListener('input', () => {
     vertexIndexValueInput.value = vertexIndexRangeInput.value;
-    displayRowAndColumnAfterIndexChanged();
+    displayRowAndColumnAfterVertexIndexChanged();
   });
   vertexIndexValueInput.addEventListener('input', () => {
     vertexIndexRangeInput.value = vertexIndexValueInput.value;
-    displayRowAndColumnAfterIndexChanged();
+    displayRowAndColumnAfterVertexIndexChanged();
   });
   
   document.getElementById('nurbs-degrees').addEventListener('input', () => {
@@ -310,7 +310,7 @@ function overwriteUnusedPixelsWithContext(source) {
   const height = image2D.height;
   for(let x = 0; x < width; x++) {
     for(let y = 0; y < height; y++) {
-      const isUsed = isVertexPixel(x, y, width, height);
+      const isUsed = isImageXyVertex(x, y, width, height);
       if(isUsed) continue;
       const imageData = source.getImageData(x, y, 1, 1);
       target.putImageData(imageData, x, y);
@@ -367,7 +367,7 @@ function drawModel2DPixelsFromImage() {
   const ctx = getModelCanvasContext();
   for(let x = 0; x < image2D.width; x++) {
     for(let y = 0; y < image2D.height; y++) {
-      const isUsed = isVertexPixel(x, y, image2D.width, image2D.height);
+      const isUsed = isImageXyVertex(x, y, image2D.width, image2D.height);
       if(!isUsed) continue;
       const pixel = source.getImageData(x, y, 1, 1);
       if(unusedPixels === 'blocks') {
@@ -395,8 +395,8 @@ function drawModel2DPixelsFromVectors() {
       xyz = xyz.map(mapClamp(0, 255));
     }
     const rgb = bytePositionAsPixelRgb(...xyz);
-    const point = dataIndexToImageXY(i);
-    const canRead = isVertexPixel(point.x, point.y, image2D.width, image2D.height);
+    const point = indexOfVertexToImageXy(i);
+    const canRead = isImageXyVertex(point.x, point.y, image2D.width, image2D.height);
     if(!canRead) {
       console.log('About to update a pixel that should not be updated');
     }
@@ -583,7 +583,7 @@ function updateModelVertexPosition() {
   const rgb = bytePositionAsPixelRgb(pos.x, pos.y, pos.z);
 
   const i = getSelectedIndex();
-  const point = dataIndexToImageXY(i);
+  const point = indexOfVertexToImageXy(i);
 
   const tempCanvas = document.createElement('canvas');
   tempCanvas.width = image2D.width;
@@ -669,26 +669,26 @@ function handle3dCanvasClick(event) {
   raycaster.setFromCamera(mouse, camera);
   raycaster.intersectObject(modelMeshObject).forEach(intersects => {
     const { x, y } = intersects.uv;
-    const index = getIndexByUV(x, y);
-    setSelectedVertexByIndex(index);
+    const index = getVertexByUvMapping(x, y);
+    setSelectedIndexOfVertex(index);
   });
 }
-function setSelectedVertexByIndex(index) {
+function setSelectedIndexOfVertex(index) {
   document.getElementById('vertex-index-range').value = index;
   document.getElementById('vertex-index-value').value = index;
-  displayRowAndColumnAfterIndexChanged();
+  displayRowAndColumnAfterVertexIndexChanged();
 }
 
-function displayIndexAfterRowOrColumnChanged() {
+function displayIndexOfVertexAfterRowOrColumnChanged() {
   const i = rowColumnToIndexOfVertex(
     parseInt(document.getElementById('vertex-row-range').value),
     parseInt(document.getElementById('vertex-column-range').value),
     horizontalSegments,
     verticalSegments
   );
-  setSelectedVertexByIndex(i);
+  setSelectedIndexOfVertex(i);
 }
-function dataIndexToRowAndColumn(i) {
+function indexOfVertexToRowAndColumn(i) {
   const row = Math.floor(i / (horizontalSegments + 1));
   let column = i % (horizontalSegments + 1);
   // hidden column for seam is first column
@@ -701,14 +701,14 @@ function dataIndexToRowAndColumn(i) {
   }
   return { row, column };
 }
-function dataIndexToImageXY(i) {
-  const { row, column } = dataIndexToRowAndColumn(i);
+function indexOfVertexToImageXy(i) {
+  const { row, column } = indexOfVertexToRowAndColumn(i);
   return {
     x: column * Math.pow(2, segments.horizontalDownsample + 1),
     y: (row * Math.pow(2, segments.verticalDownsample + 1)) + VERTICAL_OFFSET
   };
 }
-function getIndexByUV(u, v) {
+function getVertexByUvMapping(u, v) {
   let column = u * horizontalSegments + 1;
   let row = (1 - v) * verticalSegments + 1;
 
@@ -716,9 +716,9 @@ function getIndexByUV(u, v) {
   row = Math.floor(row - 0.5);
   return rowColumnToIndexOfVertex(row, column, horizontalSegments, verticalSegments);
 }
-function displayRowAndColumnAfterIndexChanged(){
+function displayRowAndColumnAfterVertexIndexChanged(){
   const i = parseInt(document.getElementById('vertex-index-range').value);
-  const { row, column } = dataIndexToRowAndColumn(i);
+  const { row, column } = indexOfVertexToRowAndColumn(i);
   document.getElementById('vertex-row-range').value = row;
   document.getElementById('vertex-column-range').value = column;
   document.getElementById('vertex-row-value').value = row;
@@ -747,7 +747,7 @@ function handle2DCanvasClick(event) {
     horizontalSegments,
     verticalSegments
   );
-  setSelectedVertexByIndex(i);
+  setSelectedIndexOfVertex(i);
 }
 function displayNewlySelectedVertex() {
   const i = getSelectedIndex();
@@ -805,7 +805,7 @@ function highlightVertex() {
   );
 
   // 2D selection
-  highlightVertexOnCanvas();
+  highlightSelectedVertexOnImageOfData();
 
   // 3D selection
   selectedVerticesObject.children.forEach(mesh => {
@@ -813,7 +813,7 @@ function highlightVertex() {
   });
   
 }
-function highlightVertexOnCanvas() {
+function highlightSelectedVertexOnImageOfData() {
   const index = rowColumnToIndexOfVertex(
     parseInt(document.getElementById('vertex-row-range').value),
     parseInt(document.getElementById('vertex-column-range').value),
@@ -824,11 +824,17 @@ function highlightVertexOnCanvas() {
   const isBlackBg = document.querySelector('input[name="unused-pixels"]:checked').value === 'black';
   const outlineColor = isBlackBg ? 'white' : getContrastingColor(r, g, b);
 
-  const { x, y } = dataIndexToImageXY(index);
-  const canRead = isVertexPixel(x, y, image2D.width, image2D.height);
+  const { x, y } = indexOfVertexToImageXy(index);
+  const canRead = isImageXyVertex(x, y, image2D.width, image2D.height);
   if(!canRead) {
     console.log('About to update a pixel that should not be updated');
   }
+  const {row, column} = indexOfVertexToRowAndColumn(index);
+  const vIndex = rowColumnToIndexOfVertex(row, column, horizontalSegments, verticalSegments);
+  if(vIndex !== index) {
+    console.log('Data index %s does not map to row %s Column %s index %s', index, row, column, vIndex);
+  }
+
   document.getElementById('selected-pixel-xy').innerText = `${x}x${y}`;
   document.getElementById('selected-pixel-color').innerText = `rgb(${r}, ${g}, ${b})`;
 
@@ -836,11 +842,11 @@ function highlightVertexOnCanvas() {
   for(let xx = x - 1; xx <= x + 1; xx++) {
     for(let yy = y - 1; yy <= y + 1; yy++) {
       if(xx === x && yy === y) continue;
-      setModelCanvasPixel(xx, yy, value, value, value);
+      setPixelColorOnImageOfData(xx, yy, value, value, value);
     }
   }
 }
-function setModelCanvasPixel(x, y, r, g, b) {
+function setPixelColorOnImageOfData(x, y, r, g, b) {
   const ctx = getModelCanvasContext();
   const imageData = ctx.getImageData(x, y, 1, 1);
   imageData.data[0] = r;
@@ -1242,7 +1248,7 @@ function handleImage2DLoad() {
   nurbsControlVertices = pixels.map(([r, g, b]) => convertRgbToVertex(r, g, b));
 
   // Draw frame around selected pixel
-  highlightVertexOnCanvas();
+  highlightSelectedVertexOnImageOfData();
 
   const vertexCount = nurbsControlVertices.length;
   const vertexIndexRangeInput = document.getElementById('vertex-index-range');
@@ -1291,7 +1297,7 @@ function surviveDownsampling(value, amount) {
   }
   return true;
 }
-function isVertexPixel(x, y, width, height) {
+function isImageXyVertex(x, y, width, height) {
   const {
     horizontalDownsample: skipH,
     verticalDownsample: skipV
@@ -1338,7 +1344,7 @@ function getModelPixels(imageData, segments) {
   for(let i = 0; i < imageData.length; i += pixelDataBytes) {
     const x = (i / pixelDataBytes) % width;
     const y = Math.floor((i / pixelDataBytes) / width);
-    if(!isVertexPixel(x, y, width, height)) continue;
+    if(!isImageXyVertex(x, y, width, height)) continue;
 
     if(y !== lastRow) {
       if(firstVirtex) controlVertices.push(firstVirtex);
@@ -1385,7 +1391,7 @@ function drawSelectionVertices() {
   const object = new THREE.Object3D();
   object.name = 'Vertices';
   vertices.forEach(({ x, y, z, color }, i) => {
-    const {row, column} = dataIndexToRowAndColumn(i);
+    const {row, column} = indexOfVertexToRowAndColumn(i);
     if(row === 0 || row === verticalSegments) {
       // poles only use center pixel
       if(column != Math.floor(horizontalSegments / 2)) return;

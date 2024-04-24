@@ -820,7 +820,9 @@ function setModelCanvasPixel(x, y, r, g, b) {
   ctx.putImageData(imageData, x, y);
 }
 function getModelCanvasContext() {
-  return canvas2D.getContext('2d', {willReadFrequently: true});
+  const ctx = canvas2D.getContext('2d', {willReadFrequently: true});
+  ctx.imageSmoothingEnabled = false;
+  return ctx;
 }
 function getContrastingColor(r, g, b) {
   const brightness = (r * 299 + g * 587 + b * 114) / 1000;

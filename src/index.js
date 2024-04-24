@@ -1296,11 +1296,10 @@ function isVertexPixel(x, y, width, height) {
     horizontalDownsample: skipH,
     verticalDownsample: skipV
   } = downsampleSegments(width/2, height/2, MAX_VERTECES);
+  // Top/bottom poles
+  if(y === 0 || y === height - 1) return x === Math.floor(width / 2);  
   // verticalOffset
   y -= VERTICAL_OFFSET;
-  if(y < 0) return false;
-  // Top pole
-  if(y === 1 || y === height) return x === Math.floor(width / 2);  
   if(x % 2 === 1 || y % 2 === 1) return false;
   if(!surviveDownsampling(x, skipH)) return false;
   if(!surviveDownsampling(y, skipV)) return false;
@@ -1415,6 +1414,8 @@ function sphericalIndex(x, y, horizontalSegments, verticalSegments) {
   if(y >= verticalSegments || y <= 0) {
     // poles of top and bottom are centered
     x = Math.floor(horizontalSegments / 2);
+  } else {
+    y += VERTICAL_OFFSET;
   }
   // keep y within bounds
   if(y < 0) {

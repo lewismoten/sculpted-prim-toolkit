@@ -10,6 +10,7 @@ const defaultModel = 'tatara7 cube.png';
 const defaultSkin = 'alignment-map-1024';
 
 const VERTICAL_OFFSET = 1; // Y starts at 1, not zero as in the technicial documentation
+const MAX_VERTECES = 1024;
 
 let image2D;
 let original2D;
@@ -1208,7 +1209,7 @@ function handleImageSelectorChange() {
   original2D.src = imageUrl;
 }
 function handleImage2DLoad() {
-  segments = downsampleSegments(image2D.width/2, image2D.height/2, 1024);
+  segments = downsampleSegments(image2D.width/2, image2D.height/2, MAX_VERTECES);
   horizontalSegments = segments.horizontal;
   verticalSegments = segments.vertical;
 

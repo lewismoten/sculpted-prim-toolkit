@@ -48,7 +48,7 @@ let modelObject;
 let nurbsControlVertices;
 let cubeObject;
 let boundariesObject;
-let wireframeObject;
+let verticesObject;
 let controlMeshObject;
 let nurbsObject;
 let segments;
@@ -354,7 +354,7 @@ function resetModelPositionRotationAndScale() {
 function applyToModels(callback) {
   [
     modelObject,
-    wireframeObject,
+    verticesObject,
     selectedVerticesObject,
     nurbsObject
   ].forEach(callback);
@@ -675,7 +675,7 @@ function clampDimensions(source) {
 }
 function saveVerticesPositionsToModelData() {
   if(!selectedVerticesObject) return;
-  if(!wireframeObject) return;
+  if(!verticesObject) return;
   let changed = false;
   selectedVerticesObject.children.forEach((object) => {
     const { index } = object.userData;
@@ -756,7 +756,7 @@ function saveVerticesPositionsToModelData() {
 }
 function updateVertexModelsPositionAndColor(index, {x,y,z}, {r, g, b}) {
   [
-    wireframeObject.children[index],
+    verticesObject.children[index],
     selectedVerticesObject.children[index]
   ].forEach(object => {
     object.position.set(x, y, z);
@@ -1569,22 +1569,22 @@ function getModelPixels(imageData, segments) {
   return controlVertices;
 }
 function drawControlVertices(controlVertices) {
-  removeObjectFromList(wireframeObject);
-  wireframeObject = new THREE.Object3D();
-  wireframeObject.name = 'Wirerame';
+  removeObjectFromList(verticesObject);
+  verticesObject = new THREE.Object3D();
+  verticesObject.name = 'Vertices';
   controlVertices.forEach(({ x, y, z, color}, index) => {
     const geometry = new THREE.BoxGeometry( 0.01, 0.01, 0.01 );
     const material = new THREE.MeshBasicMaterial( { color } );
     const mesh = new THREE.Mesh( geometry, material );
     mesh.position.set(x, y, z);
     mesh.userData.index = index;
-    wireframeObject.add(mesh);
+    verticesObject.add(mesh);
   });
-  setTranslationToObject(wireframeObject);
-  scene.add( wireframeObject );
+  setTranslationToObject(verticesObject);
+  scene.add( verticesObject );
 
-  wireframeObject.visible = document.getElementById('show-control-vertices').checked;
-  addObjectToList(wireframeObject);
+  verticesObject.visible = document.getElementById('show-control-vertices').checked;
+  addObjectToList(verticesObject);
 }
 function drawSelectionVertices() {  
   const vertices = pixels.map(([r, g, b]) => convertRgbToVertex(r, g, b));
@@ -2015,7 +2015,7 @@ function applyRotationToObects(rotation) {
     });
 }
 function handleShowControlVerticesChange() {
-  wireframeObject.visible = document.getElementById('show-control-vertices').checked;
+  verticesObject.visible = document.getElementById('show-control-vertices').checked;
 }
 function handleShowControlMeshChange() {
   controlMeshObject.visible = document.getElementById('show-control-mesh').checked;

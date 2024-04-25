@@ -468,9 +468,13 @@ function updateStatsLocation() {
   stats.domElement.style.top = `${bounds.top}px`;
   stats.domElement.style.left = `${bounds.left}px`;
 }
+function areTransformControlsEnabled() {
+  const tool = selectedTool();
+  return ['rotate', 'scale', 'move'].includes(tool);
+}
 function synchronizeTransformControlsMode() {
   const tool = selectedTool();
-  let enabled = ['rotate', 'scale', 'move'].includes(tool);
+  let enabled = areTransformControlsEnabled();
   if(transformControls) {
     if(!transformControls.object) {
       enabled = false;
@@ -534,14 +538,19 @@ function setupTransformControls(camera) {
     cleanupTransformControls();
   }
   transformControls = new TransformControls(camera, renderer.domElement);
+  const enabled = areTransformControlsEnabled();
+  transformControls.enabled = enabled;
+  transformControls.visible = enabled;
   transformControls.setSize(transformControls.size * 3);
   transformControls.addEventListener('change', (e) => {
+    if(!transformControls.enabled) return;
     if(modelMeshObject) {
       clampDimensions(transformControls.object);
     }
     render();
   });
   transformControls.addEventListener('dragging-changed', event => {
+    if(!transformControls.enabled) return;
     if(cameraOrbitControls) cameraOrbitControls.enabled = !event.value;
     if(!event.value) {
       clampDimensions(transformControls.object);

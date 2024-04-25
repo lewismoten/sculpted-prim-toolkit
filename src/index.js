@@ -6,6 +6,7 @@ import { TransformControls } from 'three/addons/controls/TransformControls.js';
 import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
 import { OBJExporter } from 'three/addons/exporters/OBJExporter.js';
 import Stats from 'three/examples/jsm/libs/stats.module';
+import { STLExporter } from 'three/addons/exporters/STLExporter.js';
 
 const defaultCameraAngle = 'front';
 const defaultModel = 'plopp smile_sculpture.png';
@@ -129,6 +130,7 @@ function handleWindowLoad() {
   document.getElementById('export-gltf').addEventListener('click', exportGltf.bind(undefined, false));
   document.getElementById('export-glb').addEventListener('click', exportGltf.bind(undefined, true));
   document.getElementById('export-obj').addEventListener('click', exportObj);
+  document.getElementById('export-stl').addEventListener('click', exportStl);
 
   document.getElementById('texture-rotation').addEventListener('input', rotateTexture);
   document.getElementById('texture-horizontal-offset').addEventListener('input', offsetTextureHorizontally);
@@ -2202,7 +2204,14 @@ function exportObj() {
     );
   }
 }
-
+function exportStl() {
+  const exporter = new STLExporter();
+  const options = {
+    binary: true
+  };
+  const data = exporter.parse(modelObject, options);
+  downloadBlobAsFile(fileName('stl'), 'model/stl', data);
+}
 function downloadCanvasAsFile(fileName, contentType, canvas) {
   downloadUrlAsFile(fileName, canvas.toDataURL(contentType));
 }

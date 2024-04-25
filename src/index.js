@@ -323,10 +323,19 @@ function getPositionToCenterModel() {
   return center.multiplyScalar(-MAX_MODEL_SIZE);
 }
 function moveModelToCenter() {
-  // TODO: calculate center based on bounding box
-  // if(modelPosition.equals(WORLD_POSITION)) return;
-  modelMeshObject.position.set(WORLD_POSITION.clone());
-  modelPosition.set(WORLD_POSITION.clone());
+  const center = getPositionToCenterModel();
+  const epsolon = vectorSnapSize() / 2;
+
+  // is already centered?
+  if("xyz".split('').every(axis => 
+    Math.abs(center[axis]) < epsolon
+  )) return;
+
+  modelMeshObject.position.copy(center.clone());
+  controlVerticesObject.position.copy(center.clone());
+  selectedVerticesObject.position.copy(center.clone());
+  nurbsMeshObject.position.copy(center.clone());
+  modelPosition.set(center.clone());
   saveVerticesPositionsToModelData();
 }
 function scaleModelToBoundingVolume() {

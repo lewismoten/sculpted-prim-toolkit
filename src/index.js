@@ -1338,6 +1338,8 @@ function loadTexture(textureUrl) {
 }
 function drawTexturePreview(image) {
   const texturePreview = document.getElementById('texture-preview');
+  texturePreview.width = image.width;
+  texturePreview.height = image.height;
   const ctx = texturePreview.getContext('2d');
   ctx.clearRect(0, 0, texturePreview.width, texturePreview.height);
   ctx.drawImage(image, 0, 0, texturePreview.width, texturePreview.height);

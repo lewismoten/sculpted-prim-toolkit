@@ -2120,12 +2120,12 @@ function fileName(ext) {
   const showTime = document.getElementById('export-time').checked;
   const showDate = document.getElementById('export-date').checked;
   if(showDate || showTime) {
-    prefix = dateAsLocal_YMD_HS(new Date(), showDate, showTime);
+    prefix = dateAsLocalStamp(new Date(), showDate, showTime);
     prefix += ' ';
   }
   return sanitizeFileName(prefix + name + ext);
 }
-function dateAsLocal_YMD_HS(date, showDate, showTime) {
+function dateAsLocalStamp(date, showDate, showTime) {
   const year = date.getFullYear();
   const month = (date.getMonth() + 1).padStart(2, '0');
   const day = date.getDate().padStart(2, '0');

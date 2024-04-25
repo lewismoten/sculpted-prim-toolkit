@@ -968,7 +968,7 @@ function handle2DCanvasClick(event) {
   setSelectedIndexOfVertex(i);
 }
 function pixelIndexAsHexArray(index) {
-  return pixels[index].map(v => v.toString(16).padStart(2, '0'));
+  return Array.from(pixels[index]).map(v => v.toString(16).padStart(2, '0'));
 }
 function displayNewlySelectedVertex() {
   const i = getSelectedIndex();

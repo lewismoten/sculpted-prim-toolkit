@@ -859,15 +859,28 @@ function handle3dCanvasClick(event) {
   mouse.x = ( x / width ) * 2 - 1;
   mouse.y = - ( y / height ) * 2 + 1;
   raycaster.setFromCamera(mouse, camera);
+  let intersected = false;
   raycaster.intersectObject(modelObject).forEach(intersects => {
+    intersected = true;
     const { x, y } = intersects.uv;
     const index = getVertexByUvMapping(x, y);
     setSelectedIndexOfVertex(index);
   });
+  if(!intersected) {
+    raycaster.intersectObjects(verticesObject.children).forEach(intersects => {
+      if(intersected) return;
+      intersected = true;
+      const index = intersects.object.userData.index;
+      setSelectedIndexOfVertex(index);
+    });
+  }
 }
 function setSelectedIndexOfVertex(index) {
   document.getElementById('vertex-index-range').value = index;
   document.getElementById('vertex-index-value').value = index;
+  selectedVerticesObject.children.forEach(mesh => {
+    mesh.visible = mesh.userData.index === index;
+  });
   displayRowAndColumnAfterVertexIndexChanged();
 }
 

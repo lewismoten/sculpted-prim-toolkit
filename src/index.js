@@ -1485,9 +1485,9 @@ function imageOfModelDataLoaded() {
   drawObjects(nurbsControlVertices);
 }
 function drawObjects(nurbsControlVertices) {
+  drawModelMesh(nurbsControlVertices);
   buildPointCloud(nurbsControlVertices);
   buildWireframeObject(nurbsControlVertices);
-  drawModelMesh(nurbsControlVertices);
   drawNurbsSurfaceMesh(nurbsControlVertices);
   drawSelectionVertices();
   displayNewlySelectedVertex();
@@ -1599,6 +1599,11 @@ function getModelPixels(imageData, segments) {
 }
 function buildPointCloud(controlVertices) {
   removeObjectFromList(pointCloudObject);
+  // const geometry = new THREE.BufferGeometry();
+  // geometry.setAttribute('position', modelObject.geometry.getAttribute('position'));
+  // const material = new THREE.PointsMaterial({ size: 0.04, color: 0xFF0000 });
+  // pointCloudObject = new THREE.Points(geometry, material);
+  // pointCloudObject.name = 'Point Cloud';
   pointCloudObject = new THREE.Object3D();
   pointCloudObject.name = 'Vertices';
   controlVertices.forEach(({ x, y, z, color}, index) => {

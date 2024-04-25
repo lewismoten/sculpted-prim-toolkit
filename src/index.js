@@ -295,8 +295,11 @@ function changeSelectedVertexPosition(axis, value) {
   const { x, y } = indexOfVertexToImageXy(index);
   updateModelDataPixel(x, y, pixel.r, pixel.g, pixel.b);
 
-  // update selected vertex
+  // update vertices model
   controlVerticesObject.children[index].position.set(vertex.x, vertex.y, vertex.z);
+
+  // update selected vertices model
+  selectedVerticesObject.children[index].position.set(vertex.x, vertex.y, vertex.z);
 
   // update model
   drawSphericalControlMesh(nurbsControlVertices);

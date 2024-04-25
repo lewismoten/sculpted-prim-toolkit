@@ -2116,8 +2116,30 @@ function fileName(ext) {
   const name = imageSelector.value
     .replace(/\.[^.]+$/i, '.') // remove ext
     .replace(/^.*\//, ''); // remove path
-  const date = new Date().toLocaleString();
-  return sanitizeFileName(date + ' ' + name + ext);
+  let prefix = '';
+  const showTime = document.getElementById('export-time').checked;
+  const showDate = document.getElementById('export-date').checked;
+  if(showDate || showTime) {
+    prefix = dateAsLocal_YMD_HS(new Date(), showDate, showTime);
+    prefix += ' ';
+  }
+  return sanitizeFileName(prefix + name + ext);
+}
+function dateAsLocal_YMD_HS(date, showDate, showTime) {
+  const year = date.getFullYear();
+  const month = (date.getMonth() + 1).padStart(2, '0');
+  const day = date.getDate().padStart(2, '0');
+  const hours = date.getHours().padStart(2, '0');
+  const minutes = date.getMinutes().padStart(2, '0');
+  if(showDate) {
+    if(showTime) {
+      return `${year}-${month}-${day} ${hours}-${minutes}`;
+    }
+    return `${year}-${month}-${day}`;
+  } else if(showTime) {
+    return `${hours}-${minutes}`;
+  }
+  return '';
 }
 function sanitizeFileName(name) {
   return name.replace(/[\/\\:<>|"*?]/gi, '_');

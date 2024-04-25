@@ -2103,12 +2103,19 @@ function render() {
 }
 
 function exportImage() {
+  // redraw canvas without selected vertex
+  updateModelDataUnusedPixels();
+  applyVectorsToModelDataImage();
+
   const dataURL = canvas2D.toDataURL();
   const link = document.createElement('a');
   link.href = dataURL;
   const imageSelector = document.getElementById('image-selector');
   link.download = new Date().toLocaleString() + ' ' + imageSelector.value;
   link.click();
+
+  // display selected vertex
+  highlightVertex();
 }
 
 window.addEventListener('load', handleWindowLoad);

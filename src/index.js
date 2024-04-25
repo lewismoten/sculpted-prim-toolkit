@@ -6,7 +6,7 @@ import { TransformControls } from 'three/addons/controls/TransformControls.js';
 import Stats from 'three/examples/jsm/libs/stats.module';
 
 const defaultCameraAngle = 'front';
-const defaultModel = 'tatara7 cube.png';
+const defaultModel = 'plopp smile_sculpture.png';
 const defaultSkin = 'alignment-map-1024';
 
 const VERTICAL_OFFSET = 1; // Y starts at 1, not zero as in the technicial documentation

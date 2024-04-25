@@ -338,12 +338,30 @@ function moveModelToCenter() {
     Math.abs(center[axis]) < epsolon
   )) return;
 
-  modelMeshObject.position.copy(center.clone());
-  controlVerticesObject.position.copy(center.clone());
-  selectedVerticesObject.position.copy(center.clone());
-  nurbsMeshObject.position.copy(center.clone());
-  modelPosition.set(center.clone());
+  modelPosition.copy(center);
+  applyToModels((object) => {
+    object.position.copy(center);
+  });
   saveVerticesPositionsToModelData();
+  resetModelPositionRotationAndScale();
+}
+function resetModelPositionRotationAndScale() {
+  modelPosition.set(0, 0, 0);
+  modelScale.set(1, 1, 1);
+  modelRotation.set(0, 0, 0);
+  applyToModels((object) => {
+    object.position.copy(modelPosition);
+    object.scale.copy(modelScale);
+    object.rotation.set(modelRotation.x, modelRotation.y, modelRotation.z);
+  });
+}
+function applyToModels(callback) {
+  [
+    modelMeshObject,
+    controlVerticesObject,
+    selectedVerticesObject,
+    nurbsMeshObject
+  ].forEach(callback);
 }
 function scaleModelToBoundingVolume() {
   const maxLength = 1; // 1x1x1 cube

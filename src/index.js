@@ -123,6 +123,7 @@ function handleWindowLoad() {
   document.getElementsByName('unused-pixels').forEach(input => {
     input.addEventListener('change', updateVerticyPositions);
   });
+  document.getElementById('export-image').addEventListener('click', exportImage);
 
   document.getElementById('texture-rotation').addEventListener('input', rotateTexture);
   document.getElementById('texture-horizontal-offset').addEventListener('input', offsetTextureHorizontally);
@@ -2099,6 +2100,15 @@ function render() {
   };
 
   stats.update();
+}
+
+function exportImage() {
+  const dataURL = canvas2D.toDataURL();
+  const link = document.createElement('a');
+  link.href = dataURL;
+  const imageSelector = document.getElementById('image-selector');
+  link.download = new Date().toLocaleString() + ' ' + imageSelector.value;
+  link.click();
 }
 
 window.addEventListener('load', handleWindowLoad);

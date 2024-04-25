@@ -2102,16 +2102,20 @@ function render() {
   stats.update();
 }
 
+function fileName(ext) {
+  const imageSelector = document.getElementById('image-selector');
+  const name = imageSelector.value.replace(/\.[^.]+$/i, '');
+  return new Date().toLocaleString() + ' ' + name + ext;
+}
 function exportImage() {
   // redraw canvas without selected vertex
   updateModelDataUnusedPixels();
   applyVectorsToModelDataImage();
 
-  const dataURL = canvas2D.toDataURL();
+  const dataURL = canvas2D.toDataURL('image/png');
   const link = document.createElement('a');
   link.href = dataURL;
-  const imageSelector = document.getElementById('image-selector');
-  link.download = new Date().toLocaleString() + ' ' + imageSelector.value;
+  link.download = fileName('png');
   link.click();
 
   // display selected vertex

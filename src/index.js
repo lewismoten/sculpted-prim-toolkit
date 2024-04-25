@@ -925,13 +925,6 @@ function indexOfVertexToRowAndColumn(i) {
   }
   return { row, column };
 }
-function indexOfVertexToImageXy(i) {
-  const { row, column } = indexOfVertexToRowAndColumn(i);
-  return {
-    x: column * Math.pow(2, segments.horizontalDownsample + 1),
-    y: (row * Math.pow(2, segments.verticalDownsample + 1)) + VERTICAL_OFFSET
-  };
-}
 function getVertexByUvMapping(u, v) {
   let column = u * horizontalSegments + 1;
   let row = (1 - v) * verticalSegments + 1;
@@ -1536,6 +1529,13 @@ function surviveDownsampling(value, amount) {
     if(value % Math.pow(2, i+1) === i * 2) return false;
   }
   return true;
+}
+function indexOfVertexToImageXy(i) {
+  const { row, column } = indexOfVertexToRowAndColumn(i);
+  return {
+    x: column * Math.pow(2, segments.horizontalDownsample + 1),
+    y: (row * Math.pow(2, segments.verticalDownsample + 1)) + VERTICAL_OFFSET
+  };
 }
 function isImageXyVertex(x, y, width, height) {
   const {

@@ -637,6 +637,7 @@ function clampDimensions(source) {
 function saveVerticesPositionsToModelData() {
   if(!selectedVerticesObject) return;
   if(!controlVerticesObject) return;
+  let changed = false;
   selectedVerticesObject.children.forEach((object) => {
     const { index } = object.userData;
     // grab world coordinates of vertex
@@ -647,6 +648,19 @@ function saveVerticesPositionsToModelData() {
     }), {});
     const { r, g, b } = bytePositionAsPixelRgb(byteVertex.x, byteVertex.y, byteVertex.z);
     const snappedVertex = convertRgbToVertex(r, g, b);
+
+    if(r === pixels[index][PIXEL_RED_INDEX] &&
+      g === pixels[index][PIXEL_GREEN_INDEX] &&
+      b === pixels[index][PIXEL_BLUE_INDEX]) {
+      // Nothing changed
+      return;
+    }
+    changed = true;
+
+    // update model data
+    pixels[index][PIXEL_RED_INDEX] = r;
+    pixels[index][PIXEL_GREEN_INDEX] = g;
+    pixels[index][PIXEL_BLUE_INDEX] = b;
 
     if(index === getSelectedIndex()) {
       document.getElementById('selected-pos-vector').innerText = `<${
@@ -659,11 +673,6 @@ function saveVerticesPositionsToModelData() {
       document.getElementById('selected-pos-z-range').value = byteVertex.z;
       document.getElementById('selected-pos-z-value').value = byteVertex.z;
     }
-
-    // update model data
-    pixels[index][PIXEL_RED_INDEX] = r;
-    pixels[index][PIXEL_GREEN_INDEX] = g;
-    pixels[index][PIXEL_BLUE_INDEX] = b;
 
     // update vertex data
     nurbsControlVertices[index] = snappedVertex;
@@ -679,6 +688,10 @@ function saveVerticesPositionsToModelData() {
     selectedVerticesObject.children[index].position.set(snappedVertex.x, snappedVertex.y, snappedVertex.z);
 
   });
+  if(!changed) {
+    console.log('nothing changed');
+    return; // nothing to update
+  }
 
   // Reset scale/position/rotation
   modelPosition.set(0, 0, 0);

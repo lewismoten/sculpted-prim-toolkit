@@ -8,9 +8,9 @@ import { OBJExporter } from 'three/addons/exporters/OBJExporter.js';
 import Stats from 'three/examples/jsm/libs/stats.module';
 import { STLExporter } from 'three/addons/exporters/STLExporter.js';
 
-const defaultCameraAngle = 'front';
-const defaultModel = 'plopp smile_sculpture.png';
-const defaultSkin = 'alignment-map-1024';
+const defaultCameraAngle = 'iso';
+const defaultModel = 'UFO Sculpty 1.0.png';
+const defaultSkin = 'UFO.Blue.1.0.png';
 
 const VERTICAL_OFFSET = 1; // Y starts at 1, not zero as in the technicial documentation
 const MAX_VERTECES = 1024;
@@ -274,9 +274,15 @@ function handleWindowLoad() {
       const option = document.createElement('option');
       option.value = `images/textures/${file}`;
       option.innerText = name;
+      if(defaultSkin === file) {
+        option.selected = true;
+      }
       textureSelector.appendChild(option);
     });
-    textureSelector.value = defaultSkin;
+    if(textureSelector.value === '') {
+      // build-in textures
+      textureSelector.value = defaultSkin;
+    }
     handleTextureSelectorChange();
   });
 }

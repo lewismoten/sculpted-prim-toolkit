@@ -297,18 +297,14 @@ function changeSelectedVertexPosition(axis, value) {
   pixels[index][PIXEL_BLUE_INDEX] = pixel.b;
 
   // update vertex data
-  const vertex = convertRgbToVertex(pixel.r, pixel.g, pixel.b);
-  nurbsControlVertices[index] = vertex;
+  const snappedVertex = convertRgbToVertex(pixel.r, pixel.g, pixel.b);
+  nurbsControlVertices[index] = snappedVertex;
 
   // update model data image
   const { x, y } = indexOfVertexToImageXy(index);
   updateModelDataPixel(x, y, pixel.r, pixel.g, pixel.b);
 
-  // update vertices model
-  controlVerticesObject.children[index].position.set(vertex.x, vertex.y, vertex.z);
-
-  // update selected vertices model
-  selectedVerticesObject.children[index].position.set(vertex.x, vertex.y, vertex.z);
+  updateVertexModelsPositionAndColor(index, snappedVertex, pixel);
 
   // update model
   drawSphericalControlMesh(nurbsControlVertices);
@@ -706,12 +702,10 @@ function saveVerticesPositionsToModelData() {
     const { x, y } = indexOfVertexToImageXy(index);
     updateModelDataPixel(x, y, r, g, b);
 
-    // update vertices model
-    controlVerticesObject.children[index].position.set(snappedVertex.x, snappedVertex.y, snappedVertex.z);
-
+    // update vertex models
+    updateVertexModelsPositionAndColor(index, snappedVertex, {r, g, b});
+  
     // update selected vertices model with updated vertex xyz (byte translation)
-    selectedVerticesObject.children[index].position.set(snappedVertex.x, snappedVertex.y, snappedVertex.z);
-
   });
   if(!changed) {
     console.log('nothing changed');
@@ -742,6 +736,16 @@ function saveVerticesPositionsToModelData() {
   // update nurbs surface
   drawNurbsSurfaceMesh(nurbsControlVertices);
 }
+function updateVertexModelsPositionAndColor(index, {x,y,z}, {r, g, b}) {
+  [
+    controlVerticesObject.children[index],
+    selectedVerticesObject.children[index]
+  ].forEach(object => {
+    object.position.set(x, y, z);
+    object.material.color = new THREE.Color(rgbLong(r, g, b));
+    object.material.needsUpdate = true;
+  });
+};
 function getPositionAsBytes() {
   const x = parseInt(document.getElementById('selected-pos-x-value').value);
   const y = parseInt(document.getElementById('selected-pos-y-value').value);

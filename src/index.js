@@ -16,6 +16,7 @@ const PIXEL_GREEN_INDEX = 1;
 const PIXEL_BLUE_INDEX = 2;
 const PIXEL_ALPHA_INDEX = 3;
 const WORLD_POSITION = new THREE.Vector3();
+const MAX_MODEL_SIZE = 1;
 
 let image2D;
 let original2D;
@@ -310,6 +311,16 @@ function changeSelectedVertexPosition(axis, value) {
   drawNurbsSurfaceMesh(nurbsControlVertices);
 
   displayNewlySelectedVertex();
+}
+
+function getPositionToCenterModel() {
+  const worldPosition = new THREE.Vector3();
+  modelMeshObject.getWorldPosition(worldPosition);
+  const boundingBox = new THREE.Box3().setFromObject(modelMeshObject);
+  const boundingBoxSize = boundingBox.getSize(new THREE.Vector3());
+  boundingBox.getSize(boundingBoxSize);
+  const center = boundingBox.getCenter(new THREE.Vector3());
+  return center.multiplyScalar(-MAX_MODEL_SIZE);
 }
 function moveModelToCenter() {
   // TODO: calculate center based on bounding box

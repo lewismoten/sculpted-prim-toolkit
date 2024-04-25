@@ -44,13 +44,13 @@ let skin;
 let transformControls;
 
 let pixels;
-let modelMeshObject;
+let modelObject;
 let nurbsControlVertices;
 let cubeObject;
 let boundariesObject;
-let controlVerticesObject;
+let wireframeObject;
 let controlMeshObject;
-let nurbsMeshObject;
+let nurbsObject;
 let segments;
 let selectedVerticesObject;
 let objectList = [];
@@ -318,8 +318,8 @@ function changeSelectedVertexPosition(axis, value) {
 
 function getPositionToCenterModel() {
   const worldPosition = new THREE.Vector3();
-  modelMeshObject.getWorldPosition(worldPosition);
-  const boundingBox = new THREE.Box3().setFromObject(modelMeshObject);
+  modelObject.getWorldPosition(worldPosition);
+  const boundingBox = new THREE.Box3().setFromObject(modelObject);
   const boundingBoxSize = boundingBox.getSize(new THREE.Vector3());
   boundingBox.getSize(boundingBoxSize);
   const center = boundingBox.getCenter(new THREE.Vector3());
@@ -353,17 +353,17 @@ function resetModelPositionRotationAndScale() {
 }
 function applyToModels(callback) {
   [
-    modelMeshObject,
-    controlVerticesObject,
+    modelObject,
+    wireframeObject,
     selectedVerticesObject,
-    nurbsMeshObject
+    nurbsObject
   ].forEach(callback);
 }
 function scaleModelToBoundingVolume() {
   const maxLength = 1; // 1x1x1 cube
 
   updateVerticyPositions();
-  let boundingBox = new THREE.Box3().setFromObject(modelMeshObject);
+  let boundingBox = new THREE.Box3().setFromObject(modelObject);
   let size = boundingBox.getSize(new THREE.Vector3());
 
   "xyz".split('')
@@ -371,7 +371,7 @@ function scaleModelToBoundingVolume() {
       const length = size[axis];
       if(length === 1) return;
       const scale = maxLength / length;
-      modelMeshObject.scale[axis] = scale * modelScale[axis];
+      modelObject.scale[axis] = scale * modelScale[axis];
       modelScale[axis] = scale;
     })
   saveVerticesPositionsToModelData();
@@ -587,7 +587,7 @@ function setupTransformControls(camera) {
   transformControls.setSize(transformControls.size * 3);
   transformControls.addEventListener('change', (e) => {
     if(!transformControls.enabled) return;
-    if(modelMeshObject) {
+    if(modelObject) {
       clampDimensions(transformControls.object);
     }
     render();
@@ -599,12 +599,12 @@ function setupTransformControls(camera) {
       clampDimensions(transformControls.object);
     }
   });
-  attachTransformControls(modelMeshObject);
+  attachTransformControls(modelObject);
   window.addEventListener('keydown', handleTranslationKeyDown);
   window.addEventListener('keyup', handleTranslationKeyUp);
   scene.add(transformControls);
   if(object) attachTransformControls(object);
-  else attachTransformControls(modelMeshObject);
+  else attachTransformControls(modelObject);
   synchronizeTransformControlsMode();
 }
 function clampDimensions(source) {
@@ -657,7 +657,7 @@ function clampDimensions(source) {
 }
 function saveVerticesPositionsToModelData() {
   if(!selectedVerticesObject) return;
-  if(!controlVerticesObject) return;
+  if(!wireframeObject) return;
   let changed = false;
   selectedVerticesObject.children.forEach((object) => {
     const { index } = object.userData;
@@ -738,7 +738,7 @@ function saveVerticesPositionsToModelData() {
 }
 function updateVertexModelsPositionAndColor(index, {x,y,z}, {r, g, b}) {
   [
-    controlVerticesObject.children[index],
+    wireframeObject.children[index],
     selectedVerticesObject.children[index]
   ].forEach(object => {
     object.position.set(x, y, z);
@@ -841,7 +841,7 @@ function handle3dCanvasClick(event) {
   mouse.x = ( x / width ) * 2 - 1;
   mouse.y = - ( y / height ) * 2 + 1;
   raycaster.setFromCamera(mouse, camera);
-  raycaster.intersectObject(modelMeshObject).forEach(intersects => {
+  raycaster.intersectObject(modelObject).forEach(intersects => {
     const { x, y } = intersects.uv;
     const index = getVertexByUvMapping(x, y);
     setSelectedIndexOfVertex(index);
@@ -1168,7 +1168,7 @@ function handleTextureSelectorChange() {
   const textureUrl = textureSelector.value;
   skin?.dispose();
   if(textureUrl === '') {
-    removeTexture(nurbsMeshObject, modelMeshObject);
+    removeTexture(nurbsObject, modelObject);
   } else if(alignmentMapPattern.test(textureUrl)) {
     const size = parseInt(textureUrl.match(alignmentMapPattern)[1]);
     loadAlignmentMap(size);
@@ -1272,7 +1272,7 @@ function loadAlignmentMap(size) {
   image.src = dataURL;
   image.onload = () => {
     drawTexturePreview(image);
-    applyTextureToObjects(image, nurbsMeshObject, modelMeshObject);
+    applyTextureToObjects(image, nurbsObject, modelObject);
   }
 }
 function getCellText(x, y, size) {
@@ -1296,7 +1296,7 @@ function loadTexture(textureUrl) {
   textureImage.src = textureUrl;
   textureImage.onload = () => {
     drawTexturePreview(textureImage);
-    applyTextureToObjects(textureImage, nurbsMeshObject, modelMeshObject);
+    applyTextureToObjects(textureImage, nurbsObject, modelObject);
   }
 }
 function drawTexturePreview(image) {
@@ -1321,7 +1321,7 @@ function repeatTextureHorizontally() {
 }
 function handleTextureOpacityChange() {
   const opacity = parseFloat(document.getElementById('texture-opacity').value);
-  [nurbsMeshObject, modelMeshObject].forEach(object => {
+  [nurbsObject, modelObject].forEach(object => {
     if(object) {
       object.material.transparent = opacity < 1;
       object.material.opacity = opacity;
@@ -1332,7 +1332,7 @@ function handleTextureOpacityChange() {
 }
 function handleTextureEmissiveChange() {
   const isEmissive = document.getElementById('show-texture-emissive').checked;
-  [nurbsMeshObject, modelMeshObject].forEach(object => {
+  [nurbsObject, modelObject].forEach(object => {
     if(object) {
       object.material.emissive = new THREE.Color(isEmissive ? 0xffffff : 0x000000);
     }
@@ -1551,22 +1551,22 @@ function getModelPixels(imageData, segments) {
   return controlVertices;
 }
 function drawControlVertices(controlVertices) {
-  removeObjectFromList(controlVerticesObject);
-  controlVerticesObject = new THREE.Object3D();
-  controlVerticesObject.name = 'Wirerame';
+  removeObjectFromList(wireframeObject);
+  wireframeObject = new THREE.Object3D();
+  wireframeObject.name = 'Wirerame';
   controlVertices.forEach(({ x, y, z, color}, index) => {
     const geometry = new THREE.BoxGeometry( 0.01, 0.01, 0.01 );
     const material = new THREE.MeshBasicMaterial( { color } );
     const mesh = new THREE.Mesh( geometry, material );
     mesh.position.set(x, y, z);
     mesh.userData.index = index;
-    controlVerticesObject.add(mesh);
+    wireframeObject.add(mesh);
   });
-  setTranslationToObject(controlVerticesObject);
-  scene.add( controlVerticesObject );
+  setTranslationToObject(wireframeObject);
+  scene.add( wireframeObject );
 
-  controlVerticesObject.visible = document.getElementById('show-control-vertices').checked;
-  addObjectToList(controlVerticesObject);
+  wireframeObject.visible = document.getElementById('show-control-vertices').checked;
+  addObjectToList(wireframeObject);
 }
 function drawSelectionVertices() {  
   const vertices = pixels.map(([r, g, b]) => convertRgbToVertex(r, g, b));
@@ -1624,7 +1624,7 @@ if(column < 0) {
 }
 
 function drawNurbsSurfaceMesh(controlVertices) {
-  removeObjectFromList(nurbsMeshObject);
+  removeObjectFromList(nurbsObject);
   let degrees = parseInt(document.getElementById('nurbs-degrees').value);
 
   const degreeU = degrees;
@@ -1674,12 +1674,12 @@ function drawNurbsSurfaceMesh(controlVertices) {
     material.map = skin;
     material.emissiveMap = skin;
   }
-  nurbsMeshObject = new THREE.Mesh(geometry, material);
-  nurbsMeshObject.name = 'NURBS Surface';
-  setTranslationToObject(nurbsMeshObject);
-  scene.add(nurbsMeshObject);
-  nurbsMeshObject.visible = document.getElementById('show-nurbs-mesh').checked;
-  addObjectToList(nurbsMeshObject);
+  nurbsObject = new THREE.Mesh(geometry, material);
+  nurbsObject.name = 'NURBS Surface';
+  setTranslationToObject(nurbsObject);
+  scene.add(nurbsObject);
+  nurbsObject.visible = document.getElementById('show-nurbs-mesh').checked;
+  addObjectToList(nurbsObject);
 }
 function makeClosedUniformKnots(spans, degreeOfRepeat) {
   const count = spans + degreeOfRepeat + 1;
@@ -1703,7 +1703,7 @@ function drawSphericalControlMesh(controlVertices) {
   addObjectToList(controlMeshObject);
 }
 function drawModelMesh(controlVertices) {
-  removeObjectFromList(modelMeshObject);
+  removeObjectFromList(modelObject);
   function getPoint(u, v, target) {
     
     let column = Math.floor(u * (horizontalSegments + 1));
@@ -1731,14 +1731,14 @@ function drawModelMesh(controlVertices) {
     material.map = skin;
     material.emissiveMap = skin;
   }
-  modelMeshObject = new THREE.Mesh(geometry, material);
-  modelMeshObject.name = 'Model';
+  modelObject = new THREE.Mesh(geometry, material);
+  modelObject.name = 'Model';
 
-  setTranslationToObject(modelMeshObject);
-  scene.add(modelMeshObject);
-  modelMeshObject.visible = document.getElementById('show-model-mesh').checked;
-  attachTransformControls(modelMeshObject);
-  addObjectToList(modelMeshObject);
+  setTranslationToObject(modelObject);
+  scene.add(modelObject);
+  modelObject.visible = document.getElementById('show-model-mesh').checked;
+  attachTransformControls(modelObject);
+  addObjectToList(modelObject);
 }
 function createSphericalControlGeometry(controlVertices, horizontalSegments, verticalSegments) {
   const controlMeshGeometry = new THREE.BufferGeometry();
@@ -1997,16 +1997,16 @@ function applyRotationToObects(rotation) {
     });
 }
 function handleShowControlVerticesChange() {
-  controlVerticesObject.visible = document.getElementById('show-control-vertices').checked;
+  wireframeObject.visible = document.getElementById('show-control-vertices').checked;
 }
 function handleShowControlMeshChange() {
   controlMeshObject.visible = document.getElementById('show-control-mesh').checked;
 }
 function handleShowModelMeshChange() {
-  modelMeshObject.visible = document.getElementById('show-model-mesh').checked;
+  modelObject.visible = document.getElementById('show-model-mesh').checked;
 }
 function handleShowNurbsMeshChange() {
-  nurbsMeshObject.visible = document.getElementById('show-nurbs-mesh').checked;
+  nurbsObject.visible = document.getElementById('show-nurbs-mesh').checked;
 }
 function handleShowCubeChange() {
   cubeObject.visible = document.getElementById('show-cube').checked;
@@ -2026,8 +2026,8 @@ const rotateWrap = (value, offset) => {
 }
 
 const rotate = () => {
-  if(!modelMeshObject) return;
-  const rotation = modelMeshObject.rotation.clone();
+  if(!modelObject) return;
+  const rotation = modelObject.rotation.clone();
   let changed = false;
   "xyz".split('').forEach(axis => {
     if(document.getElementById(`spin-${axis}`).checked) {

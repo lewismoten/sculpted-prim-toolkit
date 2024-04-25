@@ -1407,6 +1407,9 @@ function drawObjects(nurbsControlVertices) {
 function mapByteToControlVectorValue(byteValue) {
   return (byteValue / 255) - 0.5;
 }
+function vectorSnapSize() {
+  return mapByteToControlVectorValue(1) - mapByteToControlVectorValue(0);
+}
 function clamp(value, min, max) {
   return Math.min(Math.max(value, min), max);
 }

@@ -312,10 +312,11 @@ function changeSelectedVertexPosition(axis, value) {
   displayNewlySelectedVertex();
 }
 function moveModelToCenter() {
-  modelMeshObject.position.set(0, 0, 0);
-  modelPosition.set(0, 0, 0);
-  synchronizeInputsAndModels();
-  updateVerticyPositions();
+  // TODO: calculate center based on bounding box
+  // if(modelPosition.equals(WORLD_POSITION)) return;
+  modelMeshObject.position.set(WORLD_POSITION.clone());
+  modelPosition.set(WORLD_POSITION.clone());
+  saveVerticesPositionsToModelData();
 }
 function scaleModelToBoundingVolume() {
   const maxLength = 1; // 1x1x1 cube
@@ -332,7 +333,7 @@ function scaleModelToBoundingVolume() {
       modelMeshObject.scale[axis] = scale * modelScale[axis];
       modelScale[axis] = scale;
     })
-  synchronizeInputsAndModels();
+  saveVerticesPositionsToModelData();
   updateVerticyPositions();
 };
 function takeSnapshot() {
@@ -458,7 +459,7 @@ function updateVerticyPositions() {
   modelScale.set(1, 1, 1);
   modelRotation.set(0, 0, 0);
   modelPosition.set(0, 0, 0);
-  synchronizeInputsAndModels();
+  saveVerticesPositionsToModelData();
 }
 function mapClamp(min, max) {
   return (value) => Math.min(max, Math.max(min, value));
@@ -576,8 +577,11 @@ function clampDimensions(source) {
     .map(axis => boundingBox.max[axis] - boundingBox.min[axis])
     .reduce((max, v)=> Math.max(max, v), 0);
 
+  let changed = false;
+
   // Clamp Scale
   if(maxXyz > maxLength) {
+    changed = true;
     const scaleDown = maxLength / maxXyz;
     source.scale.set(scaleDown, scaleDown, scaleDown);
     boundingBox = new THREE.Box3().setFromObject(source);
@@ -586,16 +590,81 @@ function clampDimensions(source) {
   // Clamp position inside cube
   function clampAxis(axis) {
     const half = size[axis] / 2;
-    source.position[axis] =THREE.MathUtils.clamp(source.position[axis], -0.5 + half, 0.5 - half);
+    const value = THREE.MathUtils.clamp(source.position[axis], -0.5 + half, 0.5 - half);
+    if(value !== source.position[axis]) {
+      changed = true;
+      source.position[axis] = value;
+    }
   }
   "xyz".split('').forEach(clampAxis);
 
-  modelPosition.copy(source.position);
-  modelScale.copy(source.scale);
-  modelRotation.copy(source.rotation);
-  synchronizeInputsAndModels(source);
+  if(!modelPosition.equals(source.position)) {
+    changed = true;
+    modelPosition.copy(source.position);
+  }
+  if(!modelScale.equals(source.scale)) {
+    changed = true;
+    modelScale.copy(source.scale);
+  }
+  if(!modelRotation.equals(source.rotation)) {
+    changed = true;
+    modelRotation.copy(source.rotation);
+  }
+  if(changed) {
+    saveVerticesPositionsToModelData(source);
+  }
 }
-function synchronizeInputsAndModels() {  
+function saveVerticesPositionsToModelData() {
+  if(!selectedVerticesObject) return;
+  if(!controlVerticesObject) return;
+  selectedVerticesObject.children.forEach((object) => {
+    const { index } = object.userData;
+    // grab world coordinates of vertex
+    const vertex = object.getWorldPosition(WORLD_POSITION);
+    // translate to byte values
+    const byteVertex = "xyz".split('').reduce((v, axis) => ({ ... v, 
+      [axis]: mapControlVectorValueAsByte(vertex[axis])
+    }), {});
+    const { r, g, b } = bytePositionAsPixelRgb(byteVertex.x, byteVertex.y, byteVertex.z);
+    const snappedVertex = convertRgbToVertex(r, g, b);
+
+    if(index === getSelectedIndex()) {
+      document.getElementById('selected-pos-vector').innerText = `<${
+        [snappedVertex.x, snappedVertex.y, snappedVertex.z].map(v => v.toFixed(3)).join(', ')
+      }>`;
+      document.getElementById('selected-pos-x-range').value = byteVertex.x;
+      document.getElementById('selected-pos-x-value').value = byteVertex.x;
+      document.getElementById('selected-pos-y-range').value = byteVertex.y;
+      document.getElementById('selected-pos-y-value').value = byteVertex.y;
+      document.getElementById('selected-pos-z-range').value = byteVertex.z;
+      document.getElementById('selected-pos-z-value').value = byteVertex.z;
+    }
+
+    // update model data
+    pixels[index][PIXEL_RED_INDEX] = r;
+    pixels[index][PIXEL_GREEN_INDEX] = g;
+    pixels[index][PIXEL_BLUE_INDEX] = b;
+
+    // update vertex data
+    nurbsControlVertices[index] = snappedVertex;
+
+    // update model data image
+    const { x, y } = indexOfVertexToImageXy(index);
+    updateModelDataPixel(x, y, r, g, b);
+
+    // update vertices model
+    controlVerticesObject.children[index].position.set(snappedVertex.x, snappedVertex.y, snappedVertex.z);
+
+    // update selected vertices model with updated vertex xyz (byte translation)
+    selectedVerticesObject.children[index].position.set(snappedVertex.x, snappedVertex.y, snappedVertex.z);
+
+  });
+
+  // Reset scale/position/rotation
+  modelPosition.set(0, 0, 0);
+  modelScale.set(1, 1, 1);
+  modelRotation.set(0, 0, 0);
+
   "xyz".split('').forEach(axis => {
     // Scale
     const scale = modelScale[axis];
@@ -608,9 +677,12 @@ function synchronizeInputsAndModels() {
     document.getElementById(`rotation-${axis}-degrees`).value = degrees.toFixed(2);
     document.getElementById(`rotation-${axis}`).value = rotation.toFixed(2);
   });
-  applyTransformationToObects();
-  displayScaleValues();
-  displayRotationValues();
+  // update model
+  drawSphericalControlMesh(nurbsControlVertices);
+  // update wireframe
+  drawModelMesh(nurbsControlVertices);
+  // update nurbs surface
+  drawNurbsSurfaceMesh(nurbsControlVertices);
 }
 function getPositionAsBytes() {
   const x = parseInt(document.getElementById('selected-pos-x-value').value);
@@ -1315,8 +1387,12 @@ function drawObjects(nurbsControlVertices) {
 function mapByteToControlVectorValue(byteValue) {
   return (byteValue / 255) - 0.5;
 }
+function clamp(value, min, max) {
+  return Math.min(Math.max(value, min), max);
+}
 function mapControlVectorValueAsByte(position) {
-  return Math.round((position + 0.5) * 255);
+  const value = Math.round((position + 0.5) * 255);
+  return clamp(value, 0, 255);
 }
 function rgbLong(r, g, b) {
   return (r << 16) | (g << 8) | b;
@@ -1414,15 +1490,12 @@ function drawControlVertices(controlVertices) {
   removeObjectFromList(controlVerticesObject);
   controlVerticesObject = new THREE.Object3D();
   controlVerticesObject.name = 'Wirerame';
-  const exists = [];
-  controlVertices.forEach(({ x, y, z, color }) => {
-    const tag = `${x},${y},${z}`;
-    if(exists.includes(tag)) return;
-    exists.push(tag);
+  controlVertices.forEach(({ x, y, z, color}, index) => {
     const geometry = new THREE.BoxGeometry( 0.01, 0.01, 0.01 );
     const material = new THREE.MeshBasicMaterial( { color } );
     const mesh = new THREE.Mesh( geometry, material );
     mesh.position.set(x, y, z);
+    mesh.userData.index = index;
     controlVerticesObject.add(mesh);
   });
   setTranslationToObject(controlVerticesObject);
@@ -1927,7 +2000,7 @@ function render() {
   renderer.render( scene, camera );
   const unusedPixels = document.querySelector('input[name="unused-pixels"]:checked').value;
   if(unusedPixels === 'camera') {
-    updateVerticyPositions();
+    updateModelDataUnusedPixels();
   };
 
   stats.update();

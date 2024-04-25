@@ -285,6 +285,13 @@ function changeSelectedVertexPosition(axis, value) {
   // update model data
   const index = getSelectedIndex();
   const pixel = bytePositionAsPixelRgb(byteVector.x, byteVector.y, byteVector.z);
+  if(pixels[index][PIXEL_RED_INDEX] === pixel.r &&
+    pixels[index][PIXEL_GREEN_INDEX] === pixel.g &&
+    pixels[index][PIXEL_BLUE_INDEX] === pixel.b) {
+    // Nothing changed
+    console.log('Selected data not changed');
+    return;
+  };
   pixels[index][PIXEL_RED_INDEX] = pixel.r;
   pixels[index][PIXEL_GREEN_INDEX] = pixel.g;
   pixels[index][PIXEL_BLUE_INDEX] = pixel.b;

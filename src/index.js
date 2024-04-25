@@ -3,6 +3,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import { NURBSSurface } from 'three/examples/jsm/curves/NURBSSurface.js';
 import { ParametricGeometry } from 'three/addons/geometries/ParametricGeometry.js';
 import { TransformControls } from 'three/addons/controls/TransformControls.js';
+import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
 import Stats from 'three/examples/jsm/libs/stats.module';
 
 const defaultCameraAngle = 'front';
@@ -124,6 +125,7 @@ function handleWindowLoad() {
     input.addEventListener('change', updateVerticyPositions);
   });
   document.getElementById('export-image').addEventListener('click', exportImage);
+  document.getElementById('export-gltf').addEventListener('click', exportGltf);
 
   document.getElementById('texture-rotation').addEventListener('input', rotateTexture);
   document.getElementById('texture-horizontal-offset').addEventListener('input', offsetTextureHorizontally);
@@ -2104,7 +2106,7 @@ function render() {
 
 function fileName(ext) {
   const imageSelector = document.getElementById('image-selector');
-  const name = imageSelector.value.replace(/\.[^.]+$/i, '');
+  const name = imageSelector.value.replace(/\.[^.]+$/i, '.');
   return new Date().toLocaleString() + ' ' + name + ext;
 }
 function exportImage() {
@@ -2120,6 +2122,24 @@ function exportImage() {
 
   // display selected vertex
   highlightVertex();
+}
+function includeTextures() {
+  document.getElementById('export-texture').checked
+}
+function exportGltf() {
+  const gltfExporter = new GLTFExporter();
+  const options = {
+    includeTextures: includeTextures()
+  }
+  gltfExporter.parse(modelObject, function (gltf) {
+    const data = JSON.stringify(gltf, null, 2);
+    const blob = new Blob([data], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = fileName('gltf');
+    link.click();
+  }, options);
 }
 
 window.addEventListener('load', handleWindowLoad);

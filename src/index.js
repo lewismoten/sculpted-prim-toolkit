@@ -548,7 +548,7 @@ const SHIFT_KEY = 'Shift';
 function handleTranslationKeyDown(event) {
   if(!transformControls) return;
   if(event.key === SHIFT_KEY) {
-    const movement = 0.1; // mapByteToControlVectorValue(255) - mapByteToControlVectorValue(254);
+    const movement = 0.1; // vectorSnapSize();
     transformControls.setTranslationSnap(movement);
     transformControls.setRotationSnap(THREE.MathUtils.degToRad(15));
     transformControls.setScaleSnap(movement);

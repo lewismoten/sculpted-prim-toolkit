@@ -2107,7 +2107,9 @@ function render() {
 
 function fileName(ext) {
   const imageSelector = document.getElementById('image-selector');
-  const name = imageSelector.value.replace(/\.[^.]+$/i, '.');
+  const name = imageSelector.value
+    .replace(/\.[^.]+$/i, '.') // remove ext
+    .replace(/^.*\//, ''); // remove path
   return new Date().toLocaleString() + ' ' + name + ext;
 }
 function exportImage() {

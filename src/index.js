@@ -1485,7 +1485,7 @@ function imageOfModelDataLoaded() {
   drawObjects(nurbsControlVertices);
 }
 function drawObjects(nurbsControlVertices) {
-  drawControlVertices(nurbsControlVertices);
+  buildPointCloud(nurbsControlVertices);
   buildWireframeObject(nurbsControlVertices);
   drawModelMesh(nurbsControlVertices);
   drawNurbsSurfaceMesh(nurbsControlVertices);
@@ -1597,7 +1597,7 @@ function getModelPixels(imageData, segments) {
   }
   return controlVertices;
 }
-function drawControlVertices(controlVertices) {
+function buildPointCloud(controlVertices) {
   removeObjectFromList(pointCloudObject);
   pointCloudObject = new THREE.Object3D();
   pointCloudObject.name = 'Vertices';

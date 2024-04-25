@@ -125,7 +125,8 @@ function handleWindowLoad() {
     input.addEventListener('change', updateVerticyPositions);
   });
   document.getElementById('export-image').addEventListener('click', exportImage);
-  document.getElementById('export-gltf').addEventListener('click', exportGltf);
+  document.getElementById('export-gltf').addEventListener('click', exportGltf.bind(undefined, false));
+  document.getElementById('export-glb').addEventListener('click', exportGltf.bind(undefined, true));
 
   document.getElementById('texture-rotation').addEventListener('input', rotateTexture);
   document.getElementById('texture-horizontal-offset').addEventListener('input', offsetTextureHorizontally);
@@ -2126,20 +2127,31 @@ function exportImage() {
 function includeTextures() {
   document.getElementById('export-texture').checked
 }
-function exportGltf() {
+function exportGltf(binary) {
   const gltfExporter = new GLTFExporter();
   const options = {
-    includeTextures: includeTextures()
+    includeTextures: includeTextures(),
+    binary
   }
-  gltfExporter.parse(modelObject, function (gltf) {
-    const data = JSON.stringify(gltf, null, 2);
-    const blob = new Blob([data], { type: 'text/plain' });
+  function success(result) {
+    let blob;
+    if(result instanceof ArrayBuffer) {
+      blob = new Blob([result], { type: 'model/gltf-binary' });
+    }
+    else {
+      const data = JSON.stringify(result, null, 2);
+      blob = new Blob([data], { type: 'text/plain' });
+    }
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = fileName('gltf');
+    link.download = fileName(binary ? 'glb' : 'gltf');
     link.click();
-  }, options);
+  }
+  function failed(error) {
+    console.error('Failed to export GLTF', error);
+  }
+  gltfExporter.parse(modelObject, success, failed, options);
 }
 
 window.addEventListener('load', handleWindowLoad);

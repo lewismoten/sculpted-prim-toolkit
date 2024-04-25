@@ -248,7 +248,7 @@ function handleWindowLoad() {
 
   document.getElementById('ambientIntensity').addEventListener('input', handleAmbientIntensityChange);
   document.getElementById('show-model-mesh').addEventListener('change', handleShowModelMeshChange);
-  document.getElementById('show-control-vertices').addEventListener('change', handleShowControlVerticesChange);
+  document.getElementById('show-point-cloud').addEventListener('change', handleShowControlVerticesChange);
   document.getElementById('show-control-mesh').addEventListener('change', handleShowControlMeshChange);
   document.getElementById('show-nurbs-mesh').addEventListener('change', handleShowNurbsMeshChange);
   document.getElementById('show-cube').addEventListener('change', handleShowCubeChange);
@@ -1612,7 +1612,7 @@ function drawControlVertices(controlVertices) {
   setTranslationToObject(verticesObject);
   scene.add( verticesObject );
 
-  verticesObject.visible = document.getElementById('show-control-vertices').checked;
+  verticesObject.visible = document.getElementById('show-point-cloud').checked;
   addObjectToList(verticesObject);
 }
 function drawSelectionVertices() {  
@@ -2044,7 +2044,7 @@ function applyRotationToObects(rotation) {
     });
 }
 function handleShowControlVerticesChange() {
-  verticesObject.visible = document.getElementById('show-control-vertices').checked;
+  verticesObject.visible = document.getElementById('show-point-cloud').checked;
 }
 function handleShowControlMeshChange() {
   wireframeObject.visible = document.getElementById('show-control-mesh').checked;

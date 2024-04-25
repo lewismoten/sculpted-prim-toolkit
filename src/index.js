@@ -923,17 +923,16 @@ function handle2DCanvasClick(event) {
   );
   setSelectedIndexOfVertex(i);
 }
+function pixelIndexAsHexArray(index) {
+  return pixels[index].map(v => v.toString(16).padStart(2, '0'));
+}
 function displayNewlySelectedVertex() {
   const i = getSelectedIndex();
-  const [r, g, b] = pixels[i];
-  const data = r.toString(16).padStart(2, '0')
-    + g.toString(16).padStart(2, '0')
-    + b.toString(16).padStart(2, '0');
+  const hexArray = pixelIndexAsHexArray(i);
   "rgb".split('').forEach((channel, idx) => {
-    const hex = pixels[i][idx].toString(16).padStart(2, '0');
-    document.getElementById(`model-data-${channel}`).innerText = hex;
+    document.getElementById(`model-data-${channel}`).innerText = hexArray[idx];
   });
-  document.getElementById('vertex-color').style.backgroundColor = '#' + data;
+  document.getElementById('vertex-color').style.backgroundColor = '#' + hexArray.join('');
 
   displayVertexPosition()
   drawModelCanvas();

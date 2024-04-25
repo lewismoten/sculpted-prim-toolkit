@@ -327,11 +327,11 @@ function getPositionToCenterModel() {
 }
 function moveModelToCenter() {
   const center = getPositionToCenterModel();
-  const epsolon = vectorSnapSize() / 2;
+  const epsilon = vectorSnapSize() / 2;
 
   // is already centered?
   if("xyz".split('').every(axis => 
-    Math.abs(center[axis]) < epsolon
+    Math.abs(center[axis]) < epsilon
   )) return;
 
   modelPosition.copy(center);
@@ -364,8 +364,8 @@ function scaleModelToBoundingVolume() {
   // need to 'rebake' verticies to get the bounding box to scale in the correct directions
   saveVerticesPositionsToModelData();
   resetModelPositionRotationAndScale();
-  const epsolon = vectorSnapSize() / 2;
-  const maxLength = MAX_MODEL_SIZE - epsolon;
+  const epsilon = vectorSnapSize() / 2;
+  const maxLength = MAX_MODEL_SIZE - epsilon;
 
   let boundingBox = new THREE.Box3().setFromObject(modelObject);
   let size = boundingBox.getSize(new THREE.Vector3());

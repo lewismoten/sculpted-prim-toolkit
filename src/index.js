@@ -2127,7 +2127,7 @@ function exportImage() {
   highlightVertex();
 }
 function includeTextures() {
-  document.getElementById('export-texture').checked
+  return document.getElementById('export-texture').checked
 }
 function exportGltf(binary) {
   const gltfExporter = new GLTFExporter();

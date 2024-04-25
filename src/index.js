@@ -22,6 +22,7 @@ const WORLD_POSITION = new THREE.Vector3();
 const MAX_MODEL_SIZE = 1;
 
 let image2D;
+let textureImage;
 let original2D;
 let snapshot3D;
 let canvas2D;
@@ -449,6 +450,7 @@ function updateModelDataPixel(x, y, r, g, b) {
   }
 }
 function updateModelDataUnusedPixels() {
+  if(image2D === undefined) return;
   const width = image2D.width;
   const height = image2D.height;
   const tempCanvas = document.createElement('canvas');
@@ -466,6 +468,9 @@ function updateModelDataUnusedPixels() {
       break;
     case 'original':
       ctx.drawImage(original2D, 0, 0); 
+      break;
+    case 'texture':
+      ctx.drawImage(textureImage, 0, 0, textureImage.width, textureImage.height, 0, 0, width, height);
       break;
     case 'snapshot':
       if(snapshot3D)
@@ -1307,11 +1312,11 @@ function loadAlignmentMap(size) {
 
 
   const dataURL = canvas.toDataURL();
-  const image = new Image();
-  image.src = dataURL;
-  image.onload = () => {
-    drawTexturePreview(image);
-    applyTextureToObjects(image, nurbsObject, modelObject);
+  textureImage = new Image();
+  textureImage.src = dataURL;
+  textureImage.onload = () => {
+    drawTexturePreview();
+    applyTextureToObjects();
   }
 }
 function getCellText(x, y, size) {
@@ -1331,20 +1336,21 @@ function getCellText(x, y, size) {
   return letters + row.toString();
 }
 function loadTexture(textureUrl) {
-  const textureImage = new Image();
+  textureImage = new Image();
   textureImage.src = textureUrl;
   textureImage.onload = () => {
-    drawTexturePreview(textureImage);
-    applyTextureToObjects(textureImage, nurbsObject, modelObject);
+    drawTexturePreview();
+    applyTextureToObjects();
   }
 }
-function drawTexturePreview(image) {
+function drawTexturePreview() {
+  updateModelDataUnusedPixels();
   const texturePreview = document.getElementById('texture-preview');
-  texturePreview.width = image.width;
-  texturePreview.height = image.height;
+  texturePreview.width = textureImage.width;
+  texturePreview.height = textureImage.height;
   const ctx = texturePreview.getContext('2d');
   ctx.clearRect(0, 0, texturePreview.width, texturePreview.height);
-  ctx.drawImage(image, 0, 0, texturePreview.width, texturePreview.height);
+  ctx.drawImage(textureImage, 0, 0, texturePreview.width, texturePreview.height);
 }
 function rotateTexture() {
   const rotation = parseFloat(document.getElementById('texture-rotation').value);
@@ -1382,10 +1388,10 @@ function handleTextureEmissiveChange() {
 function repeatTextureVertically() {
   skin.repeat.y = parseFloat(document.getElementById('texture-vertical-repeat').value);
 }
-function applyTextureToObjects(image) {
+function applyTextureToObjects() {
   const isEmissive = document.getElementById('show-texture-emissive').checked;
   const opacity = parseFloat(document.getElementById('texture-opacity').value);
-  skin = new THREE.Texture(image);
+  skin = new THREE.Texture(textureImage);
   skin.wrapS = THREE.RepeatWrapping;
   skin.wrapT = THREE.RepeatWrapping;
   skin.rotation = Math.PI / -2;
@@ -1393,7 +1399,7 @@ function applyTextureToObjects(image) {
   skin.minFilter = THREE.LinearMipmapLinearFilter;
   skin.maxFilter = THREE.LinearMipmapLinearFilter;
   skin.needsUpdate = true;
-  Array.from(arguments).slice(1).forEach(object => {
+  [nurbsObject, modelObject].forEach(object => {
     if(object) {
       object.material.map = skin;
       object.material.emissive = new THREE.Color(isEmissive ? 0xffffff : 0x000000);

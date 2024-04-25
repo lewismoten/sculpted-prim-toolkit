@@ -12,7 +12,14 @@ const defaultCameraAngle = 'iso';
 const defaultModel = 'UFO Sculpty 1.0.png';
 const defaultSkin = 'UFO.Blue.1.0.png';
 
-const VERTICAL_OFFSET = 1; // Y starts at 1, not zero as in the technicial documentation
+// for 64x64 0x1 good
+// for 128x128 0x3 good
+// for 256x256 0x7 ???
+// for 512x512 0xf ???
+// for 1024x1024 0x1f ???
+
+const HORIZONTAL_OFFSET = 0;
+const VERTICAL_OFFSET = 3; // Y starts at 1, not zero as in the technicial documentation
 const MAX_VERTECES = 1024;
 const PIXEL_RED_INDEX = 0;
 const PIXEL_GREEN_INDEX = 1;
@@ -1533,7 +1540,7 @@ function surviveDownsampling(value, amount) {
 function indexOfVertexToImageXy(i) {
   const { row, column } = indexOfVertexToRowAndColumn(i);
   return {
-    x: column * Math.pow(2, segments.horizontalDownsample + 1),
+    x: column * Math.pow(2, segments.horizontalDownsample + 1) + HORIZONTAL_OFFSET,
     y: (row * Math.pow(2, segments.verticalDownsample + 1)) + VERTICAL_OFFSET
   };
 }
@@ -1546,6 +1553,7 @@ function isImageXyVertex(x, y, width, height) {
   if(y === 0 || y === height - 1) return x === Math.floor(width / 2);  
   // verticalOffset
   y -= VERTICAL_OFFSET;
+  x -= HORIZONTAL_OFFSET;
   if(x % 2 === 1 || y % 2 === 1) return false;
   if(!surviveDownsampling(x, skipH)) return false;
   if(!surviveDownsampling(y, skipV)) return false;

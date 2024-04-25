@@ -15,6 +15,7 @@ const PIXEL_RED_INDEX = 0;
 const PIXEL_GREEN_INDEX = 1;
 const PIXEL_BLUE_INDEX = 2;
 const PIXEL_ALPHA_INDEX = 3;
+const WORLD_POSITION = new THREE.Vector3();
 
 let image2D;
 let original2D;

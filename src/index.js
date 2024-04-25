@@ -2117,11 +2117,7 @@ function exportImage() {
   updateModelDataUnusedPixels();
   applyVectorsToModelDataImage();
 
-  const dataURL = canvas2D.toDataURL('image/png');
-  const link = document.createElement('a');
-  link.href = dataURL;
-  link.download = fileName('png');
-  link.click();
+  downloadCanvasAsFile(fileName('png'), 'image/png', canvas2D);
 
   // display selected vertex
   highlightVertex();
@@ -2136,19 +2132,13 @@ function exportGltf(binary) {
     binary
   }
   function success(result) {
-    let blob;
     if(result instanceof ArrayBuffer) {
-      blob = new Blob([result], { type: 'model/gltf-binary' });
+      downloadBlobAsFile(fileName('glb'), 'model/gltf-binary', result);
     }
     else {
       const data = JSON.stringify(result, null, 2);
-      blob = new Blob([data], { type: 'text/plain' });
+      downloadBlobAsFile(fileName('gltf'), 'model/gltf+json', data);
     }
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = fileName(binary ? 'glb' : 'gltf');
-    link.click();
   }
   function failed(error) {
     console.error('Failed to export GLTF', error);

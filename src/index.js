@@ -2112,7 +2112,11 @@ function fileName(ext) {
   const name = imageSelector.value
     .replace(/\.[^.]+$/i, '.') // remove ext
     .replace(/^.*\//, ''); // remove path
-  return new Date().toLocaleString() + ' ' + name + ext;
+  const date = new Date().toLocaleString();
+  return sanitizeFileName(date + ' ' + name + ext);
+}
+function sanitizeFileName(name) {
+  return name.replace(/[\/\\:<>|"*?]/gi, '_');
 }
 function exportImage() {
   // redraw canvas without selected vertex

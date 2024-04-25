@@ -4,6 +4,7 @@ import { NURBSSurface } from 'three/examples/jsm/curves/NURBSSurface.js';
 import { ParametricGeometry } from 'three/addons/geometries/ParametricGeometry.js';
 import { TransformControls } from 'three/addons/controls/TransformControls.js';
 import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
+import { OBJExporter } from 'three/addons/exporters/OBJExporter.js';
 import Stats from 'three/examples/jsm/libs/stats.module';
 
 const defaultCameraAngle = 'front';
@@ -127,6 +128,7 @@ function handleWindowLoad() {
   document.getElementById('export-image').addEventListener('click', exportImage);
   document.getElementById('export-gltf').addEventListener('click', exportGltf.bind(undefined, false));
   document.getElementById('export-glb').addEventListener('click', exportGltf.bind(undefined, true));
+  document.getElementById('export-obj').addEventListener('click', exportObj);
 
   document.getElementById('texture-rotation').addEventListener('input', rotateTexture);
   document.getElementById('texture-horizontal-offset').addEventListener('input', offsetTextureHorizontally);
@@ -2145,6 +2147,56 @@ function exportGltf(binary) {
   }
   gltfExporter.parse(modelObject, success, failed, options);
 }
+function exportObj() {
+  const exporter = new OBJExporter();
+  let data = exporter.parse(modelObject);
+
+  // UV mapping
+  const uvCoordinates = [];
+  const uvArray = modelObject.geometry.attributes.uv.array;
+  uvArray.forEach((uv, i) => {
+    if(i % 2 === 0) {
+      const u = uv.toFixed(6);
+      const v = uvArray[i+1].toFixed(6);
+      uvCoordinates.push(`vt ${u} ${v}`);
+    }
+  });
+  data += "\n\n# UV Coordinates\n"
+  data += uvCoordinates.join('\n');
+  data += "\n";
+
+  const textureFile = fileName('png');
+  const materialFile = fileName('mtl');
+  const objectFile = fileName('obj');
+
+  if(includeTextures()) {
+    data += "\n\n# Texture\n";
+    data += `mtllib ${materialFile}\n`;
+    data += `usemtl texture\n`;
+    data += `map_Kd ${textureFile}\n`;
+  }
+
+  downloadBlobAsFile(objectFile, 'text/plain', data);
+
+  if(includeTextures()) {
+    downloadCanvasAsFile(
+      textureFile,
+      'image/png',
+      document.getElementById('texture-preview')
+    );
+
+    let material = '';
+    material += `newmtl texture\n`;
+    material += `map_Kd ${textureFile}\n`;
+
+    downloadBlobAsFile(
+      materialFile,
+      'text/plain',
+      material
+    );
+  }
+}
+
 function downloadCanvasAsFile(fileName, contentType, canvas) {
   downloadUrlAsFile(fileName, canvas.toDataURL(contentType));
 }
@@ -2156,9 +2208,11 @@ function downloadBlobAsFile(fileName, contentType, data) {
 function downloadUrlAsFile(fileName, url) {
   console.log('download', fileName);
   const link = document.createElement('a');
+  document.body.appendChild(link);
   link.href = url;
   link.download = fileName;
   link.click();
+  document.body.removeChild(link);
 }
 
 window.addEventListener('load', handleWindowLoad);

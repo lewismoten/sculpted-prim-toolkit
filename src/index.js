@@ -49,7 +49,7 @@ let nurbsControlVertices;
 let cubeObject;
 let boundariesObject;
 let verticesObject;
-let controlMeshObject;
+let wireframeObject;
 let nurbsObject;
 let segments;
 let selectedVerticesObject;
@@ -307,9 +307,9 @@ function changeSelectedVertexPosition(axis, value) {
   updateVertexModelsPositionAndColor(index, snappedVertex, pixel);
 
   // update model
-  drawSphericalControlMesh(nurbsControlVertices);
-  // update wireframe
   drawModelMesh(nurbsControlVertices);
+  // update wireframe
+  buildWireframeObject(nurbsControlVertices);
   // update nurbs surface
   drawNurbsSurfaceMesh(nurbsControlVertices);
 
@@ -748,9 +748,9 @@ function saveVerticesPositionsToModelData() {
     document.getElementById(`rotation-${axis}`).value = rotation.toFixed(2);
   });
   // update model
-  drawSphericalControlMesh(nurbsControlVertices);
-  // update wireframe
   drawModelMesh(nurbsControlVertices);
+  // update wireframe
+  buildWireframeObject(nurbsControlVertices);
   // update nurbs surface
   drawNurbsSurfaceMesh(nurbsControlVertices);
 }
@@ -1457,7 +1457,7 @@ function imageOfModelDataLoaded() {
 }
 function drawObjects(nurbsControlVertices) {
   drawControlVertices(nurbsControlVertices);
-  drawSphericalControlMesh(nurbsControlVertices);
+  buildWireframeObject(nurbsControlVertices);
   drawModelMesh(nurbsControlVertices);
   drawNurbsSurfaceMesh(nurbsControlVertices);
   drawSelectionVertices();
@@ -1709,16 +1709,16 @@ function makeClosedUniformKnots(spans, degreeOfRepeat) {
   }
   return knots;
 }
-function drawSphericalControlMesh(controlVertices) {
-  removeObjectFromList(controlMeshObject);
-  const controlMeshGeometry = createSphericalControlGeometry(controlVertices, horizontalSegments, verticalSegments);
+function buildWireframeObject(vertices) {
+  removeObjectFromList(wireframeObject);
+  const controlMeshGeometry = createBufferGeometry(vertices, horizontalSegments, verticalSegments);
   const controlMeshMaterial = new THREE.MeshStandardMaterial( { color: 0xFFFFFF, wireframe: true } );
-  controlMeshObject = new THREE.Mesh(controlMeshGeometry, controlMeshMaterial);
-  controlMeshObject.name = 'Control Mesh/Wireframe';
-  setTranslationToObject(controlMeshObject);
-  scene.add(controlMeshObject);
-  controlMeshObject.visible = document.getElementById('show-control-mesh').checked;
-  addObjectToList(controlMeshObject);
+  wireframeObject = new THREE.Mesh(controlMeshGeometry, controlMeshMaterial);
+  wireframeObject.name = 'Wireframe';
+  setTranslationToObject(wireframeObject);
+  scene.add(wireframeObject);
+  wireframeObject.visible = document.getElementById('show-control-mesh').checked;
+  addObjectToList(wireframeObject);
 }
 function drawModelMesh(controlVertices) {
   removeObjectFromList(modelObject);
@@ -1758,10 +1758,10 @@ function drawModelMesh(controlVertices) {
   attachTransformControls(modelObject);
   addObjectToList(modelObject);
 }
-function createSphericalControlGeometry(controlVertices, horizontalSegments, verticalSegments) {
+function createBufferGeometry(vertices, horizontalSegments, verticalSegments) {
   const controlMeshGeometry = new THREE.BufferGeometry();
-  const vertices = createSphericalControlVertices(controlVertices, horizontalSegments, verticalSegments);
-  controlMeshGeometry.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
+  const positions = createSphericalVertices(vertices, horizontalSegments, verticalSegments);
+  controlMeshGeometry.setAttribute('position', positions);
   const indexedTriangles = createSphericalControlTriangles(horizontalSegments, verticalSegments);
   controlMeshGeometry.setIndex(indexedTriangles);
   controlMeshGeometry.setDrawRange(0, indexedTriangles.length);
@@ -1770,14 +1770,14 @@ function createSphericalControlGeometry(controlVertices, horizontalSegments, ver
   controlMeshGeometry.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
   controlMeshGeometry.computeTangents();
 
-  document.getElementById('control-mesh-vertices').innerText = controlVertices.length.toLocaleString();
+  document.getElementById('control-mesh-vertices').innerText = positions.count.toLocaleString();
   document.getElementById('control-mesh-faces').innerText = (indexedTriangles.length / 3).toLocaleString();
   document.getElementById('control-mesh-positions').innerText = controlMeshGeometry.attributes.position.count.toLocaleString();
   return controlMeshGeometry;
 }
 function changeUvMapping() {
-  if(controlMeshObject) {
-    const geometry = controlMeshObject.geometry;
+  if(wireframeObject) {
+    const geometry = wireframeObject.geometry;
     const uvs = createUvMappingForSphere(geometry.attributes.position.count, horizontalSegments, verticalSegments);
     geometry.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
     geometry.attributes.uv.needsUpdate = true;
@@ -1816,16 +1816,16 @@ function createUvMappingForSphere(positionCount, horizontalSegments, verticalSeg
   return uvs;
 }
 
-function createSphericalControlVertices(controlVertices, horizontalSegments, verticalSegments) {
+function createSphericalVertices(vertices, horizontalSegments, verticalSegments) {
   const count = ((horizontalSegments + 1) * (verticalSegments + 1)) * 3;
-  const vertices = new Float32Array(count);
-  controlVertices.forEach(({ x, y, z }, i) => {
+  const values = new Float32Array(count);
+  vertices.forEach(({ x, y, z }, i) => {
     const offset = i * 3;
-    vertices[offset] = x;
-    vertices[offset + 1] = y;
-    vertices[offset + 2] = z;
+    values[offset] = x;
+    values[offset + 1] = y;
+    values[offset + 2] = z;
   });
-  return vertices;
+  return new THREE.BufferAttribute(values, 3);
 }
 
 function createSphericalControlTriangles(horizontalSegments, verticalSegments) {
@@ -2018,7 +2018,7 @@ function handleShowControlVerticesChange() {
   verticesObject.visible = document.getElementById('show-control-vertices').checked;
 }
 function handleShowControlMeshChange() {
-  controlMeshObject.visible = document.getElementById('show-control-mesh').checked;
+  wireframeObject.visible = document.getElementById('show-control-mesh').checked;
 }
 function handleShowModelMeshChange() {
   modelObject.visible = document.getElementById('show-model-mesh').checked;

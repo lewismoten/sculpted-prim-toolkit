@@ -360,20 +360,40 @@ function applyToModels(callback) {
   ].forEach(callback);
 }
 function scaleModelToBoundingVolume() {
-  updateVerticyPositions();
+  
+  // need to 'rebake' verticies to get the bounding box to scale in the correct directions
+  saveVerticesPositionsToModelData();
+  resetModelPositionRotationAndScale();
+  const epsolon = vectorSnapSize() / 2;
+  const maxLength = MAX_MODEL_SIZE - epsolon;
+
   let boundingBox = new THREE.Box3().setFromObject(modelObject);
   let size = boundingBox.getSize(new THREE.Vector3());
 
+  let changed = false;
   "xyz".split('')
     .forEach(axis => {
       const length = size[axis];
-      if(length === 1) return;
+      if(length >= maxLength) return;
+      changed = true;
       const scale = MAX_MODEL_SIZE / length;
-      modelObject.scale[axis] = scale * modelScale[axis];
-      modelScale[axis] = scale;
-    })
-  saveVerticesPositionsToModelData();
-  updateVerticyPositions();
+      modelScale[axis] = scale * modelScale[axis];
+      applyToModels((object) => {
+        object.scale.copy(modelScale);
+      });
+    });
+
+  if(changed) {
+    // center - scaled object may have partially escaped the bounding box
+    const center = getPositionToCenterModel();
+    modelPosition.copy(center);
+    applyToModels((object) => {
+      object.position.copy(center);
+    });
+  
+    saveVerticesPositionsToModelData();
+    resetModelPositionRotationAndScale();
+  }
 };
 function takeSnapshot() {
   const tempCanvas = document.createElement('canvas');

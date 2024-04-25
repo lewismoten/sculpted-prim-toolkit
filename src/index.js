@@ -360,8 +360,6 @@ function applyToModels(callback) {
   ].forEach(callback);
 }
 function scaleModelToBoundingVolume() {
-  const maxLength = 1; // 1x1x1 cube
-
   updateVerticyPositions();
   let boundingBox = new THREE.Box3().setFromObject(modelObject);
   let size = boundingBox.getSize(new THREE.Vector3());
@@ -370,7 +368,7 @@ function scaleModelToBoundingVolume() {
     .forEach(axis => {
       const length = size[axis];
       if(length === 1) return;
-      const scale = maxLength / length;
+      const scale = MAX_MODEL_SIZE / length;
       modelObject.scale[axis] = scale * modelScale[axis];
       modelScale[axis] = scale;
     })

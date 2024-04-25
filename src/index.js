@@ -52,7 +52,7 @@ let modelObject;
 let nurbsControlVertices;
 let cubeObject;
 let boundariesObject;
-let verticesObject;
+let pointCloudObject;
 let wireframeObject;
 let nurbsObject;
 let segments;
@@ -363,7 +363,7 @@ function resetModelPositionRotationAndScale() {
 function applyToModels(callback) {
   [
     modelObject,
-    verticesObject,
+    pointCloudObject,
     selectedVerticesObject,
     nurbsObject
   ].forEach(callback);
@@ -688,7 +688,7 @@ function clampDimensions(source) {
 }
 function saveVerticesPositionsToModelData() {
   if(!selectedVerticesObject) return;
-  if(!verticesObject) return;
+  if(!pointCloudObject) return;
   let changed = false;
   selectedVerticesObject.children.forEach((object) => {
     const { index } = object.userData;
@@ -769,7 +769,7 @@ function saveVerticesPositionsToModelData() {
 }
 function updateVertexModelsPositionAndColor(index, {x,y,z}, {r, g, b}) {
   [
-    verticesObject.children[index],
+    pointCloudObject.children[index],
     selectedVerticesObject.children[index]
   ].forEach(object => {
     object.position.set(x, y, z);
@@ -880,7 +880,7 @@ function handle3dCanvasClick(event) {
     setSelectedIndexOfVertex(index);
   });
   if(!intersected) {
-    raycaster.intersectObjects(verticesObject.children).forEach(intersects => {
+    raycaster.intersectObjects(pointCloudObject.children).forEach(intersects => {
       if(intersected) return;
       intersected = true;
       const index = intersects.object.userData.index;
@@ -1598,22 +1598,22 @@ function getModelPixels(imageData, segments) {
   return controlVertices;
 }
 function drawControlVertices(controlVertices) {
-  removeObjectFromList(verticesObject);
-  verticesObject = new THREE.Object3D();
-  verticesObject.name = 'Vertices';
+  removeObjectFromList(pointCloudObject);
+  pointCloudObject = new THREE.Object3D();
+  pointCloudObject.name = 'Vertices';
   controlVertices.forEach(({ x, y, z, color}, index) => {
     const geometry = new THREE.BoxGeometry( 0.01, 0.01, 0.01 );
     const material = new THREE.MeshBasicMaterial( { color } );
     const mesh = new THREE.Mesh( geometry, material );
     mesh.position.set(x, y, z);
     mesh.userData.index = index;
-    verticesObject.add(mesh);
+    pointCloudObject.add(mesh);
   });
-  setTranslationToObject(verticesObject);
-  scene.add( verticesObject );
+  setTranslationToObject(pointCloudObject);
+  scene.add( pointCloudObject );
 
-  verticesObject.visible = document.getElementById('show-point-cloud').checked;
-  addObjectToList(verticesObject);
+  pointCloudObject.visible = document.getElementById('show-point-cloud').checked;
+  addObjectToList(pointCloudObject);
 }
 function drawSelectionVertices() {  
   const vertices = pixels.map(([r, g, b]) => convertRgbToVertex(r, g, b));
@@ -2044,7 +2044,7 @@ function applyRotationToObects(rotation) {
     });
 }
 function handleShowControlVerticesChange() {
-  verticesObject.visible = document.getElementById('show-point-cloud').checked;
+  pointCloudObject.visible = document.getElementById('show-point-cloud').checked;
 }
 function handleShowControlMeshChange() {
   wireframeObject.visible = document.getElementById('show-control-mesh').checked;

@@ -2155,6 +2155,21 @@ function exportGltf(binary) {
   }
   gltfExporter.parse(modelObject, success, failed, options);
 }
+function downloadCanvasAsFile(fileName, contentType, canvas) {
+  downloadUrlAsFile(fileName, canvas.toDataURL(contentType));
+}
+function downloadBlobAsFile(fileName, contentType, data) {
+  const blob = new Blob([data], { type: contentType });
+  const url = URL.createObjectURL(blob);
+  downloadUrlAsFile(fileName, url);
+}
+function downloadUrlAsFile(fileName, url) {
+  console.log('download', fileName);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = fileName;
+  link.click();
+}
 
 window.addEventListener('load', handleWindowLoad);
 

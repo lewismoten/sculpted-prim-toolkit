@@ -11,6 +11,10 @@ const defaultSkin = 'alignment-map-1024';
 
 const VERTICAL_OFFSET = 1; // Y starts at 1, not zero as in the technicial documentation
 const MAX_VERTECES = 1024;
+const PIXEL_RED_INDEX = 0;
+const PIXEL_GREEN_INDEX = 1;
+const PIXEL_BLUE_INDEX = 2;
+const PIXEL_ALPHA_INDEX = 3;
 
 let image2D;
 let original2D;
@@ -152,12 +156,10 @@ function handleWindowLoad() {
     radianInput.max = Math.PI;
 
     selectedPosRange.addEventListener('input', () => {
-      selectedPosValue.value = selectedPosRange.value;
-      updateModelVertexPosition();
+      changeSelectedVertexPosition(axis, parseInt(selectedPosRange.value));
     });
     selectedPosValue.addEventListener('input', () => {
-      selectedPosRange.value = selectedPosValue.value;
-      updateModelVertexPosition();
+      changeSelectedVertexPosition(axis, parseInt(selectedPosValue.value));
     });
 
     setObjectScaleRange(axis, 1);
@@ -266,6 +268,44 @@ function handleWindowLoad() {
     textureSelector.value = defaultSkin;
     handleTextureSelectorChange();
   });
+}
+function changeSelectedVertexPosition(axis, value) {
+  // update UI input
+  document.getElementById(`selected-pos-${axis}-range`).value = value;
+  document.getElementById(`selected-pos-${axis}-value`).value = value;
+
+  const byteVector = {
+    x: parseInt(document.getElementById('selected-pos-x-value').value),
+    y: parseInt(document.getElementById('selected-pos-y-value').value),
+    z: parseInt(document.getElementById('selected-pos-z-value').value)
+  }
+
+  // update model data
+  const index = getSelectedIndex();
+  const pixel = bytePositionAsPixelRgb(byteVector.x, byteVector.y, byteVector.z);
+  pixels[index][PIXEL_RED_INDEX] = pixel.r;
+  pixels[index][PIXEL_GREEN_INDEX] = pixel.g;
+  pixels[index][PIXEL_BLUE_INDEX] = pixel.b;
+
+  // update vertex data
+  const vertex = convertRgbToVertex(pixel.r, pixel.g, pixel.b);
+  nurbsControlVertices[index] = vertex;
+
+  // update model data image
+  const { x, y } = indexOfVertexToImageXy(index);
+  updateModelDataPixel(x, y, pixel.r, pixel.g, pixel.b);
+
+  // update selected vertex
+  controlVerticesObject.children[index].position.set(vertex.x, vertex.y, vertex.z);
+
+  // update model
+  drawSphericalControlMesh(nurbsControlVertices);
+  // update wireframe
+  drawModelMesh(nurbsControlVertices);
+  // update nurbs surface
+  drawNurbsSurfaceMesh(nurbsControlVertices);
+
+  displayNewlySelectedVertex();
 }
 function moveModelToCenter() {
   modelMeshObject.position.set(0, 0, 0);
@@ -762,9 +802,9 @@ function getSelectedIndex() {
 function displayVertexPosition() {
   const i = getSelectedIndex();
   const [r, g, b] = pixels[i];
-  const x = pixelValueForAxis('x', r, g, b);
-  const y = pixelValueForAxis('y', r, g, b);
-  const z = pixelValueForAxis('z', r, g, b);
+  const x = getPixelValueForAxis('x', r, g, b);
+  const y = getPixelValueForAxis('y', r, g, b);
+  const z = getPixelValueForAxis('z', r, g, b);
   document.getElementById('selected-pos-x-range').value = x;
   document.getElementById('selected-pos-x-value').value = x;
   document.getElementById('selected-pos-y-range').value = y;
@@ -1271,7 +1311,7 @@ function rgbLong(r, g, b) {
 function bytePositionAsPixelRgb(x, y, z) {
   return { r: z, g: x, b: y };
 }
-function pixelValueForAxis(axis, r, g, b) { 
+function getPixelValueForAxis(axis, r, g, b) { 
   if(axis === 'x') return g;
   if(axis === 'y') return b;
   return r;
@@ -1279,9 +1319,9 @@ function pixelValueForAxis(axis, r, g, b) {
 function convertRgbToVertex(r, g, b) {
   return {
     color: rgbLong(r, g, b),
-    x: mapByteToControlVectorValue(pixelValueForAxis('x', r, g, b)),
-    y: mapByteToControlVectorValue(pixelValueForAxis('y', r, g, b)),
-    z: mapByteToControlVectorValue(pixelValueForAxis('z', r, g, b))
+    x: mapByteToControlVectorValue(getPixelValueForAxis('x', r, g, b)),
+    y: mapByteToControlVectorValue(getPixelValueForAxis('y', r, g, b)),
+    z: mapByteToControlVectorValue(getPixelValueForAxis('z', r, g, b))
   };
 }
 

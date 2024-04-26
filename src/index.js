@@ -537,7 +537,7 @@ function applyVectorsToModelDataImage(targetCtx, options) {
 function getModelReadOptions() {
   const width = image2D.width;
   const height = image2D.height;
-  const segments = downsampleSegments(width, height, MAX_VERTECES);
+  const segments = downsampleSegments(width, height);
   return {
     width: width,
     height: height,
@@ -1475,7 +1475,7 @@ function imageOfModelDataLoaded() {
   const ctx = getModelCanvasContext();
   ctx.drawImage(image2D, 0, 0);
 
-  segments = downsampleSegments(image2D.width, image2D.height, MAX_VERTECES);
+  segments = downsampleSegments(image2D.width, image2D.height);
   horizontalSegments = segments.horizontal;
   verticalSegments = segments.vertical;
 
@@ -1575,7 +1575,7 @@ function isImageXyVertex(x, y, width, height) {
   const {
     horizontalDownsample: skipH,
     verticalDownsample: skipV
-  } = downsampleSegments(width, height, MAX_VERTECES);
+  } = downsampleSegments(width, height);
   // Top/bottom poles
   if(y === 0 || y === height - 1) return x === Math.floor(width / 2);  
   // verticalOffset
@@ -1586,7 +1586,7 @@ function isImageXyVertex(x, y, width, height) {
   if(!surviveDownsampling(y, skipV)) return false;
   return true;
 }
-function downsampleSegments(width, height, verticesLimit) {
+function downsampleSegments(width, height) {
   width /= 2;
   height /= 2;
   const segments = {
@@ -1595,7 +1595,7 @@ function downsampleSegments(width, height, verticesLimit) {
     horizontalDownsample: 0,
     verticalDownsample: 0
   }
-  while(segments.horizontal * segments.vertical > verticesLimit) {
+  while(segments.horizontal * segments.vertical > MAX_VERTECES) {
     const max = Math.max(segments.horizontal, segments.vertical);
     if(max === segments.horizontal) {
       segments.horizontalDownsample++;
@@ -2205,7 +2205,7 @@ function exportImage() {
 
   const width = parseInt(document.getElementById('save-image-width').value);
   const height = parseInt(document.getElementById('save-image-height').value);
-  const segments = downsampleSegments(width, height, MAX_VERTECES);
+  const segments = downsampleSegments(width, height);
   const hDown = segments.horizontalDownsample;
   const vDown = segments.verticalDownsample;
 

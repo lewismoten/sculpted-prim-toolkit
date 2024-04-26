@@ -430,42 +430,42 @@ function takeSnapshot() {
     if(unusedPixels === 'snapshot') updateVerticyPositions();
   }
 }
-function overwriteUnusedPixelsWithContext(source) {
-  const width = image2D.width;
-  const height = image2D.height;
+function overwriteUnusedPixelsWithContext(source, targetCtx, options) {
+  const width = options.width;
+  const height = options.height;
   for(let x = 0; x < width; x++) {
     for(let y = 0; y < height; y++) {
-      const isUsed = isImageXyVertex(x, y, width, height);
+      const isUsed = isImageXyVertex(x, y, options.width, options.height);
       if(isUsed) continue;
       const [r, g, b] = source.getImageData(x, y, 1, 1).data;
-      setPixelColorOnImageOfData(x, y, r, g, b);
+      setPixelColorOnImageOfData(x, y, r, g, b, targetCtx);
     }
   }
 }
-function updateModelDataPixel(x, y, r, g, b) {
-  const canRead = isImageXyVertex(x, y, image2D.width, image2D.height);
+function updateModelDataPixel(x, y, r, g, b, targetCtx = getModelCanvasContext(), options = getModelReadOptions()) {
+  const canRead = isImageXyVertex(x, y, options.width, options.height);
   if(!canRead) {
     console.log('Pixel %sx%s is not a vector.', x, y);
     return;
   }
 
   const drawBlocks = document.querySelector('input[name="unused-pixels"]:checked').value === 'blocks';
-  const blockWidth = Math.pow(2, segments.horizontalDownsample + 1);
-  const blockHeight = Math.pow(2, segments.verticalDownsample + 1);
+  const blockWidth = Math.pow(2, options.hDown + 1);
+  const blockHeight = Math.pow(2, options.vDown + 1);
   if(drawBlocks) {
     for(let h = 0; h < blockWidth; h++) {
       for(let v = 0; v < blockHeight; v++) {
-        setPixelColorOnImageOfData(x + h, y + v, r, g, b);
+        setPixelColorOnImageOfData(x + h, y + v, r, g, b, targetCtx);
       }
     }
   } else {
-    setPixelColorOnImageOfData(x, y, r, g, b);
+    setPixelColorOnImageOfData(x, y, r, g, b, targetCtx);
   }
 }
-function updateModelDataUnusedPixels() {
-  if(image2D === undefined) return;
-  const width = image2D.width;
-  const height = image2D.height;
+function updateModelDataUnusedPixels(targetCtx, options) {
+  if(options === undefined) return;
+  const width = options.width;
+  const height = options.height;
   const tempCanvas = document.createElement('canvas');
   tempCanvas.width = width;
   tempCanvas.height = height;
@@ -498,7 +498,7 @@ function updateModelDataUnusedPixels() {
       ctx.fillStyle = 'red';
       ctx.fillRect(0, 0, width, height);
   }
-  overwriteUnusedPixelsWithContext(ctx);
+  overwriteUnusedPixelsWithContext(ctx, targetCtx, options);
 }
 function originalImageContext() {
   const ctx = document.createElement('canvas').getContext('2d', { willReadFrequently: true });
@@ -519,7 +519,7 @@ function applyOriginalVectorsToModelDataImage() {
     }
   }
 }
-function applyVectorsToModelDataImage() {
+function applyVectorsToModelDataImage(targetCtx, options) {
   let outOfBounds = false;
   selectedVerticesObject.children.forEach(object => {
     const i = object.userData.index;
@@ -530,14 +530,17 @@ function applyVectorsToModelDataImage() {
       xyz = xyz.map(mapClamp(0, 255));
     }
     const rgb = bytePositionAsPixelRgb(...xyz);
-    const point = indexOfVertexToImageXy(i);
-    updateModelDataPixel(point.x, point.y, rgb.r, rgb.g, rgb.b);
+    const point = indexOfVertexToImageXy(i, options);
+    updateModelDataPixel(point.x, point.y, rgb.r, rgb.g, rgb.b, targetCtx, options);
   });
 }
 function getModelReadOptions() {
+  const width = image2D.width;
+  const height = image2D.height;
+  const segments = downsampleSegments(width/2, height/2, MAX_VERTECES);
   return {
-    width: image2D.width,
-    height: image2D.height,
+    width: width,
+    height: height,
     hDown: segments.horizontalDownsample,
     vDown: segments.verticalDownsample
   }
@@ -1087,8 +1090,7 @@ function highlightSelectedVertexOnImageOfData() {
     }
   }
 }
-function setPixelColorOnImageOfData(x, y, r, g, b) {
-  const ctx = getModelCanvasContext();
+function setPixelColorOnImageOfData(x, y, r, g, b, ctx = getModelCanvasContext()) {
   const imageData = ctx.getImageData(x, y, 1, 1);
   // Preserve transparency
   imageData.data[0] = r;
@@ -1468,6 +1470,8 @@ function loadImageOfModelData(url) {
 function imageOfModelDataLoaded() {
   canvas2D.width = image2D.width;
   canvas2D.height = image2D.height;
+  document.getElementById('save-image-width').value = image2D.width;
+  document.getElementById('save-image-height').value = image2D.height;
   const ctx = getModelCanvasContext();
   ctx.drawImage(image2D, 0, 0);
 
@@ -1560,11 +1564,11 @@ function surviveDownsampling(value, amount) {
   }
   return true;
 }
-function indexOfVertexToImageXy(i) {
+function indexOfVertexToImageXy(i, options = getModelReadOptions()) {
   const { row, column } = indexOfVertexToRowAndColumn(i);
   return {
-    x: column * Math.pow(2, segments.horizontalDownsample + 1) + HORIZONTAL_OFFSET,
-    y: (row * Math.pow(2, segments.verticalDownsample + 1)) + VERTICAL_OFFSET
+    x: column * Math.pow(2, options.hDown + 1) + HORIZONTAL_OFFSET,
+    y: (row * Math.pow(2, options.vDown + 1)) + VERTICAL_OFFSET
   };
 }
 function isImageXyVertex(x, y, width, height) {
@@ -2205,20 +2209,21 @@ function exportImage() {
   const canvas = document.createElement('canvas');
   canvas.width = width;
   canvas.height = height;
-  const ctx = canvas.getContext('2d');
-
+  const ctx = canvas.getContext('2d', {willReadFrequently: true});
+  ctx.fillStyle = 'black';
+  ctx.fillRect(0, 0, width, height);
   const options = {
     width,
     height,
     hDown,
     vDown
-  }
+  };
 
   // redraw canvas without selected vertex
   updateModelDataUnusedPixels(ctx, options);
   applyVectorsToModelDataImage(ctx, options);
 
-  downloadCanvasAsFile(fileName('png'), 'image/png', canvas2D);
+  downloadCanvasAsFile(fileName('png'), 'image/png', canvas);
 
   // display selected vertex
   highlightVertex();

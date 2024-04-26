@@ -534,9 +534,23 @@ function applyVectorsToModelDataImage() {
     updateModelDataPixel(point.x, point.y, rgb.r, rgb.g, rgb.b);
   });
 }
+function getModelReadOptions() {
+  return {
+    width: image2D.width,
+    height: image2D.height,
+    hDown: segments.horizontalDownsample,
+    vDown: segments.verticalDownsample
+  }
+}
 function updateVerticyPositions() {
-  updateModelDataUnusedPixels();
-  applyVectorsToModelDataImage();
+  updateModelDataUnusedPixels(
+    getModelCanvasContext(),
+    getModelReadOptions()
+  );
+  applyVectorsToModelDataImage(
+    getModelCanvasContext(),
+    getModelReadOptions()
+  );
   // rebuild models
   image2D.src = canvas2D.toDataURL();
 
@@ -1012,8 +1026,14 @@ function displayVertexPosition() {
   }>`;
 }
 function drawModelCanvas() {
-  updateModelDataUnusedPixels();
-  applyVectorsToModelDataImage();
+  updateModelDataUnusedPixels(
+    getModelCanvasContext(),
+    getModelReadOptions()
+  );
+  applyVectorsToModelDataImage(
+    getModelCanvasContext(),
+    getModelReadOptions()
+  );
   highlightVertex();
 }
 function highlightVertex() {
@@ -1350,7 +1370,10 @@ function loadTexture(textureUrl) {
   }
 }
 function drawTexturePreview() {
-  updateModelDataUnusedPixels();
+  updateModelDataUnusedPixels(
+    getModelCanvasContext(),
+    getModelReadOptions()
+  );
   const texturePreview = document.getElementById('texture-preview');
   texturePreview.width = textureImage.width;
   texturePreview.height = textureImage.height;
@@ -2130,7 +2153,10 @@ function render() {
   renderer.render( scene, camera );
   const unusedPixels = document.querySelector('input[name="unused-pixels"]:checked').value;
   if(unusedPixels === 'camera') {
-    updateModelDataUnusedPixels();
+    updateModelDataUnusedPixels(
+      getModelCanvasContext(),
+      getModelReadOptions()  
+    );
   };
 
   stats.update();
@@ -2170,9 +2196,27 @@ function sanitizeFileName(name) {
   return name.replace(/[\/\\:<>|"*?]/gi, '_');
 }
 function exportImage() {
+
+  const width = parseInt(document.getElementById('save-image-width').value);
+  const height = parseInt(document.getElementById('save-image-height').value);
+  const hDown = document.getElementById('save-image-width').selectedIndex;
+  const vDown = document.getElementById('save-image-height').selectedIndex;
+
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext('2d');
+
+  const options = {
+    width,
+    height,
+    hDown,
+    vDown
+  }
+
   // redraw canvas without selected vertex
-  updateModelDataUnusedPixels();
-  applyVectorsToModelDataImage();
+  updateModelDataUnusedPixels(ctx, options);
+  applyVectorsToModelDataImage(ctx, options);
 
   downloadCanvasAsFile(fileName('png'), 'image/png', canvas2D);
 

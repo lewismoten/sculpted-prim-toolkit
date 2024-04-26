@@ -435,7 +435,7 @@ function overwriteUnusedPixelsWithContext(source, targetCtx, options) {
   const height = options.height;
   for(let x = 0; x < width; x++) {
     for(let y = 0; y < height; y++) {
-      const isUsed = isImageXyVertex(x, y, options.width, options.height);
+      const isUsed = isImageXyVertex(x, y, options);
       if(isUsed) continue;
       const [r, g, b] = source.getImageData(x, y, 1, 1).data;
       setPixelColorOnImageOfData(x, y, r, g, b, targetCtx);
@@ -443,7 +443,7 @@ function overwriteUnusedPixelsWithContext(source, targetCtx, options) {
   }
 }
 function updateModelDataPixel(x, y, r, g, b, targetCtx = getModelCanvasContext(), options = getModelReadOptions()) {
-  const canRead = isImageXyVertex(x, y, options.width, options.height);
+  const canRead = isImageXyVertex(x, y, options);
   if(!canRead) {
     console.log('Pixel %sx%s is not a vector.', x, y);
     return;
@@ -512,7 +512,7 @@ function applyOriginalVectorsToModelDataImage() {
   const source = originalImageContext();
   for(let x = 0; x < image2D.width; x++) {
     for(let y = 0; y < image2D.height; y++) {
-      const isUsed = isImageXyVertex(x, y, image2D.width, image2D.height);
+      const isUsed = isImageXyVertex(x, y, getModelReadOptions());
       if(!isUsed) continue;
       const [r, g, b] = source.getImageData(x, y, 1, 1).data;
       updateModelDataPixel(x, y, r, g, b);
@@ -1069,7 +1069,7 @@ function highlightSelectedVertexOnImageOfData() {
   const outlineColor = isBlackBg ? 'white' : getContrastingColor(r, g, b);
 
   const { x, y } = indexOfVertexToImageXy(index);
-  const canRead = isImageXyVertex(x, y, image2D.width, image2D.height);
+  const canRead = isImageXyVertex(x, y, getModelReadOptions());
   if(!canRead) {
     console.log('About to update a pixel that should not be updated');
   }
@@ -1564,26 +1564,40 @@ function surviveDownsampling(value, amount) {
   }
   return true;
 }
+function getOffset(options) {
+  const vMap = {
+    16: 0,
+    32: 0,
+    64: 1,
+    128: 3,
+    256: 7,
+    512: 15,
+    1024: 31
+  };
+  return {
+    x: 0,
+    y: vMap[options.height]
+  };
+
+}
 function indexOfVertexToImageXy(i, options = getModelReadOptions()) {
   const { row, column } = indexOfVertexToRowAndColumn(i);
+  const offset = getOffset(options);
   return {
-    x: column * Math.pow(2, options.hDown + 1) + HORIZONTAL_OFFSET,
-    y: (row * Math.pow(2, options.vDown + 1)) + VERTICAL_OFFSET
+    x: column * Math.pow(2, options.hDown + 1) + offset.x,
+    y: (row * Math.pow(2, options.vDown + 1)) + offset.y
   };
 }
-function isImageXyVertex(x, y, width, height) {
-  const {
-    horizontalDownsample: skipH,
-    verticalDownsample: skipV
-  } = downsampleSegments(width, height);
+function isImageXyVertex(x, y, options) {
+  const offset = getOffset(options);
   // Top/bottom poles
   if(y === 0 || y === height - 1) return x === Math.floor(width / 2);  
   // verticalOffset
-  y -= VERTICAL_OFFSET;
-  x -= HORIZONTAL_OFFSET;
+  y -= offset.y;
+  x -= offset.x;
   if(x % 2 === 1 || y % 2 === 1) return false;
-  if(!surviveDownsampling(x, skipH)) return false;
-  if(!surviveDownsampling(y, skipV)) return false;
+  if(!surviveDownsampling(x, options.hDown)) return false;
+  if(!surviveDownsampling(y, options.vDown)) return false;
   return true;
 }
 function downsampleSegments(width, height) {
@@ -1621,7 +1635,7 @@ function getModelPixels(imageData, segments) {
   for(let i = 0; i < imageData.length; i += pixelDataBytes) {
     const x = (i / pixelDataBytes) % width;
     const y = Math.floor((i / pixelDataBytes) / width);
-    if(!isImageXyVertex(x, y, width, height)) continue;
+    if(!isImageXyVertex(x, y, getModelReadOptions())) continue;
 
     if(y !== lastRow) {
       if(firstVirtex) controlVertices.push(firstVirtex);

@@ -537,7 +537,7 @@ function applyVectorsToModelDataImage(targetCtx, options) {
 function getModelReadOptions() {
   const width = image2D.width;
   const height = image2D.height;
-  const segments = downsampleSegments(width/2, height/2, MAX_VERTECES);
+  const segments = downsampleSegments(width, height, MAX_VERTECES);
   return {
     width: width,
     height: height,
@@ -1475,7 +1475,7 @@ function imageOfModelDataLoaded() {
   const ctx = getModelCanvasContext();
   ctx.drawImage(image2D, 0, 0);
 
-  segments = downsampleSegments(image2D.width/2, image2D.height/2, MAX_VERTECES);
+  segments = downsampleSegments(image2D.width, image2D.height, MAX_VERTECES);
   horizontalSegments = segments.horizontal;
   verticalSegments = segments.vertical;
 
@@ -1575,7 +1575,7 @@ function isImageXyVertex(x, y, width, height) {
   const {
     horizontalDownsample: skipH,
     verticalDownsample: skipV
-  } = downsampleSegments(width/2, height/2, MAX_VERTECES);
+  } = downsampleSegments(width, height, MAX_VERTECES);
   // Top/bottom poles
   if(y === 0 || y === height - 1) return x === Math.floor(width / 2);  
   // verticalOffset
@@ -1587,6 +1587,8 @@ function isImageXyVertex(x, y, width, height) {
   return true;
 }
 function downsampleSegments(width, height, verticesLimit) {
+  width /= 2;
+  height /= 2;
   const segments = {
     horizontal: width,
     vertical: height,
@@ -2203,7 +2205,7 @@ function exportImage() {
 
   const width = parseInt(document.getElementById('save-image-width').value);
   const height = parseInt(document.getElementById('save-image-height').value);
-  const segments = downsampleSegments(width/2, height/2, MAX_VERTECES);
+  const segments = downsampleSegments(width, height, MAX_VERTECES);
   const hDown = segments.horizontalDownsample;
   const vDown = segments.verticalDownsample;
 

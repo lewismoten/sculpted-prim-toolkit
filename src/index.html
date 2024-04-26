@@ -189,21 +189,44 @@
     <br>
   </div>
   <div class="group">
+    <div class="group-title">Save</div>
+    Size: <select id="save-image-width">
+      <option value="32">32</option>
+      <option value="64">64</option>
+      <option value="128">128</option>
+      <option value="256">256</option>
+      <option value="512">512</option>
+      <option value="1024">1024</option>
+      </select>x
+      <select id="save-image-height">
+        <option value="32">32</option>
+        <option value="64">64</option>
+        <option value="128">128</option>
+        <option value="256">256</option>
+        <option value="512">512</option>
+        <option value="1024">1024</option>
+        </select>
+      <br>
+      <button id="export-image">Save</button><br />
+    </div>
+    <div class="group">
+      <div class="group-title">File Name</div>
+      <label>
+        <input type="checkbox" id="export-date" checked>Date
+      </label><br />
+      <label>
+        <input type="checkbox" id="export-time" checked>Time
+      </label>
+      </div>
+    <div class="group">
     <div class="group-title">Export</div>
     <button id="export-gltf">GLTF</button>
     <button id="export-glb">GLB</button><br />
     <button id="export-obj">OBJ</button>
     <button id="export-stl">STL</button><br />
-    <button id="export-image">Image</button><br />
     <label>
       <input type="checkbox" id="export-texture" checked>Texture
     </label><br />
-    <label>
-      <input type="checkbox" id="export-date" checked>Date
-    </label><br />
-    <label>
-      <input type="checkbox" id="export-time" checked>Time
-    </label>
   </div>
   <div class="group">
     <div class="group-title">Details</div>

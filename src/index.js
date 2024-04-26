@@ -2203,8 +2203,9 @@ function exportImage() {
 
   const width = parseInt(document.getElementById('save-image-width').value);
   const height = parseInt(document.getElementById('save-image-height').value);
-  const hDown = document.getElementById('save-image-width').selectedIndex;
-  const vDown = document.getElementById('save-image-height').selectedIndex;
+  const segments = downsampleSegments(width/2, height/2, MAX_VERTECES);
+  const hDown = segments.horizontalDownsample;
+  const vDown = segments.verticalDownsample;
 
   const canvas = document.createElement('canvas');
   canvas.width = width;

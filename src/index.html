@@ -232,9 +232,14 @@
   </div>
   <div class="group">
     <div class="group-title">Details</div>
-    Model Image Size: <span id="image-size"></span><br />
-    Horizontal Segments: <span id="horizontal-segments"></span><span id="horizontal-downsampling"></span><br />
-    Verticle Segments: <span id="vertical-segments"></span><span id="vertical-downsampling"></span><br />
+    Model Image Size: <span id="image-size"></span>
+      <span class="tooltip" id="image-data-coordinates" data-target="image-size"></span>
+    <br />
+    Model Data: <span id="model-data-count"></span><br />
+    Rows x Columns: <span id="rows-and-columns"></span>
+      <span class="tooltip" id="rows-and-columns-data" data-target="rows-and-columns"></span>
+      <br />
+    Model Vectors: <span id="model-data-vector-count"></span><br />
     Vertices: <span id="control-mesh-vertices"></span><br />
     Faces: <span id="control-mesh-faces"></span><br />
     Positions: <span id="control-mesh-positions"></span><br />

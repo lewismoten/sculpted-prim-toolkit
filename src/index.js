@@ -9,7 +9,7 @@ import Stats from 'three/examples/jsm/libs/stats.module';
 import { STLExporter } from 'three/addons/exporters/STLExporter.js';
 
 const defaultCameraAngle = 'iso';
-const defaultModel = 'UFO Sculpty 1.0.png';
+const defaultModel = 'star sculpty.png';
 const defaultSkin = 'UFO.Blue.1.0.png';
 
 const MAX_VERTECES = 1024;
@@ -19,6 +19,54 @@ const PIXEL_BLUE_INDEX = 2;
 const PIXEL_ALPHA_INDEX = 3;
 const WORLD_POSITION = new THREE.Vector3();
 const MAX_MODEL_SIZE = 1;
+const MAPPING_TYPE = {
+  spherical: {
+    // horizontal pole - 32
+    // horizontal - 0, 2 ... 60, 62, 0
+    // vertical - 0, 2, ... 60, 62, 63
+    x: 32,
+    y: 33,
+    yHasPoles: true,
+    xStitched: true,
+    yStitched: false,
+    dataCount: (32 * 31) + 2,
+    vectorCount: 33 * 33
+  },
+  plane: {
+    // horizontal - 0, 2 ... 64, 63
+    // vertical - 0, 2 ... 64, 63
+    x: 33,
+    y: 33,
+    yHasPoles: false,
+    xStitched: false,
+    yStitched: false,
+    dataCount: 33 * 33,
+    vectorCount: 33 * 33
+  },
+  cylinder: {
+    // horizontal - 0, 2 ... 61, 62
+    // vertical - 0, 2 ... 62, 63
+    x: 32,
+    y: 33,
+    yHasPoles: false,
+    xStitched: true,
+    yStitched: false,
+    dataCount: 32 * 33,
+    vectorCount: 32 * 33
+  },
+  torus: {
+    // horizontal - 0, 2 ... 61, 62
+    // vertical - 0, 2 ... 61, 62
+    x: 32,
+    y: 32,
+    yHasPoles: false,
+    xStitched: true,
+    yStitched: true,
+    dataCount: 32 * 32,
+    vectorCount: 32 * 32
+  }
+}
+const DEFAULT_MAPPING_TYPE = Object.keys(MAPPING_TYPE)[0];
 
 let image2D;
 let textureImage;
@@ -63,6 +111,18 @@ const modelRotation = new THREE.Vector3(0, 0, 0);
 let stats;
 
 function handleWindowLoad() {
+
+  const tips = document.getElementsByClassName('tooltip');
+  for(let i = 0; i < tips.length; i++) {
+    const tip = tips[i];
+    const id = tip.getAttribute('data-target');
+    const target = document.getElementById(id);
+    target.classList.add('has-tooltip');
+    target.addEventListener('mouseover', () => tip.setAttribute('data-open', true));
+    target.addEventListener('mouseout', () => tip.setAttribute('data-open', false));
+  }
+
+  //hasTooltip
   canvas3D = document.getElementById('image-3d');
   const rect = canvas3D.getBoundingClientRect();
   width = rect.width;
@@ -112,9 +172,9 @@ function handleWindowLoad() {
 
   canvas2D = document.getElementById('image-preview');
   let drawingCanvas2D = false;
-  canvas2D.addEventListener('click', handle2DCanvasClick);
+  canvas2D.addEventListener('click', handleModelImageClicked);
   canvas2D.addEventListener('mousemove', (e) => {
-    if(drawingCanvas2D) handle2DCanvasClick(e);
+    if(drawingCanvas2D) handleModelImageClicked(e);
   });
   canvas2D.addEventListener('mouseout', () => { drawingCanvas2D = false });
   canvas2D.addEventListener('mouseup', () => { drawingCanvas2D = false });
@@ -166,10 +226,10 @@ function handleWindowLoad() {
     radianInput.max = Math.PI;
 
     selectedPosRange.addEventListener('input', () => {
-      changeSelectedVertexPosition(axis, parseInt(selectedPosRange.value));
+      changeSelectedVertexPosition(axis, parseInt(selectedPosRange.value), getModelReadOptions());
     });
     selectedPosValue.addEventListener('input', () => {
-      changeSelectedVertexPosition(axis, parseInt(selectedPosValue.value));
+      changeSelectedVertexPosition(axis, parseInt(selectedPosValue.value), getModelReadOptions());
     });
 
     setObjectScaleRange(axis, 1);
@@ -207,11 +267,11 @@ function handleWindowLoad() {
     vertexValueInput.value = vertexRangeInput.value;
     vertexRangeInput.addEventListener('input', () => {
       vertexValueInput.value = vertexRangeInput.value;
-      displayIndexOfVertexAfterRowOrColumnChanged();
+      handleRowOrColumnChanged();
     });
     vertexValueInput.addEventListener('input', () => {
       vertexRangeInput.value = vertexValueInput.value;
-      displayIndexOfVertexAfterRowOrColumnChanged();
+      handleRowOrColumnChanged();
     });
   });
   const vertexIndexRangeInput = document.getElementById('vertex-index-range');
@@ -219,15 +279,15 @@ function handleWindowLoad() {
   vertexIndexValueInput.value = vertexIndexRangeInput.value;
   vertexIndexRangeInput.addEventListener('input', () => {
     vertexIndexValueInput.value = vertexIndexRangeInput.value;
-    displayRowAndColumnAfterVertexIndexChanged();
+    handleSelectedIndexChanged();
   });
   vertexIndexValueInput.addEventListener('input', () => {
     vertexIndexRangeInput.value = vertexIndexValueInput.value;
-    displayRowAndColumnAfterVertexIndexChanged();
+    handleSelectedIndexChanged();
   });
   
   document.getElementById('nurbs-degrees').addEventListener('input', () => {
-    drawNurbsSurfaceMesh(nurbsControlVertices);
+    drawNurbsSurfaceMesh(nurbsControlVertices, getModelReadOptions());
   });
   document.getElementById('no-rotation').addEventListener('click', () => {
     "xyz".split('').forEach(axis => {
@@ -285,7 +345,7 @@ function handleWindowLoad() {
     handleTextureSelectorChange();
   });
 }
-function changeSelectedVertexPosition(axis, value) {
+function changeSelectedVertexPosition(axis, value, options) {
   // update UI input
   document.getElementById(`selected-pos-${axis}-range`).value = value;
   document.getElementById(`selected-pos-${axis}-value`).value = value;
@@ -297,7 +357,7 @@ function changeSelectedVertexPosition(axis, value) {
   }
 
   // update model data
-  const index = getSelectedIndex();
+  const index = getSelectedIndex(options);
   const pixel = bytePositionAsPixelRgb(byteVector.x, byteVector.y, byteVector.z);
   if(pixels[index][PIXEL_RED_INDEX] === pixel.r &&
     pixels[index][PIXEL_GREEN_INDEX] === pixel.g &&
@@ -311,23 +371,23 @@ function changeSelectedVertexPosition(axis, value) {
   pixels[index][PIXEL_BLUE_INDEX] = pixel.b;
 
   // update vertex data
-  const snappedVertex = convertRgbToVertex(pixel.r, pixel.g, pixel.b);
+  const snappedVertex = rgbAsVertexAndColor(pixel);
   nurbsControlVertices[index] = snappedVertex;
 
   // update model data image
-  const { x, y } = indexOfVertexToImageXy(index);
+  const { x, y } = indexOfImageDataToImageXy(index);
   updateModelDataPixel(x, y, pixel.r, pixel.g, pixel.b);
 
   updateVertexModelsPositionAndColor(index, snappedVertex, pixel);
 
   // update model
-  drawModelMesh(nurbsControlVertices);
+  drawModelMesh(nurbsControlVertices, options);
   // update wireframe
-  buildWireframeObject(nurbsControlVertices);
+  buildWireframeObject(nurbsControlVertices, options);
   // update nurbs surface
   drawNurbsSurfaceMesh(nurbsControlVertices);
 
-  displayNewlySelectedVertex();
+  displayNewlySelectedVertex(options);
 }
 
 function getPositionToCenterModel() {
@@ -342,6 +402,7 @@ function getPositionToCenterModel() {
 function moveModelToCenter() {
   const center = getPositionToCenterModel();
   const epsilon = vectorSnapSize() / 2;
+  const options = getModelReadOptions();
 
   // is already centered?
   if("xyz".split('').every(axis => 
@@ -352,7 +413,7 @@ function moveModelToCenter() {
   applyToModels((object) => {
     object.position.copy(center);
   });
-  saveVerticesPositionsToModelData();
+  saveVerticesPositionsToModelData(options);
   resetModelPositionRotationAndScale();
 }
 function resetModelPositionRotationAndScale() {
@@ -374,9 +435,9 @@ function applyToModels(callback) {
   ].forEach(callback);
 }
 function scaleModelToBoundingVolume() {
-  
+  const options = getModelReadOptions();
   // need to 'rebake' verticies to get the bounding box to scale in the correct directions
-  saveVerticesPositionsToModelData();
+  saveVerticesPositionsToModelData(options);
   resetModelPositionRotationAndScale();
   const epsilon = vectorSnapSize() / 2;
   const maxLength = MAX_MODEL_SIZE - epsilon;
@@ -405,7 +466,7 @@ function scaleModelToBoundingVolume() {
       object.position.copy(center);
     });
   
-    saveVerticesPositionsToModelData();
+    saveVerticesPositionsToModelData(options);
     resetModelPositionRotationAndScale();
   }
 };
@@ -427,7 +488,7 @@ function overwriteUnusedPixelsWithContext(source, targetCtx, options) {
   const height = options.height;
   for(let x = 0; x < width; x++) {
     for(let y = 0; y < height; y++) {
-      const isUsed = isImageXyVertex(x, y, options);
+      const isUsed = imageXyIsImageData(x, y, options);
       if(isUsed) continue;
       const [r, g, b] = source.getImageData(x, y, 1, 1).data;
       setPixelColorOnImageOfData(x, y, r, g, b, targetCtx);
@@ -435,9 +496,9 @@ function overwriteUnusedPixelsWithContext(source, targetCtx, options) {
   }
 }
 function updateModelDataPixel(x, y, r, g, b, targetCtx = getModelCanvasContext(), options = getModelReadOptions()) {
-  const canRead = isImageXyVertex(x, y, options);
+  const canRead = imageXyIsImageData(x, y, options);
   if(!canRead) {
-    console.log('Pixel %sx%s is not a vector.', x, y);
+    // console.log('Pixel %sx%s is not a vector.', x, y); xxx
     return;
   }
 
@@ -504,7 +565,7 @@ function applyOriginalVectorsToModelDataImage() {
   const source = originalImageContext();
   for(let x = 0; x < image2D.width; x++) {
     for(let y = 0; y < image2D.height; y++) {
-      const isUsed = isImageXyVertex(x, y, getModelReadOptions());
+      const isUsed = imageXyIsImageData(x, y, getModelReadOptions());
       if(!isUsed) continue;
       const [r, g, b] = source.getImageData(x, y, 1, 1).data;
       updateModelDataPixel(x, y, r, g, b);
@@ -522,7 +583,7 @@ function applyVectorsToModelDataImage(targetCtx, options) {
       xyz = xyz.map(mapClamp(0, 255));
     }
     const rgb = bytePositionAsPixelRgb(...xyz);
-    const point = indexOfVertexToImageXy(i, options);
+    const point = indexOfImageDataToImageXy(i, options);
     updateModelDataPixel(point.x, point.y, rgb.r, rgb.g, rgb.b, targetCtx, options);
   });
 }
@@ -530,14 +591,19 @@ function getModelReadOptions() {
   const width = image2D.width;
   const height = image2D.height;
   const segments = downsampleSegments(width, height);
+  const mapping = MAPPING_TYPE[DEFAULT_MAPPING_TYPE];
   return {
     width: width,
     height: height,
     hDown: segments.horizontalDownsample,
-    vDown: segments.verticalDownsample
+    vDown: segments.verticalDownsample,
+    rows: segments.vertical,
+    columns: segments.horizontal,
+    mapping
   }
 }
 function updateVerticyPositions() {
+  const options = getModelReadOptions();
   updateModelDataUnusedPixels(
     getModelCanvasContext(),
     getModelReadOptions()
@@ -553,7 +619,7 @@ function updateVerticyPositions() {
   modelScale.set(1, 1, 1);
   modelRotation.set(0, 0, 0);
   modelPosition.set(0, 0, 0);
-  saveVerticesPositionsToModelData();
+  saveVerticesPositionsToModelData(options);
 }
 function mapClamp(min, max) {
   return (value) => Math.min(max, Math.max(min, value));
@@ -708,7 +774,7 @@ function clampDimensions(source) {
     saveVerticesPositionsToModelData(source);
   }
 }
-function saveVerticesPositionsToModelData() {
+function saveVerticesPositionsToModelData(options) {
   if(!selectedVerticesObject) return;
   if(!pointCloudObject) return;
   let changed = false;
@@ -720,23 +786,21 @@ function saveVerticesPositionsToModelData() {
     const byteVertex = "xyz".split('').reduce((v, axis) => ({ ... v, 
       [axis]: mapControlVectorValueAsByte(vertex[axis])
     }), {});
-    const { r, g, b } = bytePositionAsPixelRgb(byteVertex.x, byteVertex.y, byteVertex.z);
-    const snappedVertex = convertRgbToVertex(r, g, b);
+    const rgb = bytePositionAsPixelRgb(byteVertex.x, byteVertex.y, byteVertex.z);
+    const snappedVertex = rgbAsVertexAndColor(rgb);
 
-    if(r === pixels[index][PIXEL_RED_INDEX] &&
-      g === pixels[index][PIXEL_GREEN_INDEX] &&
-      b === pixels[index][PIXEL_BLUE_INDEX]) {
+    if(rgb.r === pixels[index].r &&
+      rgb.g === pixels[index].g &&
+      rgb.b === pixels[index].b) {
       // Nothing changed
       return;
     }
     changed = true;
 
     // update model data
-    pixels[index][PIXEL_RED_INDEX] = r;
-    pixels[index][PIXEL_GREEN_INDEX] = g;
-    pixels[index][PIXEL_BLUE_INDEX] = b;
+    pixels[index] = rgb;
 
-    if(index === getSelectedIndex()) {
+    if(index === getSelectedIndex(options)) {
       document.getElementById('selected-pos-vector').innerText = `<${
         [snappedVertex.x, snappedVertex.y, snappedVertex.z].map(v => v.toFixed(3)).join(', ')
       }>`;
@@ -752,11 +816,11 @@ function saveVerticesPositionsToModelData() {
     nurbsControlVertices[index] = snappedVertex;
 
     // update model data image
-    const { x, y } = indexOfVertexToImageXy(index);
-    updateModelDataPixel(x, y, r, g, b);
+    const { x, y } = indexOfImageDataToImageXy(index);
+    updateModelDataPixel(x, y, rgb.r, rgb.g, rgb.b);
 
     // update vertex models
-    updateVertexModelsPositionAndColor(index, snappedVertex, {r, g, b});
+    updateVertexModelsPositionAndColor(index, snappedVertex, rgb);
   
     // update selected vertices model with updated vertex xyz (byte translation)
   });
@@ -783,19 +847,19 @@ function saveVerticesPositionsToModelData() {
     document.getElementById(`rotation-${axis}`).value = rotation.toFixed(2);
   });
   // update model
-  drawModelMesh(nurbsControlVertices);
+  drawModelMesh(nurbsControlVertices, options);
   // update wireframe
-  buildWireframeObject(nurbsControlVertices);
+  buildWireframeObject(nurbsControlVertices, options);
   // update nurbs surface
-  drawNurbsSurfaceMesh(nurbsControlVertices);
+  drawNurbsSurfaceMesh(nurbsControlVertices, options);
 }
-function updateVertexModelsPositionAndColor(index, {x,y,z}, {r, g, b}) {
+function updateVertexModelsPositionAndColor(index, {x,y,z}, rgb) {
   [
     pointCloudObject.children[index],
     selectedVerticesObject.children[index]
   ].forEach(object => {
     object.position.set(x, y, z);
-    object.material.color = new THREE.Color(rgbLong(r, g, b));
+    object.material.color = rgbAsColor(rgb);
     object.material.needsUpdate = true;
   });
 };
@@ -805,12 +869,12 @@ function getPositionAsBytes() {
   const z = parseInt(document.getElementById('selected-pos-z-value').value);
   return { x, y, z };
 }
-function updateModelVertexPosition() {
+function updateModelVertexPosition(options) {
   const pos = getPositionAsBytes();
   const rgb = bytePositionAsPixelRgb(pos.x, pos.y, pos.z);
 
-  const i = getSelectedIndex();
-  const point = indexOfVertexToImageXy(i);
+  const i = getSelectedIndex(options);
+  const point = indexOfImageDataToImageXy(i);
 
   const tempCanvas = document.createElement('canvas');
   tempCanvas.width = image2D.width;
@@ -916,30 +980,17 @@ function setSelectedIndexOfVertex(index) {
   selectedVerticesObject.children.forEach(mesh => {
     mesh.visible = mesh.userData.index === index;
   });
-  displayRowAndColumnAfterVertexIndexChanged();
+  handleSelectedIndexChanged();
 }
 
-function displayIndexOfVertexAfterRowOrColumnChanged() {
+function handleRowOrColumnChanged() {
+  const options = getModelReadOptions();
   const i = rowColumnToIndexOfVertex(
     parseInt(document.getElementById('vertex-row-range').value),
     parseInt(document.getElementById('vertex-column-range').value),
-    horizontalSegments,
-    verticalSegments
+    options
   );
   setSelectedIndexOfVertex(i);
-}
-function indexOfVertexToRowAndColumn(i) {
-  const row = Math.floor(i / (horizontalSegments + 1));
-  let column = i % (horizontalSegments + 1);
-  // hidden column for seam is first column
-  if(column === horizontalSegments) {
-    column = 0;
-  }
-  // poles only use center pixel
-  if(row === 0 || row === verticalSegments) {
-    column = Math.floor(horizontalSegments / 2);
-  }
-  return { row, column };
 }
 function getVertexByUvMapping(u, v) {
   let column = u * horizontalSegments + 1;
@@ -947,16 +998,17 @@ function getVertexByUvMapping(u, v) {
 
   column = Math.floor(column - 0.5);
   row = Math.floor(row - 0.5);
-  return rowColumnToIndexOfVertex(row, column, horizontalSegments, verticalSegments);
+  return rowColumnToIndexOfVertex(row, column, options);
 }
-function displayRowAndColumnAfterVertexIndexChanged(){
+function handleSelectedIndexChanged() {
+  const options = getModelReadOptions();
   const i = parseInt(document.getElementById('vertex-index-range').value);
-  const { row, column } = indexOfVertexToRowAndColumn(i);
+  const { row, column } = indexOfImageDataToRowAndColumn(i);
   document.getElementById('vertex-row-range').value = row;
   document.getElementById('vertex-column-range').value = column;
   document.getElementById('vertex-row-value').value = row;
   document.getElementById('vertex-column-value').value = column;
-  displayNewlySelectedVertex()
+  displayNewlySelectedVertex(options)
 }
 function translatePointerCoordinates({clientX, clientY}, canvas, image) {
   const border = 1;
@@ -970,46 +1022,39 @@ function translatePointerCoordinates({clientX, clientY}, canvas, image) {
     y: y * scaleY
   };
 }
-function handle2DCanvasClick(event) {
+function handleModelImageClicked(event) {
+  const options = getModelReadOptions();
   let {x, y} = translatePointerCoordinates(event, canvas2D, image2D);
-  const column = Math.floor(x / Math.pow(2, segments.horizontalDownsample + 1));
-  const row = Math.floor(y / Math.pow(2, segments.verticalDownsample + 1));
-  const i = rowColumnToIndexOfVertex(
-    row,
-    column,
-    horizontalSegments,
-    verticalSegments
-  );
-  setSelectedIndexOfVertex(i);
+  const index = imageXyToClosestIndexOfImageData(x, y, options);
+  setSelectedIndexOfVertex(index);
 }
 function pixelIndexAsHexArray(index) {
-  return Array.from(pixels[index]).map(v => v.toString(16).padStart(2, '0'));
+  return "rgb".split('').map(channel => pixels[index][channel].toString(16).padStart(2, '0'));
 }
-function displayNewlySelectedVertex() {
-  const i = getSelectedIndex();
+function displayNewlySelectedVertex(options) {
+  const i = getSelectedIndex(options);
   const hexArray = pixelIndexAsHexArray(i);
   "rgb".split('').forEach((channel, idx) => {
     document.getElementById(`model-data-${channel}`).innerText = hexArray[idx];
   });
   document.getElementById('vertex-color').style.backgroundColor = '#' + hexArray.join('');
 
-  displayVertexPosition()
+  displayVertexPosition(options)
   drawModelCanvas();
 }
-function getSelectedIndex() {
+function getSelectedIndex(options) {
   return rowColumnToIndexOfVertex(
     parseInt(document.getElementById('vertex-row-range').value),
     parseInt(document.getElementById('vertex-column-range').value),
-    horizontalSegments,
-    verticalSegments
+    options
   );
 }
-function displayVertexPosition() {
-  const i = getSelectedIndex();
-  const [r, g, b] = pixels[i];
-  const x = getPixelValueForAxis('x', r, g, b);
-  const y = getPixelValueForAxis('y', r, g, b);
-  const z = getPixelValueForAxis('z', r, g, b);
+function displayVertexPosition(options) {
+  const i = getSelectedIndex(options);
+  const rgb = pixels[i];
+  const x = axisValueOfRgb(rgb, 'x');
+  const y = axisValueOfRgb(rgb, 'y');
+  const z = axisValueOfRgb(rgb, 'z');
   document.getElementById('selected-pos-x-range').value = x;
   document.getElementById('selected-pos-x-value').value = x;
   document.getElementById('selected-pos-y-range').value = y;
@@ -1021,23 +1066,23 @@ function displayVertexPosition() {
   }>`;
 }
 function drawModelCanvas() {
+  const options = getModelReadOptions();
   updateModelDataUnusedPixels(
     getModelCanvasContext(),
-    getModelReadOptions()
+    options
   );
   applyVectorsToModelDataImage(
     getModelCanvasContext(),
-    getModelReadOptions()
+    options
   );
-  highlightVertex();
+  highlightVertex(options);
 }
-function highlightVertex() {
+function highlightVertex(options) {
   if(!pixels) return;
   const index = rowColumnToIndexOfVertex(
     parseInt(document.getElementById('vertex-row-range').value),
     parseInt(document.getElementById('vertex-column-range').value),
-    horizontalSegments,
-    verticalSegments
+    options
   );
 
   // 2D selection
@@ -1049,30 +1094,41 @@ function highlightVertex() {
   });
   
 }
-function highlightSelectedVertexOnImageOfData() {
-  const index = rowColumnToIndexOfVertex(
-    parseInt(document.getElementById('vertex-row-range').value),
-    parseInt(document.getElementById('vertex-column-range').value),
-    horizontalSegments,
-    verticalSegments
-  );
-  const [r, g, b] = pixels[index];
-  const isBlackBg = document.querySelector('input[name="unused-pixels"]:checked').value === 'black';
-  const outlineColor = isBlackBg ? 'white' : getContrastingColor(r, g, b);
+function highlightSelectedVertexOnImageOfData(options = getModelReadOptions()) {//hhh
+  const row = parseInt(document.getElementById('vertex-row-range').value);
+  const column = parseInt(document.getElementById('vertex-column-range').value);
 
-  const { x, y } = indexOfVertexToImageXy(index);
-  const canRead = isImageXyVertex(x, y, getModelReadOptions());
+  const index = rowColumnToIndexOfVertex(
+    row,
+    column,
+    options
+  );
+  if(isNaN(index) || index > options.mapping.dataCount) {
+    console.error('unable to highlight row %s column %s - index %s out of range 0 - %s',
+      row,
+      column,
+      index,
+      options.mapping.dataCount
+    );
+    return;
+  }
+  const rgb = pixels[index];
+  const isBlackBg = document.querySelector('input[name="unused-pixels"]:checked').value === 'black';
+  const outlineColor = isBlackBg ? 'white' : getContrastingColor(rgb);
+
+  const { x, y } = indexOfImageDataToImageXy(index);
+  const canRead = imageXyIsImageData(x, y, getModelReadOptions());
   if(!canRead) {
     console.log('About to update a pixel that should not be updated');
   }
-  const {row, column} = indexOfVertexToRowAndColumn(index);
-  const vIndex = rowColumnToIndexOfVertex(row, column, horizontalSegments, verticalSegments);
+  //const {row, column} = indexOfImageDataToRowAndColumn(index);
+  const vIndex = rowColumnToIndexOfVertex(row, column, options);
   if(vIndex !== index) {
     console.log('Data index %s does not map to row %s Column %s index %s', index, row, column, vIndex);
   }
 
   document.getElementById('selected-pixel-xy').innerText = `${x}x${y}`;
-  document.getElementById('selected-pixel-color').innerText = `rgb(${r}, ${g}, ${b})`;
+  document.getElementById('selected-pixel-color').innerText = `rgb(${rgb.r}, ${rgb.g}, ${rgb.b})`;
 
   const value = outlineColor === 'black' ? 0 : 255;
   for(let xx = x - 1; xx <= x + 1; xx++) {
@@ -1096,8 +1152,12 @@ function getModelCanvasContext() {
   ctx.imageSmoothingEnabled = false;
   return ctx;
 }
-function getContrastingColor(r, g, b) {
-  const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+function getContrastingColor(rgb) {
+  if(!rgb) {
+    console.error('Color not provided.');
+    return 'black';
+  }
+  const brightness = (rgb.r * 299 + rgb.g * 587 + rgb.b * 114) / 1000;
   return brightness > 125 ? 'black' : 'white';
 }
 function displayScaleValues() {
@@ -1490,14 +1550,75 @@ function imageOfModelDataLoaded() {
     vertexRowValueInput.value = verticalSegments;
   }
 
-  document.getElementById('horizontal-segments').innerText = horizontalSegments.toLocaleString() + " + 1";
-  document.getElementById('vertical-segments').innerText = verticalSegments.toLocaleString() + " + 1";
-  document.getElementById('horizontal-downsampling').innerText = segments.horizontalDownsample === 0 ? '' : `(downsampled: ${segments.horizontalDownsample})`;
-  document.getElementById('vertical-downsampling').innerText = segments.verticalDownsample === 0 ? '' : `(downsampled: ${segments.verticalDownsample})`;
+  let count = 0;
+  let vectors = 'Coordinates of Vectors in image:<br>';
+  let lastRow = '';
+  const options = getModelReadOptions();
+  let mismatchCount = 0;
+  for(let y = 0; y < image2D.height; y++) {
+    const xx = [];
+    for(let x = 0; x < image2D.width; x++) {
+      if(imageXyIsImageData(x, y, options)) {
+        xx.push(x.toLocaleString());
+        const rc = indexOfImageDataToRowAndColumn(count, options);
+        const xy = indexOfImageDataToImageXy(count, options);
+        if(xy.x !== x || xy.y !== y) {
+          mismatchCount++;
+          if(mismatchCount < 5) {
+            console.log('mismatch %sx%s to %s (row: %s, col: %s) - got %sx%s', x, y, count, rc.row, rc.column, xy.x, xy.y);
+          }
+        }
+        count++;
+      }
+    }
+    if(xx.length !== 0) {
+      let row = xx.join(', ');
+      if(lastRow === row) {
+        vectors += `Y ${y.toLocaleString()} X: same<br>`;
+      } else {
+        vectors += `Y ${y.toLocaleString()} X: ${xx.join(', ')}<br>`;
+      }
+      lastRow = row;
+    }
+  }
+  document.getElementById('image-data-coordinates').innerHTML = count.toLocaleString() + ' ' + vectors;
+
+  let grid = `Index 0 to ${options.mapping.dataCount-1} as Row/Columns:`;
+  let row = 0;
+  let lastColList = '';
+  let cols = [];
+  for(let i = 0; i < options.mapping.dataCount; i++) {
+    const rc =   indexOfImageDataToRowAndColumn(i);
+    if(rc.row !== row) {
+      const colList = cols.join(', ');
+      if(colList === lastColList) {
+        grid += `<br>Row ${row}, Columns: same`;
+      } else {
+        grid += `<br>Row ${row}, Columns: ${colList}`;
+      }
+      lastColList = colList;
+      cols = [];
+      row = rc.row;
+    }
+    cols.push(rc.column.toLocaleString());
+    
+  }
+  const colList = cols.join(', ');
+  if(colList === lastColList) {
+    grid += `<br>Row ${row}, Columns: same`;
+  } else {
+    grid += `<br>Row ${row}, Columns: ${colList}`;
+  }
+
+  document.getElementById('model-data-count').innerText = options.mapping.dataCount.toLocaleString() + ' === (isXyVertex: ' + count.toLocaleString() + ')';
+  document.getElementById('model-data-vector-count').innerText = options.mapping.vectorCount.toLocaleString();
+
+  document.getElementById('rows-and-columns').innerText = `${options.mapping.y}x${options.mapping.x}`;
+  document.getElementById('rows-and-columns-data').innerHTML = grid;
 
   const imageData = ctx.getImageData(0, 0, image2D.width, image2D.height).data;
-  pixels = getModelPixels(imageData, segments);
-  nurbsControlVertices = pixels.map(([r, g, b]) => convertRgbToVertex(r, g, b));
+  pixels = getPixelValuesFromModelData(imageData, options);
+  nurbsControlVertices = pixels.map(rgbAsVertexAndColor);
 
   // Draw frame around selected pixel
   highlightSelectedVertexOnImageOfData();
@@ -1507,15 +1628,15 @@ function imageOfModelDataLoaded() {
   const vertexIndexValueInput = document.getElementById('vertex-index-value');
   vertexIndexRangeInput.max = vertexCount - 1;
   vertexIndexValueInput.max = vertexCount - 1;
-  drawObjects(nurbsControlVertices);
+  drawObjects(nurbsControlVertices, options);
 }
-function drawObjects(nurbsControlVertices) {
-  drawModelMesh(nurbsControlVertices);
+function drawObjects(nurbsControlVertices, options) {
+  drawModelMesh(nurbsControlVertices, options);
   buildPointCloud(nurbsControlVertices);
   buildWireframeObject(nurbsControlVertices);
-  drawNurbsSurfaceMesh(nurbsControlVertices);
+  drawNurbsSurfaceMesh(nurbsControlVertices, options);
   drawSelectionVertices();
-  displayNewlySelectedVertex();
+  displayNewlySelectedVertex(options);
 }
 function mapByteToControlVectorValue(byteValue) {
   return (byteValue / 255) - 0.5;
@@ -1530,67 +1651,75 @@ function mapControlVectorValueAsByte(position) {
   const value = Math.round((position + 0.5) * 255);
   return clamp(value, 0, 255);
 }
-function rgbLong(r, g, b) {
-  return (r << 16) | (g << 8) | b;
+function rgbAsColor(rgb) {
+  return new THREE.Color((rgb.r << 16) | (rgb.g << 8) | rgb.b);
 }
 function bytePositionAsPixelRgb(x, y, z) {
   return { r: z, g: x, b: y };
 }
-function getPixelValueForAxis(axis, r, g, b) { 
-  if(axis === 'x') return g;
-  if(axis === 'y') return b;
-  return r;
+function axisValueOfRgb(rgb, axis) { 
+  const map = {
+    x: 'g',
+    y: 'b',
+    z: 'r'
+  };
+  return rgb[map[axis]];
 }
-function convertRgbToVertex(r, g, b) {
+function rgbAsVertexAndColor(rgb) {
   return {
-    color: rgbLong(r, g, b),
-    x: mapByteToControlVectorValue(getPixelValueForAxis('x', r, g, b)),
-    y: mapByteToControlVectorValue(getPixelValueForAxis('y', r, g, b)),
-    z: mapByteToControlVectorValue(getPixelValueForAxis('z', r, g, b))
+    color: rgbAsColor(rgb.r, rgb.g, rgb.b),
+    x: mapByteToControlVectorValue(axisValueOfRgb(rgb, 'x')),
+    y: mapByteToControlVectorValue(axisValueOfRgb(rgb, 'y')),
+    z: mapByteToControlVectorValue(axisValueOfRgb(rgb, 'z'))
   };
 }
-
-function surviveDownsampling(value, amount) {
-  for(let i = 1; i <= amount; i++) {
-    if(value % Math.pow(2, i+1) === i * 2) return false;
+function indexOfImageDataToImageXy(i, options = getModelReadOptions()) {
+  const { row, column } = indexOfImageDataToRowAndColumn(i, options);
+  let x = column * Math.pow(2, options.hDown + 1);
+  let y = (row * Math.pow(2, options.vDown + 1));
+  if(row !== 0) {
+    y -= options.vDown + 1;
   }
+  // x -= offset.x;
+  return { x, y };
+}
+function imageXyToClosestIndexOfImageData(x, y, options) {
+  x = Math.floor(x);
+  y = Math.floor(y);
+  const column = Math.round((x / options.width) * options.columns);
+  const row = Math.round((y / options.height) * options.rows);
+  const index = rowColumnToIndexOfVertex(
+    row,
+    column,
+    options
+  );
+  return index;
+}
+function imageXyIsImageData(x, y, options) {
+  if(y === 0 || y === options.height - 1) return x === Math.floor(options.width / 2);  
+  if(y % (options.vDown + 2) !== 1) return false;
+  if(x % (options.hDown + 2) !== 0) return false;
   return true;
 }
-function getOffset(options) {
-  const vMap = {
-    16: 0,
-    32: 0,
-    64: 1,
-    128: 3,
-    256: 7,
-    512: 15,
-    1024: 31
-  };
-  return {
-    x: 0,
-    y: vMap[options.height]
-  };
-
-}
-function indexOfVertexToImageXy(i, options = getModelReadOptions()) {
-  const { row, column } = indexOfVertexToRowAndColumn(i);
-  const offset = getOffset(options);
-  return {
-    x: column * Math.pow(2, options.hDown + 1) + offset.x,
-    y: (row * Math.pow(2, options.vDown + 1)) + offset.y
-  };
-}//xxx
-function isImageXyVertex(x, y, options) {
-  const offset = getOffset(options);
-  // Top/bottom poles
-  if(y === 0 || y === height - 1) return x === Math.floor(options.width / 2);  
-  // verticalOffset
-  y -= offset.y;
-  x -= offset.x;
-  if(x % 2 === 1 || y % 2 === 1) return false;
-  if(!surviveDownsampling(x, options.hDown)) return false;
-  if(!surviveDownsampling(y, options.vDown)) return false;
-  return true;
+function indexOfImageDataToRowAndColumn(i, options = getModelReadOptions()) {
+  if(i >= options.mapping.dataCount) {
+    console.error('index %s out of range. Max %s', i, options.mapping.dataCount - 1);
+  }
+  if(i === 0) {
+    // poles use center column
+    i += Math.floor(options.columns / 2);
+  } else if(i === options.mapping.dataCount -1) {
+    // account for top pole with 1 column
+    i += options.columns - 1;
+    // bottom pole uses center column
+    i += Math.floor(options.columns / 2);
+  } else {
+    // account for top pole with 1 column
+    i += options.columns - 1;
+  }
+  const row = Math.floor(i / options.rows);
+  let column = i % options.rows;
+  return { row, column };
 }
 function downsampleSegments(width, height) {
   width /= 2;
@@ -1614,37 +1743,19 @@ function downsampleSegments(width, height) {
   }
   return segments;
 }
-function getModelPixels(imageData, segments) {
-  const width = canvas2D.width;
-  const height = canvas2D.height;
-  const pixelDataBytes = 4;
-  // get pixels in row major order, top to bottom, left to right as (r, g, b, a)
-  const controlVertices = [];
-
-  let lastRow = -1;
-  let firstVirtex = null;
-
-  for(let i = 0; i < imageData.length; i += pixelDataBytes) {
-    const x = (i / pixelDataBytes) % width;
-    const y = Math.floor((i / pixelDataBytes) / width);
-    if(!isImageXyVertex(x, y, getModelReadOptions())) continue;
-
-    if(y !== lastRow) {
-      if(firstVirtex) controlVertices.push(firstVirtex);
-      lastRow = y;
-    }
-
-    const vertex = imageData.slice(i, i + 3);
-    controlVertices.push(vertex);
-    if(x === 0) firstVirtex = vertex;
-    if(y === 0 || y === height - 1) {
-      // repeat vector for all segments at the poles
-      for(let j = 0; j < segments.horizontal; j++) {
-        controlVertices.push(vertex);
-      }
-    }
+function getPixelValuesFromModelData(imageData, options = getModelReadOptions()) {
+  const pixels = [];
+  const PIXEL_SIZE = 4;
+  for(let i = 0; i < options.mapping.dataCount; i++) {
+    const { x, y } = indexOfImageDataToImageXy(i, options);
+    const imageIndex = (x + (y * options.width)) * PIXEL_SIZE;
+    pixels.push({
+      r: imageData[imageIndex],
+      g: imageData[imageIndex + 1],
+      b: imageData[imageIndex + 2]
+    });
   }
-  return controlVertices;
+  return pixels;
 }
 function buildPointCloud(controlVertices) {
   removeObjectFromList(pointCloudObject);
@@ -1670,13 +1781,13 @@ function buildPointCloud(controlVertices) {
   addObjectToList(pointCloudObject);
 }
 function drawSelectionVertices() {  
-  const vertices = pixels.map(([r, g, b]) => convertRgbToVertex(r, g, b));
+  const vertices = pixels.map(rgbAsVertexAndColor);
   removeObjectFromList(selectedVerticesObject);
   const selectedIndex = parseInt(document.getElementById('vertex-index-range').value);
   const object = new THREE.Object3D();
   object.name = 'Vertices';
   vertices.forEach(({ x, y, z, color }, i) => {
-    const {row, column} = indexOfVertexToRowAndColumn(i);
+    const {row, column} = indexOfImageDataToRowAndColumn(i);
     if(row === 0 || row === verticalSegments) {
       // poles only use center pixel
       if(column != Math.floor(horizontalSegments / 2)) return;
@@ -1701,30 +1812,21 @@ function drawSelectionVertices() {
   selectedVerticesObject = object;
   addObjectToList(object);
 }
-function rowColumnToIndexOfVertex(row, column, horizontalSegments, verticalSegments) {
-  if(row >= verticalSegments || row <= 0) {
-    // poles of top and bottom are centered
-    column = Math.floor(horizontalSegments / 2);
-  }
-  // keep row within bounds
-  if(row < 0) {
-    row = 0;
-  } else if(row >= verticalSegments) {
-    // HACK: seems center pixel is not in the proper place?
-    return ((horizontalSegments + 1) * verticalSegments);
-    // row = verticalSegments - 1;
-  }
-if(column < 0) {
-  // stitch left to right
-  column += horizontalSegments + 1;
-} else if(column >= horizontalSegments) {
-  // stitch right to left
-  column -= horizontalSegments + 1;
-}
-  return row * (horizontalSegments + 1) + column;
+function rowColumnToIndexOfVertex(row, column, options = getModelReadOptions()) {
+  // handle poles
+  if(row <= 0) return 0;
+  if(row >= options.rows - 1) return options.mapping.dataCount -1;
+  
+  // offset for top pole
+  column++;
+
+  // stitch left/right
+  column = column % options.columns;
+
+  return ((row - 1) * options.columns) + column;
 }
 
-function drawNurbsSurfaceMesh(controlVertices) {
+function drawNurbsSurfaceMesh(controlVertices, options) {
   removeObjectFromList(nurbsObject);
   let degrees = parseInt(document.getElementById('nurbs-degrees').value);
 
@@ -1745,7 +1847,7 @@ function drawNurbsSurfaceMesh(controlVertices) {
   for(let column = 0; column < horizontalSegments+1; column++) {
     const vPoints = [];
     for(let row = 0; row < verticalSegments+1; row++) {
-      const index = rowColumnToIndexOfVertex(row, column, horizontalSegments, verticalSegments);
+      const index = rowColumnToIndexOfVertex(row, column, options);
       const { x, y, z } = controlVertices[index];
       vPoints.unshift(new THREE.Vector4(x, y, z, 1));
     }
@@ -1792,9 +1894,9 @@ function makeClosedUniformKnots(spans, degreeOfRepeat) {
   }
   return knots;
 }
-function buildWireframeObject(vertices) {
+function buildWireframeObject(vertices, options) {
   removeObjectFromList(wireframeObject);
-  const controlMeshGeometry = createBufferGeometry(vertices, horizontalSegments, verticalSegments);
+  const controlMeshGeometry = createBufferGeometry(vertices, options);
   const controlMeshMaterial = new THREE.MeshStandardMaterial( { color: 0xFFFFFF, wireframe: true } );
   wireframeObject = new THREE.Mesh(controlMeshGeometry, controlMeshMaterial);
   wireframeObject.name = 'Wireframe';
@@ -1803,20 +1905,40 @@ function buildWireframeObject(vertices) {
   wireframeObject.visible = document.getElementById('show-control-mesh').checked;
   addObjectToList(wireframeObject);
 }
-function drawModelMesh(controlVertices) {
+function drawModelMesh(controlVertices, options) {
+  if(controlVertices.length !== options.mapping.dataCount) {
+    console.error('Expected %s vertices, received %s',
+      options.mapping.dataCount,
+      controlVertices.length
+    );
+    return;
+  }
   removeObjectFromList(modelObject);
   function getPoint(u, v, target) {
-    
-    let column = Math.floor(u * (horizontalSegments + 1));
-    let row = Math.floor((1 - v) * (verticalSegments + 1));
+    let column = Math.floor(u * (options.columns + 1));
+    let row = Math.floor((1 - v) * (options.rows + 1));
     const index = rowColumnToIndexOfVertex(
       row,
       column, 
-      horizontalSegments,
-      verticalSegments
+      options
     );
-    const { x, y, z } = controlVertices[index];
-    target.set(x, y, z);
+    if(index > options.mapping.dataCount) {
+      console.error('Attempting to getPoint(u: %s, v: %s) for row %s col %s, but %s out of range (%s max)', 
+        u.toFixed(2),
+        v.toFixed(2),
+        row,
+        column,
+        index,
+        options.mapping.dataCount - 1
+      );
+      target.set(0, 0, 0);
+    }
+    // hhh
+    const xyz = controlVertices[index];
+    if(!xyz) {
+      console.error('Control Vertices Index %s returned nothing', index, controlVertices)
+    }
+    target.set(xyz.x, xyz.y, xyz.z);
   }
   const geometry = new ParametricGeometry(getPoint, horizontalSegments, verticalSegments);
   geometry.computeVertexNormals();
@@ -1841,15 +1963,15 @@ function drawModelMesh(controlVertices) {
   attachTransformControls(modelObject);
   addObjectToList(modelObject);
 }
-function createBufferGeometry(vertices, horizontalSegments, verticalSegments) {
+function createBufferGeometry(vertices, options = getModelReadOptions()) {
   const controlMeshGeometry = new THREE.BufferGeometry();
-  const positions = createSphericalVertices(vertices, horizontalSegments, verticalSegments);
+  const positions = createSphericalVertices(vertices, options.columns, options.rows);
   controlMeshGeometry.setAttribute('position', positions);
-  const indexedTriangles = createSphericalControlTriangles(horizontalSegments, verticalSegments);
+  const indexedTriangles = createSphericalControlTriangles(options);
   controlMeshGeometry.setIndex(indexedTriangles);
   controlMeshGeometry.setDrawRange(0, indexedTriangles.length);
   controlMeshGeometry.computeVertexNormals();
-  const uvs = createUvMappingForSphere(controlMeshGeometry.attributes.position.count, horizontalSegments, verticalSegments);
+  const uvs = createUvMappingForSphere(controlMeshGeometry.attributes.position.count, options.columns, options.rows);
   controlMeshGeometry.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
   controlMeshGeometry.computeTangents();
 
@@ -1911,14 +2033,14 @@ function createSphericalVertices(vertices, horizontalSegments, verticalSegments)
   return new THREE.BufferAttribute(values, 3);
 }
 
-function createSphericalControlTriangles(horizontalSegments, verticalSegments) {
+function createSphericalControlTriangles(options) {
   var indexedTriangles = [];
   for(let column = 0; column < horizontalSegments; column++) {
     for(let row = 0; row < verticalSegments; row++) {
-      const centerIndex = rowColumnToIndexOfVertex(row, column, horizontalSegments, verticalSegments);
-      const bottomRightIndex = rowColumnToIndexOfVertex(row + 1, column + 1, horizontalSegments, verticalSegments);
-      const bottomIndex = rowColumnToIndexOfVertex(row + 1, column, horizontalSegments, verticalSegments);
-      const rightIndex = rowColumnToIndexOfVertex(row, column + 1, horizontalSegments, verticalSegments);
+      const centerIndex = rowColumnToIndexOfVertex(row, column, options);
+      const bottomRightIndex = rowColumnToIndexOfVertex(row + 1, column + 1, options);
+      const bottomIndex = rowColumnToIndexOfVertex(row + 1, column, options);
+      const rightIndex = rowColumnToIndexOfVertex(row, column + 1, options);
       // Add triangles in counter-clockwise order
       if(row === 0) {
         // triangles at top pole
@@ -2235,7 +2357,7 @@ function exportImage() {
   downloadCanvasAsFile(fileName('png'), 'image/png', canvas);
 
   // display selected vertex
-  highlightVertex();
+  highlightVertex(options);
 }
 function includeTextures() {
   return document.getElementById('export-texture').checked

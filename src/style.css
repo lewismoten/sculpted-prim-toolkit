@@ -83,7 +83,7 @@ body {
   font-family: monospace;
   font-size: xx-small;
 }
-[title] {
+.has-tooltip, [title] {
   cursor: help;
   border-bottom: 1px dotted black;
 }
@@ -102,6 +102,23 @@ body {
   border-radius: 5px;
 }
 [title]:hover::after {
+  display: block;
+}
+.tooltip {
+  display: none;
+  font-size: x-small;
+  position: absolute;
+  z-index: 1;
+  display: none;
+  pointer-events: none;
+  top: 50%;
+  left: 0;
+  padding: 20px 20px;
+  background-color: rgb(65, 0, 145);
+  color: #ffffff;
+  border-radius: 5px;  
+}
+.tooltip[data-open=true] {
   display: block;
 }
 .axis-x {

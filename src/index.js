@@ -1587,14 +1587,14 @@ function isImageXyVertex(x, y, width, height) {
   return true;
 }
 function downsampleSegments(width, height) {
-  width /= 2;
-  height /= 2;
   const segments = {
     horizontal: width,
     vertical: height,
     horizontalDownsample: 0,
     verticalDownsample: 0
   }
+  width /= 2;
+  height /= 2;
   while(segments.horizontal * segments.vertical > MAX_VERTECES) {
     const max = Math.max(segments.horizontal, segments.vertical);
     if(max === segments.horizontal) {

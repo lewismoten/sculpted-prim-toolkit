@@ -12,14 +12,6 @@ const defaultCameraAngle = 'iso';
 const defaultModel = 'UFO Sculpty 1.0.png';
 const defaultSkin = 'UFO.Blue.1.0.png';
 
-// for 64x64 0x1 good
-// for 128x128 0x3 good
-// for 256x256 0x7 ???
-// for 512x512 0xf ???
-// for 1024x1024 0x1f ???
-
-const HORIZONTAL_OFFSET = 0;
-const VERTICAL_OFFSET = 3; // Y starts at 1, not zero as in the technicial documentation
 const MAX_VERTECES = 1024;
 const PIXEL_RED_INDEX = 0;
 const PIXEL_GREEN_INDEX = 1;
@@ -1587,7 +1579,7 @@ function indexOfVertexToImageXy(i, options = getModelReadOptions()) {
     x: column * Math.pow(2, options.hDown + 1) + offset.x,
     y: (row * Math.pow(2, options.vDown + 1)) + offset.y
   };
-}
+}//xxx
 function isImageXyVertex(x, y, options) {
   const offset = getOffset(options);
   // Top/bottom poles

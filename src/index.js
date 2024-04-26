@@ -1583,7 +1583,7 @@ function indexOfVertexToImageXy(i, options = getModelReadOptions()) {
 function isImageXyVertex(x, y, options) {
   const offset = getOffset(options);
   // Top/bottom poles
-  if(y === 0 || y === height - 1) return x === Math.floor(width / 2);  
+  if(y === 0 || y === height - 1) return x === Math.floor(options.width / 2);  
   // verticalOffset
   y -= offset.y;
   x -= offset.x;

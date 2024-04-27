@@ -1391,11 +1391,11 @@ function createDynamicModelDataTexture() {
 }
 function createDynamicModelDensityTexture() {
   const canvas = document.createElement('canvas');
-  canvas.height = canvas.width = 1024 * 1;
+  canvas.height = canvas.width = 1024 * 4;
   const ctx = canvas.getContext('2d', {willReadFrequently: true});
 
-  ctx.fillStyle = 'hsl(75, 100%, 100%)';
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  // ctx.fillStyle = 'black';
+  // ctx.fillRect(0, 0, canvas.width, canvas.height);
 
   const options = getModelReadOptions(image2D)
   // UV density map
@@ -1477,7 +1477,7 @@ function createDynamicModelDensityTexture() {
   console.log('triangles', trianglesXy.length, min, max);
   // draw triangles
   ctx.strokeStyle = 'black';
-  ctx.lineWidth = 1;
+  ctx.lineWidth = canvas.width / 1024;
   for(let i = 0; i < trianglesXy.length; i++) {
     const [xy1, xy2, xy3] = trianglesXy[i];
     const area = areas[i];

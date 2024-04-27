@@ -1502,11 +1502,11 @@ function createDynamicModelDensityTexture() {
   const sortedAreas = areas.slice().sort((a, b) => a-b);
   const medianCount = 3;
   const medians = [];
+  const areaSize = areas.length / (medianCount + 1);
   for(let i = 0; i < medianCount; i++) {
-    const areaIndex = Math.floor(i * (areas.length/(medianCount + 1)));
+    const areaIndex = Math.floor((i + 1) * areaSize);
     medians[i] = sortedAreas[areaIndex];
   }
-
   // draw triangles
   ctx.strokeStyle = 'black';
   ctx.lineWidth = canvas.width / 1024;
@@ -1514,8 +1514,7 @@ function createDynamicModelDensityTexture() {
     const [xy1, xy2, xy3] = trianglesXy[i];
     const area = areas[i];
     const weight = getWeight(area, {min, max, medians});
-    const hue = Math.floor(weight * 240); // red to blue
-    const color = `hsl(${hue}, 100%, 50%)`;
+    const color = getWeightedColor(weight);
     // const color = `hsl(0, 0%, ${Math.floor(weight * 100)}%)`
     ctx.beginPath();
     ctx.moveTo(xy1.x, xy1.y);
@@ -1539,10 +1538,49 @@ function rgbAreEqual(rgb1, rgb2) {
     rgb1.g === rgb2.g &&
     rgb1.b === rgb2.b;
 }
+function getWeightedColor(weight) {
+  weight = Math.min(1, Math.max(weight, 0));
+  const HUE_RED = 0;
+  const HUE_BLUE = 240;
+  const LUMINANCE_WHITE = 100;
+  const LUMINANCE_GREY = LUMINANCE_WHITE / 2;
+  // Red to blue (note: unused, will be overwritten)
+  let hue = Math.abs(HUE_RED + Math.floor(weight * (HUE_BLUE - HUE_RED)));
+  let saturation = 0;
+  let luminance = 50;
+  //  let luminance = Math.floor(weight * 100);
+
+  const COUNT = 4;
+  const SIZE = 1/COUNT;
+
+  if(weight < SIZE) {
+    hue = HUE_RED;
+    const delta = weight * COUNT;
+    // full saturation to half
+    saturation = 50 + Math.floor((1-delta) * 50);
+    // fade hue to white
+    luminance = LUMINANCE_GREY + Math.floor(delta * LUMINANCE_GREY);
+  } else if(weight < 1 - SIZE) {
+    hue = HUE_RED;
+    // middle range - 25% to 75%
+    // override hue with white
+    saturation = 0;
+    luminance = LUMINANCE_WHITE;
+  } else {
+    // translate weight for section 
+    const delta = (weight - (SIZE * (COUNT - 1))) * COUNT;
+    // white to blue
+    hue = HUE_BLUE;
+    saturation = 50 + Math.floor((delta) * 50);
+    // fade white to hue
+    luminance = LUMINANCE_GREY + Math.floor((1-delta) * LUMINANCE_GREY)
+  }
+  return `hsl(${hue}, ${saturation}%, ${luminance}%)`;
+}
 function getWeight(value, {min, max, medians}) {
   if(value <= min) return 0;
   if(value >= max) return 1;
-  const SEGMENT_SIZE = 1 / medians.length;
+  const SEGMENT_SIZE = 1 / (medians.length + 1);
   for(let i = 0; i <= medians.length; i++) {
     const median = i === medians.length ? max : medians[i];
     if(value <= median) {

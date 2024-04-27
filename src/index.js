@@ -1501,9 +1501,6 @@ function createDynamicModelDensityTexture() {
   const max = areas.reduce((max, area) => area === 0 ? max : Math.max(max, area), -Infinity);
   const median = areas.slice().sort((a, b) => a-b)[Math.floor(areas.length/2)];
 
-
-
-  console.log('triangles', trianglesXy.length, min, max);
   // draw triangles
   ctx.strokeStyle = 'black';
   ctx.lineWidth = canvas.width / 1024;

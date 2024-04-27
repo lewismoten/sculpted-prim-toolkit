@@ -1755,7 +1755,7 @@ function axisValueOfRgb(rgb, axis) {
 }
 function rgbAsVertexAndColor(rgb) {
   return {
-    color: rgbAsColor(rgb.r, rgb.g, rgb.b),
+    color: rgbAsColor(rgb),
     x: mapByteToControlVectorValue(axisValueOfRgb(rgb, 'x')),
     y: mapByteToControlVectorValue(axisValueOfRgb(rgb, 'y')),
     z: mapByteToControlVectorValue(axisValueOfRgb(rgb, 'z'))

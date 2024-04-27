@@ -2360,21 +2360,47 @@ function animate() {
   changeDirectionalLight();
   render();
 }
-let lastUnusedPixelUpdate = 0;
+
+function debounce(callback, delay) {
+  let timeoutId;
+  return function(...args) {
+    const context = this;
+    clearTimeout(timeoutId);
+    timeoutId = setTimeout(() => callback.apply(context, args), delay);
+  }
+}
+function throttle(callback, delay) {
+  let lastExecutionTime = 0;
+  let timeoutId;
+  return function(...args) {
+    const context = this;
+    const currentTime = Date.now();
+    const elapsedTime = currentTime - lastExecutionTime;
+    if(!lastExecutionTime || elapsedTime >= delay) {
+      callback.apply(context, args);
+      lastExecutionTime = currentTime;
+    } else {
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => {
+        callback.apply(context, args);
+        lastExecutionTime = currentTime;
+      }, delay - elapsedTime);
+    }
+  }
+}
+function renderLiveSceneOnUnusedPixels() {
+  updateModelDataUnusedPixels(
+    getModelCanvasContext(),
+    getModelReadOptions(image2D)  
+  );
+}
+const throttledRenderLiveSceneOnUnusedPixels = throttle(renderLiveSceneOnUnusedPixels, 100)
 function render() {
   renderer.render( scene, camera );
   const unusedPixels = document.querySelector('input[name="unused-pixels"]:checked').value;
   if(unusedPixels === 'camera') {
-    const time = Date.now();
-    if(time - lastUnusedPixelUpdate >= 1000) {
-      lastUnusedPixelUpdate = time;
-      updateModelDataUnusedPixels(
-        getModelCanvasContext(),
-        getModelReadOptions(image2D)  
-      );
-    }
+    throttledRenderLiveSceneOnUnusedPixels();
   };
-
   stats.update();
 }
 

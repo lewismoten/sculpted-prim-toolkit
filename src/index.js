@@ -226,10 +226,10 @@ function handleWindowLoad() {
     radianInput.max = Math.PI;
 
     selectedPosRange.addEventListener('input', () => {
-      changeSelectedVertexPosition(axis, parseInt(selectedPosRange.value), getModelReadOptions());
+      changeSelectedVertexPosition(axis, parseInt(selectedPosRange.value), getModelReadOptions(image2D));
     });
     selectedPosValue.addEventListener('input', () => {
-      changeSelectedVertexPosition(axis, parseInt(selectedPosValue.value), getModelReadOptions());
+      changeSelectedVertexPosition(axis, parseInt(selectedPosValue.value), getModelReadOptions(image2D));
     });
 
     setObjectScaleRange(axis, 1);
@@ -287,7 +287,7 @@ function handleWindowLoad() {
   });
   
   document.getElementById('nurbs-degrees').addEventListener('input', () => {
-    drawNurbsSurfaceMesh(nurbsControlVertices, getModelReadOptions());
+    drawNurbsSurfaceMesh(nurbsControlVertices, getModelReadOptions(image2D));
   });
   document.getElementById('no-rotation').addEventListener('click', () => {
     "xyz".split('').forEach(axis => {
@@ -402,7 +402,7 @@ function getPositionToCenterModel() {
 function moveModelToCenter() {
   const center = getPositionToCenterModel();
   const epsilon = vectorSnapSize() / 2;
-  const options = getModelReadOptions();
+  const options = getModelReadOptions(image2D);
 
   // is already centered?
   if("xyz".split('').every(axis => 
@@ -435,7 +435,7 @@ function applyToModels(callback) {
   ].forEach(callback);
 }
 function scaleModelToBoundingVolume() {
-  const options = getModelReadOptions();
+  const options = getModelReadOptions(image2D);
   // need to 'rebake' verticies to get the bounding box to scale in the correct directions
   saveVerticesPositionsToModelData(options);
   resetModelPositionRotationAndScale();
@@ -495,7 +495,7 @@ function overwriteUnusedPixelsWithContext(source, targetCtx, options) {
     }
   }
 }
-function updateModelDataPixel(x, y, r, g, b, targetCtx = getModelCanvasContext(), options = getModelReadOptions()) {
+function updateModelDataPixel(x, y, r, g, b, targetCtx = getModelCanvasContext(), options = getModelReadOptions(image2D)) {
   const canRead = imageXyIsImageData(x, y, options);
   if(!canRead) {
     // console.log('Pixel %sx%s is not a vector.', x, y); xxx
@@ -565,7 +565,7 @@ function applyOriginalVectorsToModelDataImage() {
   const source = originalImageContext();
   for(let x = 0; x < image2D.width; x++) {
     for(let y = 0; y < image2D.height; y++) {
-      const isUsed = imageXyIsImageData(x, y, getModelReadOptions());
+      const isUsed = imageXyIsImageData(x, y, getModelReadOptions(image2D));
       if(!isUsed) continue;
       const [r, g, b] = source.getImageData(x, y, 1, 1).data;
       updateModelDataPixel(x, y, r, g, b);
@@ -587,30 +587,68 @@ function applyVectorsToModelDataImage(targetCtx, options) {
     updateModelDataPixel(point.x, point.y, rgb.r, rgb.g, rgb.b, targetCtx, options);
   });
 }
-function getModelReadOptions() {
-  const width = image2D.width;
-  const height = image2D.height;
+function getModelName() {
+  const selector = document.getElementById('image-selector');
+  return selector.options[selector.selectedIndex].innerText;
+}
+let currentName;
+function modelNameChanged() {
+  const name = getModelName();
+  if(name !== currentName) {
+    currentName = name;
+    return true;
+  }
+  return false;
+}
+function getModelReadOptions(size = image2D) {
+  const width = size.width;
+  const height = size.height;
+  if(width <= 0 || height <= 0) {
+    throw "Width or Height cannot be zero!";
+  }
   const segments = downsampleSegments(width, height);
-  const mapping = MAPPING_TYPE[DEFAULT_MAPPING_TYPE];
-  return {
-    width: width,
-    height: height,
+  const mapping = {...MAPPING_TYPE[DEFAULT_MAPPING_TYPE]};
+  if(width < 32) {
+    // prim oven images are 16 x 256
+    // hard code these for now...
+    mapping.x = 8;
+    mapping.y = 129;
+    mapping.dataCount = (8 * 127) + 2;
+    mapping.vectorCount = 9 * 129;
+  }
+
+  const options = {
+    width,
+    height,
     hDown: segments.horizontalDownsample,
     vDown: segments.verticalDownsample,
     rows: segments.vertical,
     columns: segments.horizontal,
     mapping
+  };
+const o = clone(options);
+  // Check that top pole is applied
+  if(modelNameChanged()) {
+    const rc = indexOfImageDataToRowAndColumn(1, o);
+    if(!(rc.row === 1 && rc.column === 0)) {
+      console.log(getModelName(),JSON.parse(JSON.stringify(o)));
+      console.error('Expected index 1 to be Row 1, Column 0 but got Row %s Column %s', rc.row, rc.column);  
+    }
   }
+
+  return options;
 }
+const clone = o => JSON.parse(JSON.stringify(o));
+
 function updateVerticyPositions() {
-  const options = getModelReadOptions();
+  const options = getModelReadOptions(image2D);
   updateModelDataUnusedPixels(
     getModelCanvasContext(),
-    getModelReadOptions()
+    options
   );
   applyVectorsToModelDataImage(
     getModelCanvasContext(),
-    getModelReadOptions()
+    options
   );
   // rebuild models
   image2D.src = canvas2D.toDataURL();
@@ -984,7 +1022,7 @@ function setSelectedIndexOfVertex(index) {
 }
 
 function handleRowOrColumnChanged() {
-  const options = getModelReadOptions();
+  const options = getModelReadOptions(image2D);
   const i = rowColumnToIndexOfVertex(
     parseInt(document.getElementById('vertex-row-range').value),
     parseInt(document.getElementById('vertex-column-range').value),
@@ -1001,9 +1039,9 @@ function getVertexByUvMapping(u, v) {
   return rowColumnToIndexOfVertex(row, column, options);
 }
 function handleSelectedIndexChanged() {
-  const options = getModelReadOptions();
+  const options = getModelReadOptions(image2D);
   const i = parseInt(document.getElementById('vertex-index-range').value);
-  const { row, column } = indexOfImageDataToRowAndColumn(i);
+  const { row, column } = indexOfImageDataToRowAndColumn(i, options);
   document.getElementById('vertex-row-range').value = row;
   document.getElementById('vertex-column-range').value = column;
   document.getElementById('vertex-row-value').value = row;
@@ -1023,7 +1061,7 @@ function translatePointerCoordinates({clientX, clientY}, canvas, image) {
   };
 }
 function handleModelImageClicked(event) {
-  const options = getModelReadOptions();
+  const options = getModelReadOptions(image2D);
   let {x, y} = translatePointerCoordinates(event, canvas2D, image2D);
   const index = imageXyToClosestIndexOfImageData(x, y, options);
   setSelectedIndexOfVertex(index);
@@ -1066,7 +1104,7 @@ function displayVertexPosition(options) {
   }>`;
 }
 function drawModelCanvas() {
-  const options = getModelReadOptions();
+  const options = getModelReadOptions(image2D);
   updateModelDataUnusedPixels(
     getModelCanvasContext(),
     options
@@ -1094,7 +1132,7 @@ function highlightVertex(options) {
   });
   
 }
-function highlightSelectedVertexOnImageOfData(options = getModelReadOptions()) {//hhh
+function highlightSelectedVertexOnImageOfData(options = getModelReadOptions(image2D)) {//hhh
   const row = parseInt(document.getElementById('vertex-row-range').value);
   const column = parseInt(document.getElementById('vertex-column-range').value);
 
@@ -1117,7 +1155,7 @@ function highlightSelectedVertexOnImageOfData(options = getModelReadOptions()) {
   const outlineColor = isBlackBg ? 'white' : getContrastingColor(rgb);
 
   const { x, y } = indexOfImageDataToImageXy(index);
-  const canRead = imageXyIsImageData(x, y, getModelReadOptions());
+  const canRead = imageXyIsImageData(x, y, getModelReadOptions(image2D));
   if(!canRead) {
     console.log('About to update a pixel that should not be updated');
   }
@@ -1395,7 +1433,7 @@ function loadAlignmentMap(size) {
   textureImage = new Image();
   textureImage.src = dataURL;
   textureImage.onload = () => {
-    drawTexturePreview();
+    drawTexturePreview(getModelReadOptions(image2D));
     applyTextureToObjects();
   }
 }
@@ -1415,18 +1453,29 @@ function getCellText(x, y, size) {
   }
   return letters + row.toString();
 }
-function loadTexture(textureUrl) {
+function isModelLoaded() {
+  return image2D && image2D.width !== 0 && image2D.height !== 0;
+}
+function loadTexture(textureUrl) {  
   textureImage = new Image();
   textureImage.src = textureUrl;
-  textureImage.onload = () => {
-    drawTexturePreview();
-    applyTextureToObjects();
-  }
+  textureImage.onload = handleTextureLoaded;
 }
-function drawTexturePreview() {
+let textureLoadedTimeoutId;
+function handleTextureLoaded() {
+  if(textureLoadedTimeoutId) window.clearTimeout(textureLoadedTimeoutId);
+  if(!isModelLoaded()) {
+    window.setTimeout(handleTextureLoaded, 50);
+    return;
+  }
+  drawTexturePreview(getModelReadOptions(image2D));
+  applyTextureToObjects();
+
+}
+function drawTexturePreview(options) {
   updateModelDataUnusedPixels(
     getModelCanvasContext(),
-    getModelReadOptions()
+    options
   );
   const texturePreview = document.getElementById('texture-preview');
   texturePreview.width = textureImage.width;
@@ -1553,7 +1602,7 @@ function imageOfModelDataLoaded() {
   let count = 0;
   let vectors = 'Coordinates of Vectors in image:<br>';
   let lastRow = '';
-  const options = getModelReadOptions();
+  const options = getModelReadOptions(image2D);
   let mismatchCount = 0;
   for(let y = 0; y < image2D.height; y++) {
     const xx = [];
@@ -1593,7 +1642,7 @@ function imageOfModelDataLoaded() {
   let lastColList = '';
   let cols = [];
   for(let i = 0; i < options.mapping.dataCount; i++) {
-    const rc =   indexOfImageDataToRowAndColumn(i);
+    const rc =   indexOfImageDataToRowAndColumn(i, options);
     if(rc.row !== row) {
       const colList = cols.join(', ');
       if(colList === lastColList) {
@@ -1640,7 +1689,7 @@ function drawObjects(nurbsControlVertices, options) {
   buildPointCloud(nurbsControlVertices);
   buildWireframeObject(nurbsControlVertices);
   drawNurbsSurfaceMesh(nurbsControlVertices, options);
-  drawSelectionVertices();
+  drawSelectionVertices(options);
   displayNewlySelectedVertex(options);
 }
 function mapByteToControlVectorValue(byteValue) {
@@ -1678,7 +1727,7 @@ function rgbAsVertexAndColor(rgb) {
     z: mapByteToControlVectorValue(axisValueOfRgb(rgb, 'z'))
   };
 }
-function indexOfImageDataToImageXy(i, options = getModelReadOptions()) {
+function indexOfImageDataToImageXy(i, options = getModelReadOptions(image2D)) {
   const { row, column } = indexOfImageDataToRowAndColumn(i, options);
   const powX =  Math.pow(2, options.hDown + 1);
   const powY = Math.pow(2, options.vDown + 1);
@@ -1724,9 +1773,14 @@ function imageXyIsImageData(x, y, options) {
   if(x % xMod !== 0) return false;
   return true;
 }
-function indexOfImageDataToRowAndColumn(i, options = getModelReadOptions()) {
+function indexOfImageDataToRowAndColumn(i, options) {
   if(i >= options.mapping.dataCount) {
     console.error('index %s out of range. Max %s', i, options.mapping.dataCount - 1);
+    // return bottom pole
+    return {
+      row: options.rows - 1,
+      column: Math.floor(options.columns / 2)
+    };
   }
   if(i === 0) {
     // poles use center column
@@ -1766,7 +1820,7 @@ function downsampleSegments(width, height) {
   }
   return segments;
 }
-function getPixelValuesFromModelData(imageData, options = getModelReadOptions()) {
+function getPixelValuesFromModelData(imageData, options = getModelReadOptions(image2D)) {
   const pixels = [];
   const PIXEL_SIZE = 4;
   for(let i = 0; i < options.mapping.dataCount; i++) {
@@ -1803,14 +1857,14 @@ function buildPointCloud(controlVertices) {
   pointCloudObject.visible = document.getElementById('show-point-cloud').checked;
   addObjectToList(pointCloudObject);
 }
-function drawSelectionVertices() {  
+function drawSelectionVertices(options) {  
   const vertices = pixels.map(rgbAsVertexAndColor);
   removeObjectFromList(selectedVerticesObject);
   const selectedIndex = parseInt(document.getElementById('vertex-index-range').value);
   const object = new THREE.Object3D();
   object.name = 'Vertices';
   vertices.forEach(({ x, y, z, color }, i) => {
-    const {row, column} = indexOfImageDataToRowAndColumn(i);
+    const {row, column} = indexOfImageDataToRowAndColumn(i, options);
     if(row === 0 || row === verticalSegments) {
       // poles only use center pixel
       if(column != Math.floor(horizontalSegments / 2)) return;
@@ -1835,7 +1889,7 @@ function drawSelectionVertices() {
   selectedVerticesObject = object;
   addObjectToList(object);
 }
-function rowColumnToIndexOfVertex(row, column, options = getModelReadOptions()) {
+function rowColumnToIndexOfVertex(row, column, options = getModelReadOptions(image2D)) {
   // handle poles
   if(row <= 0) return 0;
   if(row >= options.rows - 1) return options.mapping.dataCount -1;
@@ -1986,7 +2040,7 @@ function drawModelMesh(controlVertices, options) {
   attachTransformControls(modelObject);
   addObjectToList(modelObject);
 }
-function createBufferGeometry(vertices, options = getModelReadOptions()) {
+function createBufferGeometry(vertices, options = getModelReadOptions(image2D)) {
   const controlMeshGeometry = new THREE.BufferGeometry();
   const positions = createSphericalVertices(vertices, options.columns, options.rows);
   controlMeshGeometry.setAttribute('position', positions);

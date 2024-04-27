@@ -204,6 +204,9 @@ function handleWindowLoad() {
   document.getElementById('texture-flip-v').addEventListener('change', handleTextureOrientation);
   document.getElementById('texture-flip-h').addEventListener('change', handleTextureOrientation);
   document.getElementById('texture-opacity').addEventListener('input', handleTextureOpacityChange);
+  document.getElementById('dynamic-colors').addEventListener('change', () => {
+    if(isDynamicTexture()) handleDynamicMapChange();
+  });
   document.getElementsByName('tool').forEach(input => {
     input.addEventListener('change', () => {
       const tool = selectedTool();
@@ -1394,6 +1397,19 @@ function handleTextureSelectorChange() {
 function selectedTexture() {
   return document.getElementById('texture-selector').value;
 }
+function dynamicColorScheme() {
+  const scheme = document.getElementById('dynamic-colors').value;
+  switch(scheme) {
+    case 'red-white-blue':
+        return [0xFF0000, 0xFFFFFF, 0xFFFFFF, 0xFFFFFF, 0x0000FF];
+    case 'rainbow':
+        return [0xFF0000, 0x00FF00, 0x00FF00, 0x00FF00, 0x0000FF]
+    case 'grey-scale':
+        return [0x000000, 0x808080, 0x808080, 0x808080, 0xFFFFFF];
+    default:
+        return [0x000000, 0xFFFFFF];
+  }
+}
 function dynamicTextureName() {
   if(!isDynamicTexture()) return;
   return selectedTexture().match(dynamicMapPattern)[1];
@@ -1500,13 +1516,15 @@ function createDynamicModelDensityTexture() {
   const min = areas.reduce((min, area) => area === 0 ? min : Math.min(min, area), Infinity);
   const max = areas.reduce((max, area) => area === 0 ? max : Math.max(max, area), -Infinity);
   const sortedAreas = areas.slice().sort((a, b) => a-b);
-  const medianCount = 3;
+  const colors = dynamicColorScheme();
+  const medianCount = Math.max(1, colors.length - 1);
   const medians = [];
   const areaSize = areas.length / (medianCount + 1);
   for(let i = 0; i < medianCount; i++) {
     const areaIndex = Math.floor((i + 1) * areaSize);
     medians[i] = sortedAreas[areaIndex];
   }
+
   // draw triangles
   ctx.strokeStyle = 'black';
   ctx.lineWidth = canvas.width / 1024;
@@ -1514,7 +1532,7 @@ function createDynamicModelDensityTexture() {
     const [xy1, xy2, xy3] = trianglesXy[i];
     const area = areas[i];
     const weight = getWeight(area, {min, max, medians});
-    const color = getWeightedColor(weight);
+    const color = intColorAsHex(getWeightedIntColor(weight, colors));
     // const color = `hsl(0, 0%, ${Math.floor(weight * 100)}%)`
     ctx.beginPath();
     ctx.moveTo(xy1.x, xy1.y);
@@ -1538,44 +1556,39 @@ function rgbAreEqual(rgb1, rgb2) {
     rgb1.g === rgb2.g &&
     rgb1.b === rgb2.b;
 }
-function getWeightedColor(weight) {
-  weight = Math.min(1, Math.max(weight, 0));
-  const HUE_RED = 0;
-  const HUE_BLUE = 240;
-  const LUMINANCE_WHITE = 100;
-  const LUMINANCE_GREY = LUMINANCE_WHITE / 2;
-  // Red to blue (note: unused, will be overwritten)
-  let hue = Math.abs(HUE_RED + Math.floor(weight * (HUE_BLUE - HUE_RED)));
-  let saturation = 0;
-  let luminance = 50;
-  //  let luminance = Math.floor(weight * 100);
-
-  const COUNT = 4;
-  const SIZE = 1/COUNT;
-
-  if(weight < SIZE) {
-    hue = HUE_RED;
-    const delta = weight * COUNT;
-    // full saturation to half
-    saturation = 50 + Math.floor((1-delta) * 50);
-    // fade hue to white
-    luminance = LUMINANCE_GREY + Math.floor(delta * LUMINANCE_GREY);
-  } else if(weight < 1 - SIZE) {
-    hue = HUE_RED;
-    // middle range - 25% to 75%
-    // override hue with white
-    saturation = 0;
-    luminance = LUMINANCE_WHITE;
-  } else {
-    // translate weight for section 
-    const delta = (weight - (SIZE * (COUNT - 1))) * COUNT;
-    // white to blue
-    hue = HUE_BLUE;
-    saturation = 50 + Math.floor((delta) * 50);
-    // fade white to hue
-    luminance = LUMINANCE_GREY + Math.floor((1-delta) * LUMINANCE_GREY)
-  }
-  return `hsl(${hue}, ${saturation}%, ${luminance}%)`;
+function getWeightedIntColor(weight, colors) {
+  const count = colors.length;
+  if(weight <= 0) return colors[0];
+  if(weight >= 1) return colors[count - 1];
+  const segmentSize = 1 / (count - 1);
+  const index = Math.floor(weight * (count - 1));
+  const fromColor = colors[index];
+  const toColor = colors[Math.min(index+1, count - 1)];
+  const offset = segmentSize * index;
+  const delta = weight - offset;
+  const percent = delta / segmentSize;
+  return intColorBetween(fromColor, toColor, percent);
+}
+function intColorAsHex(color) {
+  return '#' + Math.min(Math.max(color, 0x000000), 0xFFFFFF).toString(16).padStart(6, '0');
+}
+function intColorBetween(color1, color2, percent) {
+  const rgb1 = rgbIntToRgb(color1);
+  const rgb2 = rgbIntToRgb(color2);
+  const r = intValueBetween(rgb1.r, rgb2.r, percent);
+  const g = intValueBetween(rgb1.g, rgb2.g, percent);
+  const b = intValueBetween(rgb1.b, rgb2.b, percent);
+  return (r << 16) | (g << 8) | b;
+}
+function intValueBetween(start, end, percent) {
+  return Math.floor(start + (end - start) * percent);
+}
+function rgbIntToRgb(color) {
+  return {
+    r: (color >> 16) & 0xFF,
+    g: (color >> 8) & 0xFF,
+    b: color & 0xFF
+  };
 }
 function getWeight(value, {min, max, medians}) {
   if(value <= min) return 0;
@@ -1602,6 +1615,7 @@ function scaleCoordinate(xy, source, target) {
 
 let applyDynamicMapId;
 function applyDynamicMap() {
+  if(!isDynamicTexture()) return;
   const name = dynamicTextureName();
   if(applyDynamicMapId) {
     window.clearTimeout(applyDynamicMapId);

@@ -10,7 +10,7 @@ import { STLExporter } from 'three/addons/exporters/STLExporter.js';
 
 const defaultCameraAngle = 'iso';
 const defaultModel = 'UFO Sculpty 1.0.png';
-const defaultSkin = 'dynamic-model-data';
+const defaultSkin = 'dynamic-model-density';
 
 const MAX_VERTECES = 1024;
 const PIXEL_RED_INDEX = 0;
@@ -1386,6 +1386,107 @@ function createDynamicModelDataTexture() {
   }
   return canvas.toDataURL();
 }
+function createDynamicModelDensityTexture() {
+  const canvas = document.createElement('canvas');
+  canvas.height = canvas.width = 1024 * 4;
+  const ctx = canvas.getContext('2d', {willReadFrequently: true});
+
+  ctx.fillStyle = 'hsl(75, 100%, 100%)';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  const options = getModelReadOptions(image2D)
+  // UV density map
+  // lighter colors for large areas
+  // darker colors for small areas
+  // heat map [high density/small] red-orange-yellow-green-blue [low density/large]
+  const vectors = pixels.map(rgbAsVector);
+  const trianglePositionIndexes = createSphericalControlTriangles(options);
+
+  // group triangle vectors and original x/y coordinates
+  const triangles = [];
+  const trianglesXy = [];
+  for(let i = 0; i < trianglePositionIndexes.length; i+= 3) {
+    const index1 = trianglePositionIndexes[i];
+    const index2 = trianglePositionIndexes[i + 1];
+    const index3 = trianglePositionIndexes[i + 2];
+
+    // skip wrapping triangles
+    const col1 = indexOfImageDataToRowAndColumn(index1, options);
+    const col2 = indexOfImageDataToRowAndColumn(index2, options);
+    const col3 = indexOfImageDataToRowAndColumn(index3, options);
+    if(col1 === 0 || col2 === 0 || col3 === 0) {
+      // stitched
+      if(col1 > 1 || col2 > 1 || col3 > 1) continue;
+    }
+
+    triangles.push([
+      vectors[index1],
+      vectors[index2],
+      vectors[index3],
+    ]);
+    trianglesXy.push([
+      scaleCoordinate(indexOfImageDataToImageXy(index1), options, canvas),
+      scaleCoordinate(indexOfImageDataToImageXy(index2), options, canvas),
+      scaleCoordinate(indexOfImageDataToImageXy(index3), options, canvas)
+    ]);
+  }
+
+  // calculate area of each triangle
+  const areas = [];
+  for(let i = 0; i < triangles.length; i++) {
+    const [vector1, vector2, vector3] = triangles[i];
+    // console.log(vector1, vector2, vector3);
+    const edge1 = new THREE.Vector3().copy(vector2).sub(vector1);
+    const edge2 = new THREE.Vector3().copy(vector3).sub(vector1);
+    const crossProduct = new THREE.Vector3().crossVectors(edge1, edge2);
+    areas.push(0.5 * crossProduct.length());    
+  };
+
+  // get min/max/median
+  const min = areas.reduce((min, area) => Math.min(min, area), Infinity);
+  const max = areas.reduce((max, area) => Math.max(max, area), -Infinity);
+  const median = areas.slice().sort((a, b) => a-b)[Math.floor(areas.length/2)];
+
+  // draw triangles
+  ctx.strokeStyle = 'white';
+  for(let i = 0; i < trianglesXy.length; i++) {
+    const [xy1, xy2, xy3] = trianglesXy[i];
+    const area = areas[i];
+    const weight = getWeight(area, {min, max, median});
+    // const percent = (area - min) / (max - min);
+    // const hue = Math.floor(getWeight(area, {min, max, median}) * 360);
+    // const color = `hsl(${hue}, 100%, 50%)`;
+    const color = `hsl(0, 0%, ${Math.floor(weight * 100)}%)`
+    ctx.beginPath();
+    ctx.moveTo(xy1.x, xy1.y);
+    ctx.lineTo(xy2.x, xy2.y);
+    ctx.lineTo(xy3.x, xy3.y);
+    ctx.lineTo(xy1.x, xy1.y);
+    ctx.closePath();
+    // ctx.stroke();
+    ctx.fillStyle = color;
+    ctx.fill();
+  }
+  return canvas.toDataURL();
+}
+function getWeight(value, {min, max, median}) {
+  if(value < median) {
+    const range = median - min;
+    const v = value - min;
+    return v / range;
+  } else {
+    const range = max - median;
+    const v = value - median;
+    return 0.5 + ((v / range) * 0.5);
+  }
+}
+
+function scaleCoordinate(xy, source, target) {
+  return {
+    x: (xy.x / source.width) * target.width,
+    y: (xy.y / source.height) * target.height,
+  };  
+}
 
 let applyDynamicMapId;
 function applyDynamicMap(name) {
@@ -1403,6 +1504,9 @@ function applyDynamicMap(name) {
   switch(name) {
     case 'model-data':
       dataURL = createDynamicModelDataTexture();
+      break;
+    case 'model-density':
+      dataURL = createDynamicModelDensityTexture();
       break;
     default:
       dataURL = canvas2D.toDataURL();
@@ -1788,12 +1892,21 @@ function axisValueOfRgb(rgb, axis) {
   };
   return rgb[map[axis]];
 }
+function rgbAsVector(rgb) {
+  return new THREE.Vector3(
+    mapByteToControlVectorValue(axisValueOfRgb(rgb, 'x')),
+    mapByteToControlVectorValue(axisValueOfRgb(rgb, 'y')),
+    mapByteToControlVectorValue(axisValueOfRgb(rgb, 'z'))    
+  );
+}
 function rgbAsVertexAndColor(rgb) {
+  const vector = rgbAsVector(rgb);
   return {
     color: rgbAsColor(rgb),
-    x: mapByteToControlVectorValue(axisValueOfRgb(rgb, 'x')),
-    y: mapByteToControlVectorValue(axisValueOfRgb(rgb, 'y')),
-    z: mapByteToControlVectorValue(axisValueOfRgb(rgb, 'z'))
+    vector,
+    x: vector.x,
+    y: vector.y,
+    z: vector.z
   };
 }
 function indexOfImageDataToImageXy(i, options = getModelReadOptions(image2D)) {

@@ -418,7 +418,7 @@ function changeSelectedVertexPosition(axis, value, options) {
 
   // Dynamic texutres need to be updated
   if(isDynamicTexture()) {
-    applyDynamicMap(dynamicTextureName());
+    applyDynamicMap();
   }
 
   displayNewlySelectedVertex(options);
@@ -1383,7 +1383,7 @@ function handleTextureSelectorChange() {
   if(textureUrl === '') {
     removeTexture(nurbsObject, modelObject);
   } else if(isDynamicTexture()) {
-    applyDynamicMap(dynamicTextureName());    
+    applyDynamicMap();    
   } else if(alignmentMapPattern.test(textureUrl)) {
     const size = parseInt(textureUrl.match(alignmentMapPattern)[1]);
     loadAlignmentMap(size);
@@ -1557,14 +1557,15 @@ function scaleCoordinate(xy, source, target) {
 }
 
 let applyDynamicMapId;
-function applyDynamicMap(name) {
+function applyDynamicMap_delayed() {
+  const name = dynamicTextureName();
   if(applyDynamicMapId) {
     window.clearTimeout(applyDynamicMapId);
     applyDynamicMapId = undefined;
   }
   if(!pixels) {
     // race condition, or not loaded
-    applyDynamicMapId = window.setTimeout(applyDynamicMap, 500, name);
+    applyDynamicMapId = window.setTimeout(applyDynamicMap_delayed, 500);
     return;
   }
 
@@ -1581,6 +1582,7 @@ function applyDynamicMap(name) {
   }
   textureImage.src = dataURL;
 }
+const applyDynamicMap = debounce(applyDynamicMap_delayed, 250);
 function loadAlignmentMap(size) {
   const canvas = document.createElement('canvas');
   canvas.width = size;
@@ -1738,7 +1740,8 @@ function handleTextureEmissiveChange() {
     }
   });
 }
-function handleTextureOrientation() {
+
+function changeTextureOrientation() {
   const rotation = parseFloat(document.getElementById('texture-rotation').value);
   const flipX = document.getElementById('texture-flip-h').checked;
   const flipY = document.getElementById('texture-flip-v').checked;
@@ -1753,6 +1756,8 @@ function handleTextureOrientation() {
   skin.offset.y = offsetY;
   skin.needsUpdate = true;
 }
+const handleTextureOrientation = debounce(changeTextureOrientation, 500);
+
 function applyTextureToObjects() {
   const isEmissive = document.getElementById('show-texture-emissive').checked;
   const opacity = parseFloat(document.getElementById('texture-opacity').value);
@@ -1919,7 +1924,7 @@ function imageOfModelDataLoaded() {
 
   // Dynamic texutres need to be updated
   if(isDynamicTexture()) {
-    applyDynamicMap(dynamicTextureName());
+    applyDynamicMap();
   }
 }
 function drawObjects(nurbsControlVertices, options) {

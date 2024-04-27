@@ -350,6 +350,34 @@ function handleWindowLoad() {
     handleTextureSelectorChange();
   });
 }
+
+function debounce(callback, delay) {
+  let timeoutId;
+  return function(...args) {
+    const context = this;
+    clearTimeout(timeoutId);
+    timeoutId = setTimeout(() => callback.apply(context, args), delay);
+  }
+}
+function throttle(callback, delay) {
+  let lastExecutionTime = 0;
+  let timeoutId;
+  return function(...args) {
+    const context = this;
+    const currentTime = Date.now();
+    const elapsedTime = currentTime - lastExecutionTime;
+    if(!lastExecutionTime || elapsedTime >= delay) {
+      callback.apply(context, args);
+      lastExecutionTime = currentTime;
+    } else {
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => {
+        callback.apply(context, args);
+        lastExecutionTime = currentTime;
+      }, delay - elapsedTime);
+    }
+  }
+}
 function changeSelectedVertexPosition(axis, value, options) {
   // update UI input
   document.getElementById(`selected-pos-${axis}-range`).value = value;
@@ -2581,33 +2609,6 @@ function animate() {
   render();
 }
 
-function debounce(callback, delay) {
-  let timeoutId;
-  return function(...args) {
-    const context = this;
-    clearTimeout(timeoutId);
-    timeoutId = setTimeout(() => callback.apply(context, args), delay);
-  }
-}
-function throttle(callback, delay) {
-  let lastExecutionTime = 0;
-  let timeoutId;
-  return function(...args) {
-    const context = this;
-    const currentTime = Date.now();
-    const elapsedTime = currentTime - lastExecutionTime;
-    if(!lastExecutionTime || elapsedTime >= delay) {
-      callback.apply(context, args);
-      lastExecutionTime = currentTime;
-    } else {
-      clearTimeout(timeoutId);
-      timeoutId = setTimeout(() => {
-        callback.apply(context, args);
-        lastExecutionTime = currentTime;
-      }, delay - elapsedTime);
-    }
-  }
-}
 function renderLiveSceneOnUnusedPixels() {
   updateModelDataUnusedPixels(
     getModelCanvasContext(),

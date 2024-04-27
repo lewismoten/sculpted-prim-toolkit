@@ -9,7 +9,7 @@ import Stats from 'three/examples/jsm/libs/stats.module';
 import { STLExporter } from 'three/addons/exporters/STLExporter.js';
 
 const defaultCameraAngle = 'iso';
-const defaultModel = 'star sculpty.png';
+const defaultModel = 'UFO Sculpty 1.0.png';
 const defaultSkin = 'UFO.Blue.1.0.png';
 
 const MAX_VERTECES = 1024;
@@ -1559,6 +1559,7 @@ function imageOfModelDataLoaded() {
     const xx = [];
     for(let x = 0; x < image2D.width; x++) {
       if(imageXyIsImageData(x, y, options)) {
+        // console.log('loading %sx%s is valid - index %s', x, y, count);
         xx.push(x.toLocaleString());
         const rc = indexOfImageDataToRowAndColumn(count, options);
         const xy = indexOfImageDataToImageXy(count, options);
@@ -1581,6 +1582,10 @@ function imageOfModelDataLoaded() {
       lastRow = row;
     }
   }
+  if(count !== options.mapping.dataCount) {
+    console.log('expected %s pieces of data - only got %s', options.mapping.dataCount, count);
+  }
+
   document.getElementById('image-data-coordinates').innerHTML = count.toLocaleString() + ' ' + vectors;
 
   let grid = `Index 0 to ${options.mapping.dataCount-1} as Row/Columns:`;
@@ -1675,13 +1680,23 @@ function rgbAsVertexAndColor(rgb) {
 }
 function indexOfImageDataToImageXy(i, options = getModelReadOptions()) {
   const { row, column } = indexOfImageDataToRowAndColumn(i, options);
-  let x = column * Math.pow(2, options.hDown + 1);
-  let y = (row * Math.pow(2, options.vDown + 1));
-  if(row !== 0) {
-    y -= options.vDown + 1;
+  const powX =  Math.pow(2, options.hDown + 1);
+  const powY = Math.pow(2, options.vDown + 1);
+  let x = column * powX;
+  let y = row * powY;
+  if(row === options.rows) {
+    y = getLastImageDataY(options);
+  } else if(row !== 0) {
+    // Cube = 64x64 vDown = 0, powY = 2
+    // UFO = 128x128 vDown = 1, powY = 4
+    // Brick Wall = 256x256 vDown = 2, powY = 8
+    y -= powY - 1;
   }
-  // x -= offset.x;
   return { x, y };
+}
+function getLastImageDataY(options) {
+  const yMod = Math.pow(2, options.vDown + 1);
+  return options.height - yMod;
 }
 function imageXyToClosestIndexOfImageData(x, y, options) {
   x = Math.floor(x);
@@ -1696,9 +1711,17 @@ function imageXyToClosestIndexOfImageData(x, y, options) {
   return index;
 }
 function imageXyIsImageData(x, y, options) {
-  if(y === 0 || y === options.height - 1) return x === Math.floor(options.width / 2);  
-  if(y % (options.vDown + 2) !== 1) return false;
-  if(x % (options.hDown + 2) !== 0) return false;
+  if(y === 0) return x === Math.floor(options.width / 2);
+  const yMod = Math.pow(2, options.vDown + 1);
+  const xMod = Math.pow(2, options.hDown + 1);
+  const lastY = getLastImageDataY(options);
+  if(y === lastY) {
+    return x === Math.floor(options.width / 2);
+  } else if(y > lastY) {
+    return false;
+  }
+  if(y % yMod !== 1) return false;
+  if(x % xMod !== 0) return false;
   return true;
 }
 function indexOfImageDataToRowAndColumn(i, options = getModelReadOptions()) {

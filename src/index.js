@@ -198,9 +198,11 @@ function handleWindowLoad() {
   document.getElementById('texture-rotation').addEventListener('input', rotateTexture);
   document.getElementById('texture-horizontal-offset').addEventListener('input', offsetTextureHorizontally);
   document.getElementById('texture-vertical-offset').addEventListener('input', offsetTextureVertically);
-  document.getElementById('texture-horizontal-repeat').addEventListener('input', repeatTextureHorizontally);
-  document.getElementById('texture-vertical-repeat').addEventListener('input', repeatTextureVertically);
+  document.getElementById('texture-horizontal-repeat').addEventListener('input', handleTextureOffsetAndFlip);
+  document.getElementById('texture-vertical-repeat').addEventListener('input', handleTextureOffsetAndFlip);
   document.getElementById('show-texture-emissive').addEventListener('change', handleTextureEmissiveChange);
+  document.getElementById('texture-flip-v').addEventListener('change', handleTextureOffsetAndFlip);
+  document.getElementById('texture-flip-h').addEventListener('change', handleTextureOffsetAndFlip);
   document.getElementById('texture-opacity').addEventListener('input', handleTextureOpacityChange);
   document.getElementsByName('tool').forEach(input => {
     input.addEventListener('change', () => {
@@ -1696,9 +1698,6 @@ function offsetTextureHorizontally() {
 function offsetTextureVertically() {
   skin.offset.y = parseFloat(document.getElementById('texture-vertical-offset').value);
 }
-function repeatTextureHorizontally() {
-  skin.repeat.x = parseFloat(document.getElementById('texture-horizontal-repeat').value);
-}
 function handleTextureOpacityChange() {
   const opacity = parseFloat(document.getElementById('texture-opacity').value);
   [nurbsObject, modelObject].forEach(object => {
@@ -1718,8 +1717,14 @@ function handleTextureEmissiveChange() {
     }
   });
 }
-function repeatTextureVertically() {
-  skin.repeat.y = parseFloat(document.getElementById('texture-vertical-repeat').value);
+function handleTextureOffsetAndFlip() {
+  const flipX = document.getElementById('texture-flip-h').checked;
+  const flipY = document.getElementById('texture-flip-v').checked;
+  const y = parseFloat(document.getElementById('texture-vertical-repeat').value)
+  const x = parseFloat(document.getElementById('texture-horizontal-repeat').value);
+  skin.repeat.y = flipY ? y * -1: y;
+  skin.repeat.x = flipX ? x * -1: x;
+  skin.needsUpdate = true;
 }
 function applyTextureToObjects() {
   const isEmissive = document.getElementById('show-texture-emissive').checked;

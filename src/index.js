@@ -10,7 +10,7 @@ import { STLExporter } from 'three/addons/exporters/STLExporter.js';
 
 const defaultCameraAngle = 'iso';
 const defaultModel = 'UFO Sculpty 1.0.png';
-const defaultSkin = 'UFO.Blue.1.0.png';
+const defaultSkin = 'dynamic-model-data';
 
 const MAX_VERTECES = 1024;
 const PIXEL_RED_INDEX = 0;
@@ -111,6 +111,9 @@ const modelRotation = new THREE.Vector3(0, 0, 0);
 let stats;
 
 function handleWindowLoad() {
+
+  textureImage = new Image();
+  textureImage.onload = handleTextureLoaded;
 
   const tips = document.getElementsByClassName('tooltip');
   for(let i = 0; i < tips.length; i++) {
@@ -501,18 +504,20 @@ function updateModelDataPixel(x, y, r, g, b, targetCtx = getModelCanvasContext()
     // console.log('Pixel %sx%s is not a vector.', x, y); xxx
     return;
   }
-
   const drawBlocks = document.querySelector('input[name="unused-pixels"]:checked').value === 'blocks';
-  const blockWidth = Math.pow(2, options.hDown + 1);
-  const blockHeight = Math.pow(2, options.vDown + 1);
   if(drawBlocks) {
-    for(let h = 0; h < blockWidth; h++) {
-      for(let v = 0; v < blockHeight; v++) {
-        setPixelColorOnImageOfData(x + h, y + v, r, g, b, targetCtx);
-      }
-    }
+    drawBlock(x, y, {r, g, b}, targetCtx, options);
   } else {
     setPixelColorOnImageOfData(x, y, r, g, b, targetCtx);
+  }
+}
+function drawBlock(x, y, rgb, ctx, options) {
+  const blockWidth = Math.pow(2, options.hDown + 1);
+  const blockHeight = Math.pow(2, options.vDown + 1);
+  for(let h = 0; h < blockWidth; h++) {
+    for(let v = 0; v < blockHeight; v++) {
+      setPixelColorOnImageOfData(x + h, y + v, rgb.r, rgb.g, rgb.b, ctx);
+    }
   }
 }
 function updateModelDataUnusedPixels(targetCtx, options) {
@@ -1356,21 +1361,46 @@ function handleTextureSelectorChange() {
     loadTexture(textureUrl);
   }
 }
+
+function createDynamicModelDataTexture() {
+  const options = getModelReadOptions({width: 256, height: 256})
+
+  const canvas = document.createElement('canvas');
+  canvas.width = 256;
+  canvas.height = 256;
+  const ctx = canvas.getContext('2d', {willReadFrequently: true});
+
+  ctx.fillStyle = 'black';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  for(let i = 0; i < options.mapping.dataCount; i++) {
+    const {x, y} = indexOfImageDataToImageXy(i, options);
+    drawBlock(x, y, pixels[i], ctx, options);
+  }
+  return canvas.toDataURL();
+}
+
+let applyDynamicMapId;
 function applyDynamicMap(name) {
+  if(applyDynamicMapId) {
+    window.clearTimeout(applyDynamicMapId);
+    applyDynamicMapId = undefined;
+  }
+  if(!pixels) {
+    // race condition, or not loaded
+    applyDynamicMapId = window.setTimeout(applyDynamicMap, 500, name);
+    return;
+  }
+
   let dataURL;
   switch(name) {
     case 'model-data':
-      dataURL = canvas2D.toDataURL();
+      dataURL = createDynamicModelDataTexture();
       break;
     default:
       dataURL = canvas2D.toDataURL();
   }
-  textureImage = new Image();
   textureImage.src = dataURL;
-  textureImage.onload = () => {
-    drawTexturePreview(getModelReadOptions(image2D));
-    applyTextureToObjects();
-  }
 }
 function loadAlignmentMap(size) {
   const canvas = document.createElement('canvas');
@@ -1464,12 +1494,7 @@ function loadAlignmentMap(size) {
 
 
   const dataURL = canvas.toDataURL();
-  textureImage = new Image();
   textureImage.src = dataURL;
-  textureImage.onload = () => {
-    drawTexturePreview(getModelReadOptions(image2D));
-    applyTextureToObjects();
-  }
 }
 function getCellText(x, y, size) {
   let row = Math.floor(y / size) + 1;
@@ -1491,9 +1516,7 @@ function isModelLoaded() {
   return image2D && image2D.width !== 0 && image2D.height !== 0;
 }
 function loadTexture(textureUrl) {  
-  textureImage = new Image();
   textureImage.src = textureUrl;
-  textureImage.onload = handleTextureLoaded;
 }
 let textureLoadedTimeoutId;
 function handleTextureLoaded() {
@@ -1878,6 +1901,7 @@ function buildPointCloud(controlVertices) {
   pointCloudObject = new THREE.Object3D();
   pointCloudObject.name = 'Vertices';
   controlVertices.forEach(({ x, y, z, color}, index) => {
+    // console.log(color);
     const geometry = new THREE.BoxGeometry( 0.01, 0.01, 0.01 );
     const material = new THREE.MeshBasicMaterial( { color } );
     const mesh = new THREE.Mesh( geometry, material );

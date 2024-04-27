@@ -1007,6 +1007,7 @@ function handle3dCanvasClick(event) {
   if(selectedTool() !== 'select') {
     if(pointer.moved) return;
   }
+  const options = getModelReadOptions(image2D);
   const rect = canvas3D.getBoundingClientRect();
   const x = event.clientX - rect.left;
   const y = event.clientY - rect.top;
@@ -1019,7 +1020,7 @@ function handle3dCanvasClick(event) {
   raycaster.intersectObject(modelObject).forEach(intersects => {
     intersected = true;
     const { x, y } = intersects.uv;
-    const index = getVertexByUvMapping(x, y);
+    const index = getVertexByUvMapping(x, y, options);
     setSelectedIndexOfVertex(index);
   });
   if(!intersected) {
@@ -1049,9 +1050,9 @@ function handleRowOrColumnChanged() {
   );
   setSelectedIndexOfVertex(i);
 }
-function getVertexByUvMapping(u, v) {
-  let column = u * horizontalSegments + 1;
-  let row = (1 - v) * verticalSegments + 1;
+function getVertexByUvMapping(u, v, options) {
+  let column = u * options.columns + 1;
+  let row = (1 - v) * options.rows + 1;
 
   column = Math.floor(column - 0.5);
   row = Math.floor(row - 0.5);

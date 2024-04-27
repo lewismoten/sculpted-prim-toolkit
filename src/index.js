@@ -1482,7 +1482,6 @@ function createDynamicModelDensityTexture() {
     const [xy1, xy2, xy3] = trianglesXy[i];
     const area = areas[i];
     const weight = getWeight(area, {min, max, median});
-    // const percent = (area - min) / (max - min);
     const hue = Math.floor(weight * 240); // red to blue
     const color = `hsl(${hue}, 100%, 50%)`;
     // const color = `hsl(0, 0%, ${Math.floor(weight * 100)}%)`

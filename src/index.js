@@ -182,7 +182,7 @@ function handleWindowLoad() {
   canvas2D.addEventListener('mouseout', () => { drawingCanvas2D = false });
   canvas2D.addEventListener('mouseup', () => { drawingCanvas2D = false });
   canvas2D.addEventListener('mousedown', () => { drawingCanvas2D = true });
-  document.getElementById('image-selector').addEventListener('change', handleImageSelectorChange);
+  document.getElementById('image-selector').addEventListener('change', handleModelSelectorChange);
   document.getElementById('texture-selector').addEventListener('change', handleTextureSelectorChange);
 
   document.getElementById('take-snapshot').addEventListener('click', takeSnapshot);
@@ -329,7 +329,7 @@ function handleWindowLoad() {
       }
       imageSelector.appendChild(option);
     });
-    handleImageSelectorChange();
+    handleModelSelectorChange();
     const textureSelector = document.getElementById('texture-selector');
     Object.keys(files.textureNames).forEach(name => {
       const file = files.textureNames[name];
@@ -1346,14 +1346,12 @@ function getAnglePosition(angle, fov, targetPos, targetSize) {
 const alignmentMapPattern = /alignment-map-(\d+)$/;
 const dynamicMapPattern = /dynamic-(.*)$/
 function handleTextureSelectorChange() {
-  const textureSelector = document.getElementById('texture-selector');
-  const textureUrl = textureSelector.value;
+  const textureUrl = selectedTexture();
   skin?.dispose();
   if(textureUrl === '') {
     removeTexture(nurbsObject, modelObject);
-  } else if(dynamicMapPattern.test(textureUrl)) {
-    const dynamic = textureUrl.match(dynamicMapPattern)[1];
-    applyDynamicMap(dynamic);    
+  } else if(isDynamicTexture()) {
+    applyDynamicMap();    
   } else if(alignmentMapPattern.test(textureUrl)) {
     const size = parseInt(textureUrl.match(alignmentMapPattern)[1]);
     loadAlignmentMap(size);
@@ -1361,7 +1359,16 @@ function handleTextureSelectorChange() {
     loadTexture(textureUrl);
   }
 }
-
+function selectedTexture() {
+  return document.getElementById('texture-selector').value;
+}
+function dynamicTextureName() {
+  if(!isDynamicTexture()) return;
+  return selectedTexture().match(dynamicMapPattern)[1];
+}
+function isDynamicTexture() {
+  return dynamicMapPattern.test(selectedTexture());
+}
 function createDynamicModelDataTexture() {
   const options = getModelReadOptions({width: 256, height: 256})
 
@@ -1612,11 +1619,11 @@ function removeTexture() {
     }
   });
 }
-function handleImageSelectorChange() {
+function handleModelSelectorChange() {
   const imageSelector = document.getElementById('image-selector');
-  loadImageOfModelData(imageSelector.value);
+  loadModelData(imageSelector.value);
 }
-function loadImageOfModelData(url) {
+function loadModelData(url) {
   original2D = new Image();
   original2D.src = url;
   original2D.onload = () => {
@@ -1740,6 +1747,11 @@ function imageOfModelDataLoaded() {
   vertexIndexRangeInput.max = vertexCount - 1;
   vertexIndexValueInput.max = vertexCount - 1;
   drawObjects(nurbsControlVertices, options);
+
+  // Dynamic texutres need to be updated
+  if(isDynamicTexture()) {
+    applyDynamicMap(dynamicTextureName());
+  }
 }
 function drawObjects(nurbsControlVertices, options) {
   drawModelMesh(nurbsControlVertices, options);

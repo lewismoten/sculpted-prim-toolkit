@@ -1388,7 +1388,7 @@ function createDynamicModelDataTexture() {
 }
 function createDynamicModelDensityTexture() {
   const canvas = document.createElement('canvas');
-  canvas.height = canvas.width = 1024 * 4;
+  canvas.height = canvas.width = 1024 * 1;
   const ctx = canvas.getContext('2d', {willReadFrequently: true});
 
   ctx.fillStyle = 'hsl(75, 100%, 100%)';
@@ -1410,24 +1410,41 @@ function createDynamicModelDensityTexture() {
     const index2 = trianglePositionIndexes[i + 1];
     const index3 = trianglePositionIndexes[i + 2];
 
+    if(index1 === index2 || index1 === index3 || index2 === index3) {
+      // no area
+      continue;
+    }
+
+    const vector1 = vectors[index1];
+    const vector2 = vectors[index2];
+    const vector3 = vectors[index3];
+    if(
+      vectorsAreEqual(vector1, vector2) ||
+      vectorsAreEqual(vector1, vector3) ||
+      vectorsAreEqual(vector2, vector3)
+    ) {
+      // no area
+      continue;
+    }
+
     // skip wrapping triangles
-    const col1 = indexOfImageDataToRowAndColumn(index1, options);
-    const col2 = indexOfImageDataToRowAndColumn(index2, options);
-    const col3 = indexOfImageDataToRowAndColumn(index3, options);
-    if(col1 === 0 || col2 === 0 || col3 === 0) {
+    const rc1 = indexOfImageDataToRowAndColumn(index1, options);
+    const rc2 = indexOfImageDataToRowAndColumn(index2, options);
+    const rc3 = indexOfImageDataToRowAndColumn(index3, options);
+    if(rc1.column === 0 || rc2.column === 0 || rc3.column === 0) {
       // stitched
       if(
-          col1 === options.columns - 1 || 
-          col2 === options.columns - 1 || 
-          col3 === options.columns - 1
+          rc1.column === options.columns - 1 || 
+          rc2.column === options.columns - 1 || 
+          rc3.column === options.columns - 1
         )
           continue;
     }
 
     triangles.push([
-      vectors[index1],
-      vectors[index2],
-      vectors[index3],
+      vector1,
+      vector2,
+      vector3
     ]);
     trianglesXy.push([
       scaleCoordinate(indexOfImageDataToImageXy(index1), options, canvas),
@@ -1448,41 +1465,51 @@ function createDynamicModelDensityTexture() {
   };
 
   // get min/max/median
-  const min = areas.reduce((min, area) => Math.min(min, area), Infinity);
-  const max = areas.reduce((max, area) => Math.max(max, area), -Infinity);
+  const min = areas.reduce((min, area) => area === 0 ? min : Math.min(min, area), Infinity);
+  const max = areas.reduce((max, area) => area === 0 ? max : Math.max(max, area), -Infinity);
   const median = areas.slice().sort((a, b) => a-b)[Math.floor(areas.length/2)];
 
+
+
+  console.log('triangles', trianglesXy.length, min, max);
   // draw triangles
-  ctx.strokeStyle = 'white';
+  ctx.strokeStyle = 'black';
+  ctx.lineWidth = 1;
   for(let i = 0; i < trianglesXy.length; i++) {
     const [xy1, xy2, xy3] = trianglesXy[i];
     const area = areas[i];
     const weight = getWeight(area, {min, max, median});
     // const percent = (area - min) / (max - min);
-    // const hue = Math.floor(getWeight(area, {min, max, median}) * 360);
-    // const color = `hsl(${hue}, 100%, 50%)`;
-    const color = `hsl(0, 0%, ${Math.floor(weight * 100)}%)`
+    const hue = Math.floor(weight * 240); // red to blue
+    const color = `hsl(${hue}, 100%, 50%)`;
+    // const color = `hsl(0, 0%, ${Math.floor(weight * 100)}%)`
     ctx.beginPath();
     ctx.moveTo(xy1.x, xy1.y);
     ctx.lineTo(xy2.x, xy2.y);
     ctx.lineTo(xy3.x, xy3.y);
     ctx.lineTo(xy1.x, xy1.y);
     ctx.closePath();
-    // ctx.stroke();
     ctx.fillStyle = color;
     ctx.fill();
+    ctx.stroke();
   }
   return canvas.toDataURL();
 }
+function vectorsAreEqual(vector1, vector2) {
+  return vector1.x === vector2.x &&
+    vector1.y === vector2.y &&
+    vector1.z === vector2.z;
+}
 function getWeight(value, {min, max, median}) {
+  const SEGMENT_SIZE = 0.5;
   if(value < median) {
     const range = median - min;
     const v = value - min;
-    return v / range;
+    return (v / range) * SEGMENT_SIZE;
   } else {
     const range = max - median;
     const v = value - median;
-    return 0.5 + ((v / range) * 0.5);
+    return SEGMENT_SIZE + ((v / range) * SEGMENT_SIZE);
   }
 }
 

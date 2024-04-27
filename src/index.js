@@ -1416,7 +1416,12 @@ function createDynamicModelDensityTexture() {
     const col3 = indexOfImageDataToRowAndColumn(index3, options);
     if(col1 === 0 || col2 === 0 || col3 === 0) {
       // stitched
-      if(col1 > 1 || col2 > 1 || col3 > 1) continue;
+      if(
+          col1 === options.columns - 1 || 
+          col2 === options.columns - 1 || 
+          col3 === options.columns - 1
+        )
+          continue;
     }
 
     triangles.push([

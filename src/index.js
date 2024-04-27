@@ -1339,17 +1339,37 @@ function getAnglePosition(angle, fov, targetPos, targetSize) {
   }
 }
 const alignmentMapPattern = /alignment-map-(\d+)$/;
+const dynamicMapPattern = /dynamic-(.*)$/
 function handleTextureSelectorChange() {
   const textureSelector = document.getElementById('texture-selector');
   const textureUrl = textureSelector.value;
   skin?.dispose();
   if(textureUrl === '') {
     removeTexture(nurbsObject, modelObject);
+  } else if(dynamicMapPattern.test(textureUrl)) {
+    const dynamic = textureUrl.match(dynamicMapPattern)[1];
+    applyDynamicMap(dynamic);    
   } else if(alignmentMapPattern.test(textureUrl)) {
     const size = parseInt(textureUrl.match(alignmentMapPattern)[1]);
     loadAlignmentMap(size);
   } else {
     loadTexture(textureUrl);
+  }
+}
+function applyDynamicMap(name) {
+  let dataURL;
+  switch(name) {
+    case 'model-data':
+      dataURL = canvas2D.toDataURL();
+      break;
+    default:
+      dataURL = canvas2D.toDataURL();
+  }
+  textureImage = new Image();
+  textureImage.src = dataURL;
+  textureImage.onload = () => {
+    drawTexturePreview(getModelReadOptions(image2D));
+    applyTextureToObjects();
   }
 }
 function loadAlignmentMap(size) {

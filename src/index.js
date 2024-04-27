@@ -1702,7 +1702,6 @@ function handleTextureOpacityChange() {
   const opacity = parseFloat(document.getElementById('texture-opacity').value);
   [nurbsObject, modelObject].forEach(object => {
     if(object) {
-      object.material.transparent = opacity < 1;
       object.material.opacity = opacity;
       object.material.needsUpdate = true;
     }
@@ -1742,7 +1741,7 @@ function applyTextureToObjects() {
       object.material.map = skin;
       object.material.emissive = new THREE.Color(isEmissive ? 0xffffff : 0x000000);
       object.material.emissiveMap = skin;
-      object.material.transparent = opacity < 1;
+      object.material.transparent = true; // Always true to allow PNG alpha
       object.material.opacity = opacity;
       object.material.needsUpdate = true;
     }
@@ -2168,7 +2167,7 @@ function drawNurbsSurfaceMesh(controlVertices, options) {
   const material = new THREE.MeshStandardMaterial( { 
     color: 'white',
     emissive: isEmissive ? 0xFFFFFF : 0x000000,
-    transparent: opacity < 1,
+    transparent: true,
     opacity
   });
   if(skin) {
@@ -2245,7 +2244,7 @@ function drawModelMesh(controlVertices, options) {
   const material = new THREE.MeshStandardMaterial({
     color: 'white',
     emissive: isEmissive ? 0xFFFFFF : 0x000000,
-    transparent: opacity < 1,
+    transparent: true,
     opacity
   });
   if(skin) {

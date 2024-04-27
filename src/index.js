@@ -2306,14 +2306,19 @@ function animate() {
   changeDirectionalLight();
   render();
 }
+let lastUnusedPixelUpdate = 0;
 function render() {
   renderer.render( scene, camera );
   const unusedPixels = document.querySelector('input[name="unused-pixels"]:checked').value;
   if(unusedPixels === 'camera') {
-    updateModelDataUnusedPixels(
-      getModelCanvasContext(),
-      getModelReadOptions()  
-    );
+    const time = Date.now();
+    if(time - lastUnusedPixelUpdate >= 1000) {
+      lastUnusedPixelUpdate = time;
+      updateModelDataUnusedPixels(
+        getModelCanvasContext(),
+        getModelReadOptions(image2D)  
+      );
+    }
   };
 
   stats.update();

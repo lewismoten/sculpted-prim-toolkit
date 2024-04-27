@@ -1347,7 +1347,7 @@ function getAnglePosition(angle, fov, targetPos, targetSize) {
   }
 }
 const alignmentMapPattern = /alignment-map-(\d+)$/;
-const dynamicMapPattern = /dynamic-(.*)$/
+const dynamicMapPattern = /dynamic-model-(.*)$/
 function handleTextureSelectorChange() {
   const textureUrl = selectedTexture();
   skin?.dispose();
@@ -1372,7 +1372,7 @@ function dynamicTextureName() {
 function isDynamicTexture() {
   return dynamicMapPattern.test(selectedTexture());
 }
-function createDynamicModelDataTexture() {
+function createDynamicModelVertexTexture() {
   const options = getModelReadOptions({width: 256, height: 256})
 
   const canvas = document.createElement('canvas');
@@ -1536,10 +1536,10 @@ function applyDynamicMap(name) {
 
   let dataURL;
   switch(name) {
-    case 'model-data':
-      dataURL = createDynamicModelDataTexture();
+    case 'vertex':
+      dataURL = createDynamicModelVertexTexture();
       break;
-    case 'model-density':
+    case 'density':
       dataURL = createDynamicModelDensityTexture();
       break;
     default:

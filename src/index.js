@@ -615,6 +615,21 @@ function getModelReadOptions(size = image2D) {
     mapping.y = 129;
     mapping.dataCount = (8 * 127) + 2;
     mapping.vectorCount = 9 * 129;
+  } else if(width === 32) {
+    // prim oven image is 32x512 for Overlook3b
+    // hard code these for now...
+    mapping.x = 16;
+    mapping.y = 65;
+    mapping.dataCount = (16 * 63) + 2;
+    mapping.vectorCount = 17 * 65;
+  } else if(width === 128 && height === 32) {
+    // pie (creame)
+    // not sure where this one came from...
+    mapping.x = 64;
+    mapping.y = 17;
+    mapping.dataCount = (64 * 15) + 2;
+    mapping.vectorCount = 65 * 17;
+
   }
 
   const options = {
@@ -1793,8 +1808,8 @@ function indexOfImageDataToRowAndColumn(i, options) {
     // account for top pole with 1 column
     i += options.columns - 1;
   }
-  const row = Math.floor(i / options.rows);
-  let column = i % options.rows;
+  const row = Math.floor(i / options.columns);
+  let column = i % options.columns;
   return { row, column };
 }
 function downsampleSegments(width, height) {

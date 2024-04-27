@@ -364,16 +364,12 @@ function changeSelectedVertexPosition(axis, value, options) {
   // update model data
   const index = getSelectedIndex(options);
   const pixel = bytePositionAsPixelRgb(byteVector.x, byteVector.y, byteVector.z);
-  if(pixels[index][PIXEL_RED_INDEX] === pixel.r &&
-    pixels[index][PIXEL_GREEN_INDEX] === pixel.g &&
-    pixels[index][PIXEL_BLUE_INDEX] === pixel.b) {
+  if(rgbAreEqual(pixels[index], pixel)) {
     // Nothing changed
     console.log('Selected data not changed');
     return;
   };
-  pixels[index][PIXEL_RED_INDEX] = pixel.r;
-  pixels[index][PIXEL_GREEN_INDEX] = pixel.g;
-  pixels[index][PIXEL_BLUE_INDEX] = pixel.b;
+  pixels[index] = pixel;
 
   // update vertex data
   const snappedVertex = rgbAsVertexAndColor(pixel);
@@ -391,6 +387,11 @@ function changeSelectedVertexPosition(axis, value, options) {
   buildWireframeObject(nurbsControlVertices, options);
   // update nurbs surface
   drawNurbsSurfaceMesh(nurbsControlVertices);
+
+  // Dynamic texutres need to be updated
+  if(isDynamicTexture()) {
+    applyDynamicMap(dynamicTextureName());
+  }
 
   displayNewlySelectedVertex(options);
 }
@@ -1501,6 +1502,11 @@ function vectorsAreEqual(vector1, vector2) {
   return vector1.x === vector2.x &&
     vector1.y === vector2.y &&
     vector1.z === vector2.z;
+}
+function rgbAreEqual(rgb1, rgb2) {
+  return rgb1.r === rgb2.r &&
+    rgb1.g === rgb2.g &&
+    rgb1.b === rgb2.b;
 }
 function getWeight(value, {min, max, median}) {
   const SEGMENT_SIZE = 0.5;

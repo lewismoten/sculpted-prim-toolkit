@@ -626,12 +626,11 @@ function getModelReadOptions(size = image2D) {
     columns: segments.horizontal,
     mapping
   };
-const o = clone(options);
   // Check that top pole is applied
   if(modelNameChanged()) {
-    const rc = indexOfImageDataToRowAndColumn(1, o);
+    const rc = indexOfImageDataToRowAndColumn(1, options);
     if(!(rc.row === 1 && rc.column === 0)) {
-      console.log(getModelName(),JSON.parse(JSON.stringify(o)));
+      console.log(getModelName(),JSON.parse(JSON.stringify(options)));
       console.error('Expected index 1 to be Row 1, Column 0 but got Row %s Column %s', rc.row, rc.column);  
     }
   }
@@ -2391,7 +2390,7 @@ function throttle(callback, delay) {
 function renderLiveSceneOnUnusedPixels() {
   updateModelDataUnusedPixels(
     getModelCanvasContext(),
-    getModelReadOptions(image2D)  
+    getModelReadOptions(image2D)
   );
 }
 const throttledRenderLiveSceneOnUnusedPixels = throttle(renderLiveSceneOnUnusedPixels, 100)

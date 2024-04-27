@@ -195,14 +195,14 @@ function handleWindowLoad() {
   document.getElementById('export-obj').addEventListener('click', exportObj);
   document.getElementById('export-stl').addEventListener('click', exportStl);
 
-  document.getElementById('texture-rotation').addEventListener('input', rotateTexture);
-  document.getElementById('texture-horizontal-offset').addEventListener('input', offsetTextureHorizontally);
-  document.getElementById('texture-vertical-offset').addEventListener('input', offsetTextureVertically);
-  document.getElementById('texture-horizontal-repeat').addEventListener('input', handleTextureOffsetAndFlip);
-  document.getElementById('texture-vertical-repeat').addEventListener('input', handleTextureOffsetAndFlip);
+  document.getElementById('texture-rotation').addEventListener('input', handleTextureOrientation);
+  document.getElementById('texture-horizontal-offset').addEventListener('input', handleTextureOrientation);
+  document.getElementById('texture-vertical-offset').addEventListener('input', handleTextureOrientation);
+  document.getElementById('texture-horizontal-repeat').addEventListener('input', handleTextureOrientation);
+  document.getElementById('texture-vertical-repeat').addEventListener('input', handleTextureOrientation);
   document.getElementById('show-texture-emissive').addEventListener('change', handleTextureEmissiveChange);
-  document.getElementById('texture-flip-v').addEventListener('change', handleTextureOffsetAndFlip);
-  document.getElementById('texture-flip-h').addEventListener('change', handleTextureOffsetAndFlip);
+  document.getElementById('texture-flip-v').addEventListener('change', handleTextureOrientation);
+  document.getElementById('texture-flip-h').addEventListener('change', handleTextureOrientation);
   document.getElementById('texture-opacity').addEventListener('input', handleTextureOpacityChange);
   document.getElementsByName('tool').forEach(input => {
     input.addEventListener('change', () => {
@@ -1692,17 +1692,6 @@ function drawTexturePreview(options) {
   ctx.clearRect(0, 0, texturePreview.width, texturePreview.height);
   ctx.drawImage(textureImage, 0, 0, texturePreview.width, texturePreview.height);
 }
-function rotateTexture() {
-  const rotation = parseFloat(document.getElementById('texture-rotation').value);
-  skin.rotation = rotation;
-  skin.needsUpdate = true;
-}
-function offsetTextureHorizontally() {
-  skin.offset.x = parseFloat(document.getElementById('texture-horizontal-offset').value);
-}
-function offsetTextureVertically() {
-  skin.offset.y = parseFloat(document.getElementById('texture-vertical-offset').value);
-}
 function handleTextureOpacityChange() {
   const opacity = parseFloat(document.getElementById('texture-opacity').value);
   [nurbsObject, modelObject].forEach(object => {
@@ -1721,13 +1710,19 @@ function handleTextureEmissiveChange() {
     }
   });
 }
-function handleTextureOffsetAndFlip() {
+function handleTextureOrientation() {
+  const rotation = parseFloat(document.getElementById('texture-rotation').value);
   const flipX = document.getElementById('texture-flip-h').checked;
   const flipY = document.getElementById('texture-flip-v').checked;
-  const y = parseFloat(document.getElementById('texture-vertical-repeat').value)
-  const x = parseFloat(document.getElementById('texture-horizontal-repeat').value);
-  skin.repeat.y = flipY ? y * -1: y;
-  skin.repeat.x = flipX ? x * -1: x;
+  const repeatY = parseFloat(document.getElementById('texture-vertical-repeat').value)
+  const repeatX = parseFloat(document.getElementById('texture-horizontal-repeat').value);
+  const offsetX =  parseFloat(document.getElementById('texture-horizontal-offset').value);
+  const offsetY =  parseFloat(document.getElementById('texture-vertical-offset').value);
+  skin.rotation = rotation;
+  skin.repeat.y = flipY ? repeatY * -1: repeatY;
+  skin.repeat.x = flipX ? repeatX * -1: repeatX;
+  skin.offset.x = offsetX;
+  skin.offset.y = offsetY;
   skin.needsUpdate = true;
 }
 function applyTextureToObjects() {
@@ -1736,10 +1731,10 @@ function applyTextureToObjects() {
   skin = new THREE.Texture(textureImage);
   skin.wrapS = THREE.RepeatWrapping;
   skin.wrapT = THREE.RepeatWrapping;
-  skin.rotation = Math.PI / -2;
   skin.generateMipmaps = true;
   skin.minFilter = THREE.LinearMipmapLinearFilter;
   skin.maxFilter = THREE.LinearMipmapLinearFilter;
+  handleTextureOrientation();
   skin.needsUpdate = true;
   [nurbsObject, modelObject].forEach(object => {
     if(object) {

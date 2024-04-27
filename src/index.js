@@ -1499,7 +1499,13 @@ function createDynamicModelDensityTexture() {
   // get min/max/median
   const min = areas.reduce((min, area) => area === 0 ? min : Math.min(min, area), Infinity);
   const max = areas.reduce((max, area) => area === 0 ? max : Math.max(max, area), -Infinity);
-  const median = areas.slice().sort((a, b) => a-b)[Math.floor(areas.length/2)];
+  const sortedAreas = areas.slice().sort((a, b) => a-b);
+  const medianCount = 3;
+  const medians = [];
+  for(let i = 0; i < medianCount; i++) {
+    const areaIndex = Math.floor(i * (areas.length/(medianCount + 1)));
+    medians[i] = sortedAreas[areaIndex];
+  }
 
   // draw triangles
   ctx.strokeStyle = 'black';
@@ -1507,7 +1513,7 @@ function createDynamicModelDensityTexture() {
   for(let i = 0; i < trianglesXy.length; i++) {
     const [xy1, xy2, xy3] = trianglesXy[i];
     const area = areas[i];
-    const weight = getWeight(area, {min, max, median});
+    const weight = getWeight(area, {min, max, medians});
     const hue = Math.floor(weight * 240); // red to blue
     const color = `hsl(${hue}, 100%, 50%)`;
     // const color = `hsl(0, 0%, ${Math.floor(weight * 100)}%)`
@@ -1533,17 +1539,20 @@ function rgbAreEqual(rgb1, rgb2) {
     rgb1.g === rgb2.g &&
     rgb1.b === rgb2.b;
 }
-function getWeight(value, {min, max, median}) {
-  const SEGMENT_SIZE = 0.5;
-  if(value < median) {
-    const range = median - min;
-    const v = value - min;
-    return (v / range) * SEGMENT_SIZE;
-  } else {
-    const range = max - median;
-    const v = value - median;
-    return SEGMENT_SIZE + ((v / range) * SEGMENT_SIZE);
+function getWeight(value, {min, max, medians}) {
+  if(value <= min) return 0;
+  if(value >= max) return 1;
+  const SEGMENT_SIZE = 1 / medians.length;
+  for(let i = 0; i <= medians.length; i++) {
+    const median = i === medians.length ? max : medians[i];
+    if(value <= median) {
+      const minValue = i === 0 ? min : medians[i-1];
+      const range = median - minValue;
+      const v = value - minValue;
+      return ((v/range) * SEGMENT_SIZE) + (SEGMENT_SIZE * i);
+    }
   }
+  return 1;
 }
 
 function scaleCoordinate(xy, source, target) {

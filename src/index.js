@@ -1354,7 +1354,7 @@ function handleTextureSelectorChange() {
   if(textureUrl === '') {
     removeTexture(nurbsObject, modelObject);
   } else if(isDynamicTexture()) {
-    applyDynamicMap();    
+    applyDynamicMap(dynamicTextureName());    
   } else if(alignmentMapPattern.test(textureUrl)) {
     const size = parseInt(textureUrl.match(alignmentMapPattern)[1]);
     loadAlignmentMap(size);

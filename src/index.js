@@ -418,7 +418,7 @@ function changeSelectedVertexPosition(axis, value, options) {
 
   // Dynamic texutres need to be updated
   if(isDynamicTexture()) {
-    applyDynamicMap();
+    handleDynamicMapChange();
   }
 
   displayNewlySelectedVertex(options);
@@ -1383,7 +1383,7 @@ function handleTextureSelectorChange() {
   if(textureUrl === '') {
     removeTexture(nurbsObject, modelObject);
   } else if(isDynamicTexture()) {
-    applyDynamicMap();    
+    handleDynamicMapChange();    
   } else if(alignmentMapPattern.test(textureUrl)) {
     const size = parseInt(textureUrl.match(alignmentMapPattern)[1]);
     loadAlignmentMap(size);
@@ -1557,7 +1557,7 @@ function scaleCoordinate(xy, source, target) {
 }
 
 let applyDynamicMapId;
-function applyDynamicMap_delayed() {
+function applyDynamicMap() {
   const name = dynamicTextureName();
   if(applyDynamicMapId) {
     window.clearTimeout(applyDynamicMapId);
@@ -1565,7 +1565,7 @@ function applyDynamicMap_delayed() {
   }
   if(!pixels) {
     // race condition, or not loaded
-    applyDynamicMapId = window.setTimeout(applyDynamicMap_delayed, 500);
+    applyDynamicMapId = window.setTimeout(applyDynamicMap, 500);
     return;
   }
 
@@ -1582,7 +1582,7 @@ function applyDynamicMap_delayed() {
   }
   textureImage.src = dataURL;
 }
-const applyDynamicMap = debounce(applyDynamicMap_delayed, 250);
+const handleDynamicMapChange = debounce(applyDynamicMap, 250);
 function loadAlignmentMap(size) {
   const canvas = document.createElement('canvas');
   canvas.width = size;
@@ -1924,7 +1924,7 @@ function imageOfModelDataLoaded() {
 
   // Dynamic texutres need to be updated
   if(isDynamicTexture()) {
-    applyDynamicMap();
+    handleDynamicMapChange();
   }
 }
 function drawObjects(nurbsControlVertices, options) {

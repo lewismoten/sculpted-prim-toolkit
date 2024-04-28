@@ -2337,7 +2337,6 @@ function buildModel(controlVertices, options) {
       );
       target.set(0, 0, 0);
     }
-    // hhh
     const xyz = controlVertices[index];
     if(!xyz) {
       console.error('Control Vertices Index %s returned nothing', index, controlVertices)

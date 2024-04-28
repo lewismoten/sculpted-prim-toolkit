@@ -127,13 +127,6 @@
         <label>
           <input type="checkbox" id="show-texture-emissive">Emissive
         </label><br />
-        <label>
-          <input type="checkbox" id="texture-flip-v">Flip V
-        </label><br />
-        <label>
-          <input type="checkbox" id="texture-flip-h">Flip H
-        </label>
-
       </div>
       <div>
         Skin: <select id="texture-selector">
@@ -155,34 +148,46 @@
           <option value="grey-scale">Grey Scale</option>
         </select><br />
 
-        <label>Rotate: <input type="range" id="texture-rotation" min="-3.14" max="3.14" step="0.01"
-            value="0"></label>
 
-          <div class="group">
-            <div class="group-title">Offset</div>
-        <label>H: <input type="range" id="texture-horizontal-offset" min="-1" max="1" step="0.01"
-            value="0"></label>
-            <input type="number" class="scale-input" id="texture-horizontal-offset-value" min="-1" max="1" step="0.01" value="0">
-            <br />
-        <label>V: <input type="range" id="texture-vertical-offset" min="-1" max="1" step="0.01" value="0"></label>
-        <input type="number" class="scale-input" id="texture-vertical-offset-value" min="-1" max="1" step="0.01" value="0">
-        
-        <br />
-      </div>
-      <div class="group">
-        <div class="group-title">Repeat</div>
-        <label>H: <input type="range" id="texture-horizontal-repeat" min="0.01" max="10" step="0.01"
-            value="1"></label>
-            <input type="number" class="scale-input" id="texture-horizontal-repeat-value" min="0.01" max="10" step="0.01" value="1">
 
-            <br />
-        <label>V: <input type="range" id="texture-vertical-repeat" min="0.01" max="10" step="0.01"
-            value="1"></label>
-            <input type="number" class="scale-input" id="texture-vertical-repeat-value" min="0.01" max="10" step="0.01" value="1">
-        </div>
         Opacity: <input type="range" id="texture-opacity" min="0" max="1" step="0.01" value="1"><br />
       </div>
     </div>
+  </div>
+  <div class="group">
+    <div class="group-title">Texture Orientation</div>
+    <label>Rotate: <input type="range" id="texture-rotation" min="-3.14" max="3.14" step="0.01"
+      value="0"></label><br>
+      Flip:
+      <label>
+        <input type="checkbox" id="texture-flip-h">H
+      </label>
+      <label>
+        <input type="checkbox" id="texture-flip-v">V
+      </label>
+
+    <div class="group">
+      <div class="group-title">Offset</div>
+  <label>H: <input type="range" id="texture-horizontal-offset" min="-1" max="1" step="0.01"
+      value="0"></label>
+      <input type="number" class="scale-input" id="texture-horizontal-offset-value" min="-1" max="1" step="0.01" value="0">
+      <br />
+  <label>V: <input type="range" id="texture-vertical-offset" min="-1" max="1" step="0.01" value="0"></label>
+  <input type="number" class="scale-input" id="texture-vertical-offset-value" min="-1" max="1" step="0.01" value="0">
+  
+  <br />
+</div>
+<div class="group">
+  <div class="group-title">Repeat</div>
+  <label>H: <input type="range" id="texture-horizontal-repeat" min="0.01" max="10" step="0.01"
+      value="1"></label>
+      <input type="number" class="scale-input" id="texture-horizontal-repeat-value" min="0.01" max="10" step="0.01" value="1">
+
+      <br />
+  <label>V: <input type="range" id="texture-vertical-repeat" min="0.01" max="10" step="0.01"
+      value="1"></label>
+      <input type="number" class="scale-input" id="texture-vertical-repeat-value" min="0.01" max="10" step="0.01" value="1">
+  </div>
   </div>
   <div class="group">
     <div class="group-title">Lighting</div>

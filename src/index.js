@@ -414,7 +414,7 @@ function changeSelectedVertexPosition(axis, value, options) {
   updateVertexModelsPositionAndColor(index, snappedVertex, pixel);
 
   // update model
-  drawModelMesh(nurbsControlVertices, options);
+  buildModel(nurbsControlVertices, options);
   // update wireframe
   buildWireframeObject(nurbsControlVertices, options);
   // update nurbs surface
@@ -944,7 +944,7 @@ function saveVerticesPositionsToModelData(options) {
     document.getElementById(`rotation-${axis}`).value = rotation.toFixed(2);
   });
   // update model
-  drawModelMesh(nurbsControlVertices, options);
+  buildModel(nurbsControlVertices, options);
   // update wireframe
   buildWireframeObject(nurbsControlVertices, options);
   // update nurbs surface
@@ -2002,7 +2002,7 @@ function imageOfModelDataLoaded() {
   }
 }
 function drawObjects(nurbsControlVertices, options) {
-  drawModelMesh(nurbsControlVertices, options);
+  buildModel(nurbsControlVertices, options);
   buildPointCloud(nurbsControlVertices);
   buildWireframeObject(nurbsControlVertices);
   drawNurbsSurfaceMesh(nurbsControlVertices, options);
@@ -2309,7 +2309,7 @@ function buildWireframeObject(vertices, options) {
   wireframeObject.visible = document.getElementById('show-control-mesh').checked;
   addObjectToList(wireframeObject);
 }
-function drawModelMesh(controlVertices, options) {
+function buildModel(controlVertices, options) {
   if(controlVertices.length !== options.mapping.dataCount) {
     console.error('Expected %s vertices, received %s',
       options.mapping.dataCount,

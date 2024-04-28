@@ -160,6 +160,7 @@ function handleWindowLoad() {
   scene.background = new THREE.Color(0x000040);
 
   const axesHelper = new THREE.AxesHelper(.75);
+  axesHelper.visible = document.getElementById('axis-helper').checked;
   scene.add(axesHelper);
 
   setupTransformControls(camera);

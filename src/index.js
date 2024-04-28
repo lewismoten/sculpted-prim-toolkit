@@ -2319,7 +2319,7 @@ function buildModel(controlVertices, options) {
   }
   removeObjectFromList(modelObject);
   function getPoint(u, v, target) {
-    let column = Math.floor(u * (options.columns + 1));
+    let column = Math.floor(u * (options.columns));
     let row = Math.floor((1 - v) * (options.rows + 1));
     const index = rowColumnToIndexOfVertex(
       row,

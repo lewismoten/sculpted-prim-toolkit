@@ -1514,9 +1514,13 @@ function createDynamicModelDensityTexture() {
   };
 
   // get min/max/median
-  const min = areas.reduce((min, area) => area === 0 ? min : Math.min(min, area), Infinity);
-  const max = areas.reduce((max, area) => area === 0 ? max : Math.max(max, area), -Infinity);
+  // const min = areas.reduce((min, area) => area === 0 ? min : Math.min(min, area), Infinity);
+  // const max = areas.reduce((max, area) => area === 0 ? max : Math.max(max, area), -Infinity);
   const sortedAreas = areas.slice().sort((a, b) => a-b);
+  let min = sortedAreas[0];
+  if(min === 0) min = sortedAreas[1];
+  const max = sortedAreas[sortedAreas.length -1];
+
   const colors = dynamicColorScheme();
   const medianCount = Math.max(1, colors.length - 1);
   const medians = [];

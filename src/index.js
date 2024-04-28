@@ -224,7 +224,11 @@ function handleWindowLoad() {
   document.getElementById('show-texture-emissive').addEventListener('change', handleTextureEmissiveChange);
   document.getElementById('texture-flip-v').addEventListener('change', handleTextureOrientation);
   document.getElementById('texture-flip-h').addEventListener('change', handleTextureOrientation);
-  document.getElementById('texture-opacity').addEventListener('input', handleTextureOpacityChange);
+  bindRangeAndNumericInput(
+    'texture-opacity',
+    'texture-opacity-value',
+    handleTextureOpacityChange
+  );
 
   function bindRadianAndDegreeInput(radianId, degreeId, callback) {
     const radian = document.getElementById(radianId);

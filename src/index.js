@@ -1949,6 +1949,12 @@ function imageOfModelDataLoaded() {
   let cols = [];
   for(let i = 0; i < options.mapping.dataCount; i++) {
     const rc =   indexOfImageDataToRowAndColumn(i, options);
+    const backToIndex = rowColumnToIndexOfVertex(rc.row, rc.column, options);
+    if(i !== backToIndex) {
+      console.log('Index %s (Row %s, Column %s) mismatch = %s',
+        i, rc.row, rc.column, backToIndex
+      );
+    }
     if(rc.row !== row) {
       const colList = cols.join(', ');
       if(colList === lastColList) {

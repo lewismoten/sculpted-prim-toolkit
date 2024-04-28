@@ -197,14 +197,36 @@ function handleWindowLoad() {
   document.getElementById('export-stl').addEventListener('click', exportStl);
 
   document.getElementById('texture-rotation').addEventListener('input', handleTextureOrientation);
-  document.getElementById('texture-horizontal-offset').addEventListener('input', handleTextureOrientation);
-  document.getElementById('texture-vertical-offset').addEventListener('input', handleTextureOrientation);
+  bindRangeAndNumericInput(
+    'texture-horizontal-offset',
+    'texture-horizontal-offset-value',
+    handleTextureOrientation
+  );
+  bindRangeAndNumericInput(
+    'texture-vertical-offset',
+    'texture-vertical-offset-value',
+    handleTextureOrientation
+  );
   document.getElementById('texture-horizontal-repeat').addEventListener('input', handleTextureOrientation);
   document.getElementById('texture-vertical-repeat').addEventListener('input', handleTextureOrientation);
   document.getElementById('show-texture-emissive').addEventListener('change', handleTextureEmissiveChange);
   document.getElementById('texture-flip-v').addEventListener('change', handleTextureOrientation);
   document.getElementById('texture-flip-h').addEventListener('change', handleTextureOrientation);
   document.getElementById('texture-opacity').addEventListener('input', handleTextureOpacityChange);
+
+  function bindRangeAndNumericInput(rangeId, numericId, callback) {
+    const range = document.getElementById(rangeId);
+    const numeric = document.getElementById(numericId);
+    range.value = parseFloat(numeric.value).toFixed(2);
+    range.addEventListener('input', () => {
+      numeric.value = parseFloat(range.value).toFixed(2);
+      callback();
+    });
+    numeric.addEventListener('input', () => {
+      range.value = parseFloat(numeric.value).toFixed(2);
+      debounce(callback, 100)();
+    });
+  }
   document.getElementById('dynamic-colors').addEventListener('change', () => {
     if(isDynamicTexture()) handleDynamicMapChange();
   });

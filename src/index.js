@@ -229,43 +229,6 @@ function handleWindowLoad() {
     'texture-opacity-value',
     handleTextureOpacityChange
   );
-
-  function bindRadianAndDegreeInput(radianId, degreeId, callback) {
-    const radian = document.getElementById(radianId);
-    const degree = document.getElementById(degreeId);
-    degree.min = 0;
-    degree.max = 359.95;
-    degree.step = 0.05;
-    radian.min = -Math.PI;
-    radian.max = Math.PI;
-    degree.value = parseFloat(degree.value).toFixed(2);
-    radian.value = degreesToRadians(parseFloat(degree.value));
-    const handler = debounce(callback, 100);
-    radian.addEventListener('input', () => {
-      const value = radiansToDegrees(parseFloat(radian.value));
-      degree.value = (Math.floor(value * 20) / 20).toFixed(2);
-      handler();
-    });
-    degree.addEventListener('input', () => {
-      radian.value = degreesToRadians(parseFloat(degree.value));
-      handler();
-    });
-  }
-  function bindRangeAndNumericInput(rangeId, numericId, callback) {
-    const range = document.getElementById(rangeId);
-    const numeric = document.getElementById(numericId);
-    numeric.value = parseFloat(numeric.value).toFixed(2);
-    range.value = parseFloat(numeric.value).toFixed(2);
-    const handler = debounce(callback, 100);
-    range.addEventListener('input', () => {
-      numeric.value = parseFloat(range.value).toFixed(2);
-      handler();
-    });
-    numeric.addEventListener('input', () => {
-      range.value = parseFloat(numeric.value).toFixed(2);
-      handler();
-    });
-  }
   document.getElementById('dynamic-colors').addEventListener('change', () => {
     if(isDynamicTexture()) handleDynamicMapChange();
   });
@@ -415,7 +378,42 @@ function handleWindowLoad() {
     handleTextureSelectorChange();
   });
 }
-
+function bindRangeAndNumericInput(rangeId, numericId, callback) {
+  const range = document.getElementById(rangeId);
+  const numeric = document.getElementById(numericId);
+  numeric.value = parseFloat(numeric.value).toFixed(2);
+  range.value = parseFloat(numeric.value).toFixed(2);
+  const handler = debounce(callback, 100);
+  range.addEventListener('input', () => {
+    numeric.value = parseFloat(range.value).toFixed(2);
+    handler();
+  });
+  numeric.addEventListener('input', () => {
+    range.value = parseFloat(numeric.value).toFixed(2);
+    handler();
+  });
+}
+function bindRadianAndDegreeInput(radianId, degreeId, callback) {
+  const radian = document.getElementById(radianId);
+  const degree = document.getElementById(degreeId);
+  degree.min = 0;
+  degree.max = 359.95;
+  degree.step = 0.05;
+  radian.min = -Math.PI;
+  radian.max = Math.PI;
+  degree.value = parseFloat(degree.value).toFixed(2);
+  radian.value = degreesToRadians(parseFloat(degree.value));
+  const handler = debounce(callback, 100);
+  radian.addEventListener('input', () => {
+    const value = radiansToDegrees(parseFloat(radian.value));
+    degree.value = (Math.floor(value * 20) / 20).toFixed(2);
+    handler();
+  });
+  degree.addEventListener('input', () => {
+    radian.value = degreesToRadians(parseFloat(degree.value));
+    handler();
+  });
+}
 function debounce(callback, delay) {
   let timeoutId;
   return function(...args) {

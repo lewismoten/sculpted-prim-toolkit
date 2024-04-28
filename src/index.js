@@ -408,7 +408,7 @@ function changeSelectedVertexPosition(axis, value, options) {
   nurbsControlVertices[index] = snappedVertex;
 
   // update model data image
-  const { x, y } = indexOfImageDataToImageXy(index);
+  const { x, y } = indexOfImageDataToImageXy(index, options);
   updateModelDataPixel(x, y, pixel.r, pixel.g, pixel.b);
 
   updateVertexModelsPositionAndColor(index, snappedVertex, pixel);
@@ -908,7 +908,7 @@ function saveVerticesPositionsToModelData(options) {
     nurbsControlVertices[index] = snappedVertex;
 
     // update model data image
-    const { x, y } = indexOfImageDataToImageXy(index);
+    const { x, y } = indexOfImageDataToImageXy(index, options);
     updateModelDataPixel(x, y, rgb.r, rgb.g, rgb.b);
 
     // update vertex models
@@ -966,7 +966,7 @@ function updateModelVertexPosition(options) {
   const rgb = bytePositionAsPixelRgb(pos.x, pos.y, pos.z);
 
   const i = getSelectedIndex(options);
-  const point = indexOfImageDataToImageXy(i);
+  const point = indexOfImageDataToImageXy(i, options);
 
   const tempCanvas = document.createElement('canvas');
   tempCanvas.width = image2D.width;
@@ -1209,8 +1209,8 @@ function highlightSelectedVertexOnImageOfData(options = getModelReadOptions(imag
   const isBlackBg = document.querySelector('input[name="unused-pixels"]:checked').value === 'black';
   const outlineColor = isBlackBg ? 'white' : getContrastingColor(rgb);
 
-  const { x, y } = indexOfImageDataToImageXy(index);
-  const canRead = imageXyIsImageData(x, y, getModelReadOptions(image2D));
+  const { x, y } = indexOfImageDataToImageXy(index, options);
+  const canRead = imageXyIsImageData(x, y, options);
   if(!canRead) {
     console.log('About to update a pixel that should not be updated');
   }
@@ -2042,7 +2042,7 @@ function rgbAsVertexAndColor(rgb) {
     z: vector.z
   };
 }
-function indexOfImageDataToImageXy(i, options = getModelReadOptions(image2D)) {
+function indexOfImageDataToImageXy(i, options) {
   const { row, column } = indexOfImageDataToRowAndColumn(i, options);
   const powX =  Math.pow(2, options.hDown + 1);
   const powY = Math.pow(2, options.vDown + 1);
@@ -2205,7 +2205,7 @@ function drawSelectionVertices(options) {
   selectedVerticesObject = object;
   addObjectToList(object);
 }
-function rowColumnToIndexOfVertex(row, column, options = getModelReadOptions(image2D)) {
+function rowColumnToIndexOfVertex(row, column, options) {
   // handle poles
   if(row <= 0) return 0;
   if(row >= options.rows - 1) return options.mapping.dataCount -1;

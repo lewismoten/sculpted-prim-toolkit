@@ -169,13 +169,18 @@
         
         <br />
       </div>
-        Repeat:<br />
+      <div class="group">
+        <div class="group-title">Repeat</div>
         <label>H: <input type="range" id="texture-horizontal-repeat" min="0.01" max="10" step="0.01"
-            value="1"></label><br />
+            value="1"></label>
+            <input type="number" class="scale-input" id="texture-horizontal-repeat-value" min="0.01" max="10" step="0.01" value="1">
+
+            <br />
         <label>V: <input type="range" id="texture-vertical-repeat" min="0.01" max="10" step="0.01"
-            value="1"></label><br />
+            value="1"></label>
+            <input type="number" class="scale-input" id="texture-vertical-repeat-value" min="0.01" max="10" step="0.01" value="1">
+        </div>
         Opacity: <input type="range" id="texture-opacity" min="0" max="1" step="0.01" value="1"><br />
-        
       </div>
     </div>
   </div>

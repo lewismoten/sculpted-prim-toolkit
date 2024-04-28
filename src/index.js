@@ -207,8 +207,16 @@ function handleWindowLoad() {
     'texture-vertical-offset-value',
     handleTextureOrientation
   );
-  document.getElementById('texture-horizontal-repeat').addEventListener('input', handleTextureOrientation);
-  document.getElementById('texture-vertical-repeat').addEventListener('input', handleTextureOrientation);
+  bindRangeAndNumericInput(
+    'texture-horizontal-repeat',
+    'texture-horizontal-repeat-value',
+    handleTextureOrientation
+  );
+  bindRangeAndNumericInput(
+    'texture-vertical-repeat',
+    'texture-vertical-repeat-value',
+    handleTextureOrientation
+  );
   document.getElementById('show-texture-emissive').addEventListener('change', handleTextureEmissiveChange);
   document.getElementById('texture-flip-v').addEventListener('change', handleTextureOrientation);
   document.getElementById('texture-flip-h').addEventListener('change', handleTextureOrientation);
@@ -217,6 +225,7 @@ function handleWindowLoad() {
   function bindRangeAndNumericInput(rangeId, numericId, callback) {
     const range = document.getElementById(rangeId);
     const numeric = document.getElementById(numericId);
+    numeric.value = parseFloat(numeric.value).toFixed(2);
     range.value = parseFloat(numeric.value).toFixed(2);
     range.addEventListener('input', () => {
       numeric.value = parseFloat(range.value).toFixed(2);

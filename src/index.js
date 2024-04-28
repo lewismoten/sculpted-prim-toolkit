@@ -196,7 +196,11 @@ function handleWindowLoad() {
   document.getElementById('export-obj').addEventListener('click', exportObj);
   document.getElementById('export-stl').addEventListener('click', exportStl);
 
-  document.getElementById('texture-rotation').addEventListener('input', handleTextureOrientation);
+  bindRadianAndDegreeInput(
+    'texture-rotation',
+    'texture-rotation-value',
+    handleTextureOrientation
+  )
   bindRangeAndNumericInput(
     'texture-horizontal-offset',
     'texture-horizontal-offset-value',
@@ -222,18 +226,40 @@ function handleWindowLoad() {
   document.getElementById('texture-flip-h').addEventListener('change', handleTextureOrientation);
   document.getElementById('texture-opacity').addEventListener('input', handleTextureOpacityChange);
 
+  function bindRadianAndDegreeInput(radianId, degreeId, callback) {
+    const radian = document.getElementById(radianId);
+    const degree = document.getElementById(degreeId);
+    degree.min = 0;
+    degree.max = 359.95;
+    degree.step = 0.05;
+    radian.min = -Math.PI;
+    radian.max = Math.PI;
+    degree.value = parseFloat(degree.value).toFixed(2);
+    radian.value = degreesToRadians(parseFloat(degree.value));
+    const handler = debounce(callback, 100);
+    radian.addEventListener('input', () => {
+      const value = radiansToDegrees(parseFloat(radian.value));
+      degree.value = (Math.floor(value * 20) / 20).toFixed(2);
+      handler();
+    });
+    degree.addEventListener('input', () => {
+      radian.value = degreesToRadians(parseFloat(degree.value));
+      handler();
+    });
+  }
   function bindRangeAndNumericInput(rangeId, numericId, callback) {
     const range = document.getElementById(rangeId);
     const numeric = document.getElementById(numericId);
     numeric.value = parseFloat(numeric.value).toFixed(2);
     range.value = parseFloat(numeric.value).toFixed(2);
+    const handler = debounce(callback, 100);
     range.addEventListener('input', () => {
       numeric.value = parseFloat(range.value).toFixed(2);
-      callback();
+      handler();
     });
     numeric.addEventListener('input', () => {
       range.value = parseFloat(numeric.value).toFixed(2);
-      debounce(callback, 100)();
+      handler();
     });
   }
   document.getElementById('dynamic-colors').addEventListener('change', () => {

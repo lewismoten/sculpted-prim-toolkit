@@ -681,6 +681,11 @@ function getModelReadOptions(size = image2D) {
     columns: segments.horizontal,
     mapping
   };
+  options.minY = indexOfImageDataToImageXy(0, options).y;
+  options.minX = indexOfImageDataToImageXy(rowColumnToIndexOfVertex(1, 0, options), options).x;
+  options.maxX = indexOfImageDataToImageXy(rowColumnToIndexOfVertex(2, 0, options)-1, options).x;
+  options.maxY = indexOfImageDataToImageXy(mapping.dataCount-1, options).y;
+
   // Check that top pole is applied
   if(modelNameChanged()) {
     const rc = indexOfImageDataToRowAndColumn(1, options);
@@ -1496,9 +1501,9 @@ function createDynamicModelDensityTexture() {
       vector3
     ]);
     trianglesXy.push([
-      scaleCoordinate(indexOfImageDataToImageXy(index1), options, canvas),
-      scaleCoordinate(indexOfImageDataToImageXy(index2), options, canvas),
-      scaleCoordinate(indexOfImageDataToImageXy(index3), options, canvas)
+      scaleCoordinateWithOffsets(indexOfImageDataToImageXy(index1, options), options, canvas),
+      scaleCoordinateWithOffsets(indexOfImageDataToImageXy(index2, options), options, canvas),
+      scaleCoordinateWithOffsets(indexOfImageDataToImageXy(index3, options), options, canvas)
     ]);
   }
 
@@ -1611,10 +1616,10 @@ function getWeight(value, {min, max, medians}) {
   return 1;
 }
 
-function scaleCoordinate(xy, source, target) {
+function scaleCoordinateWithOffsets(xy, source, target) {
   return {
-    x: (xy.x / source.width) * target.width,
-    y: (xy.y / source.height) * target.height,
+    x: ((xy.x - source.minX) / (source.maxX - source.minX)) * target.width,
+    y: ((xy.y - source.minY) / (source.maxY - source.minY)) * target.height,
   };  
 }
 

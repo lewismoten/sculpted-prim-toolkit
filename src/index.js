@@ -2213,13 +2213,13 @@ function drawSelectionVertices(options) {
 function rowColumnToIndexOfVertex(row, column, options) {
   // handle poles
   if(row <= 0) return 0;
-  if(row >= options.rows - 1) return options.mapping.dataCount -1;
+  if(row >= options.rows) return options.mapping.dataCount -1;
   
   // offset for top pole
-  column++;
+  column;
 
   // stitch left/right
-  column = column % options.columns;
+  column = column % options.columns + 1;
 
   return ((row - 1) * options.columns) + column;
 }

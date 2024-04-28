@@ -2424,8 +2424,8 @@ function createSphericalVertices(vertices, horizontalSegments, verticalSegments)
 
 function createSphericalControlTriangles(options) {
   var indexedTriangles = [];
-  for(let column = 0; column < horizontalSegments; column++) {
-    for(let row = 0; row < verticalSegments; row++) {
+  for(let column = 0; column < options.columns; column++) {
+    for(let row = 0; row < options.rows; row++) {
       const centerIndex = rowColumnToIndexOfVertex(row, column, options);
       const bottomRightIndex = rowColumnToIndexOfVertex(row + 1, column + 1, options);
       const bottomIndex = rowColumnToIndexOfVertex(row + 1, column, options);
@@ -2434,7 +2434,7 @@ function createSphericalControlTriangles(options) {
       if(row === 0) {
         // triangles at top pole
         indexedTriangles.push(centerIndex, bottomIndex, bottomRightIndex);
-      } else if(row === verticalSegments - 1) {
+      } else if(row === options.rows - 1) {
         // triangles at bottom pole
         indexedTriangles.push(centerIndex, bottomRightIndex, rightIndex);
       } else {

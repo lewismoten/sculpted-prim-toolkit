@@ -2798,9 +2798,6 @@ function exportImage() {
 
   const width = parseInt(document.getElementById('save-image-width').value);
   const height = parseInt(document.getElementById('save-image-height').value);
-  const segments = downsampleSegments(width, height);
-  const hDown = segments.horizontalDownsample;
-  const vDown = segments.verticalDownsample;
 
   const canvas = document.createElement('canvas');
   canvas.width = width;
@@ -2808,12 +2805,7 @@ function exportImage() {
   const ctx = canvas.getContext('2d', {willReadFrequently: true});
   ctx.fillStyle = 'black';
   ctx.fillRect(0, 0, width, height);
-  const options = {
-    width,
-    height,
-    hDown,
-    vDown
-  };
+  const options = getModelReadOptions({width, height})
 
   // redraw canvas without selected vertex
   updateModelDataUnusedPixels(ctx, options);

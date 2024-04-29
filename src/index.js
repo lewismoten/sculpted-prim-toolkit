@@ -1587,7 +1587,7 @@ function hslToRgbHex(hue, saturation, luminance) {
     luminance + saturation - luminance * saturation;
   const lower = 2 * luminance - upper;
   function channelIntensity(min, max, hueOffset) {
-    hueOffset = Math.max(0, Math.min(1, hueOffset));
+    hueOffset = (hueOffset + 1) % 1;
     let value = min;
     if (hueOffset < 1 / 6) value = min + (max - min) * 6 * hueOffset;
     else if (hueOffset < 1 / 2) value = max;

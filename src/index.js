@@ -1556,11 +1556,6 @@ function createDynamicModelDensityTexture() {
     trianglesXy.push(
       trianglePositionXy[i / 3]
     )
-    // trianglesXy.push([
-    //   scaleCoordinateWithOffsets(indexOfImageDataToImageXy(index1, options), options, canvas),
-    //   scaleCoordinateWithOffsets(indexOfImageDataToImageXy(index2, options), options, canvas),
-    //   scaleCoordinateWithOffsets(indexOfImageDataToImageXy(index3, options), options, canvas)
-    // ]);
   }
 
   // calculate area of each triangle

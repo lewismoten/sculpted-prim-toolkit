@@ -1521,7 +1521,7 @@ function createDynamicModelDensityTexture() {
   // darker colors for small areas
   // heat map [high density/small] red-orange-yellow-green-blue [low density/large]
   const vectors = pixels.map(rgbAsVector);
-  const trianglePositionIndexes = createSphericalControlTriangles(options);
+  const trianglePositionIndexes = getIndexesOfTriangleVectorIndexes(options);
   const trianglePositionXy = getTextureMapCoordinatesForTriangles(targetOptions);
   // group triangle vectors and original x/y coordinates
   const triangles = [];
@@ -2440,7 +2440,7 @@ function createBufferGeometry(vertices, options = getModelReadOptions(image2D)) 
   const controlMeshGeometry = new THREE.BufferGeometry();
   const positions = createSphericalVertices(vertices, options.columns, options.rows);
   controlMeshGeometry.setAttribute('position', positions);
-  const indexedTriangles = createSphericalControlTriangles(options);
+  const indexedTriangles = getIndexesOfTriangleVectorIndexes(options);
   controlMeshGeometry.setIndex(indexedTriangles);
   controlMeshGeometry.setDrawRange(0, indexedTriangles.length);
   controlMeshGeometry.computeVertexNormals();
@@ -2506,7 +2506,7 @@ function createSphericalVertices(vertices, horizontalSegments, verticalSegments)
   return new THREE.BufferAttribute(values, 3);
 }
 
-function createSphericalControlTriangles(options) {
+function getIndexesOfTriangleVectorIndexes(options) {
   const {
     width,
     height,
@@ -2547,8 +2547,8 @@ function getTextureMapCoordinatesForTriangles({
   }
 }) {
   var xyTriangles = [];
-  const cellWidth = width / (columnCount-1);
-  const cellHeight = height / (rowCount-1);
+  const cellWidth = width / columnCount;
+  const cellHeight = height / (rowCount - 1);
   for(let column = 0; column < columnCount+1; column++) {
     for(let row = 0; row < rowCount; row++) {
       const x = column * cellWidth;

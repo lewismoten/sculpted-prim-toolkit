@@ -1600,6 +1600,26 @@ function hslToRgbHex(hue, saturation, luminance) {
     channelIntensity(lower, upper, hue - 1 / 3)
   );
 }
+function calculateVerticalAngle(v1, v2, v3) {
+  const normal = new THREE.Vector3().crossVectors(
+    new THREE.Vector3().subVectors(v2, v1),
+    new THREE.Vector3().subVectors(v3, v1)
+  ).normalize();
+  const angleRadians = Math.acos(normal.dot(new THREE.Vector3(0, 1, 0)));
+  const value = (angleRadians / Math.PI) * 180;
+  return 180 - value;
+}
+function calculateHorizontalAngle(v1, v2, v3) {
+  const normal = new THREE.Vector3().crossVectors(
+    new THREE.Vector3().subVectors(v2, v1),
+    new THREE.Vector3().subVectors(v3, v1)
+  ).normalize();
+  const horizontalNormal = new THREE.Vector3(normal.x, 0, normal.z).normalize();
+  const angleRadians = Math.atan2(horizontalNormal.x, horizontalNormal.z);
+  let angleDegrees = THREE.MathUtils.radToDeg(angleRadians);
+  if(angleDegrees < 0) angleDegrees += 360;
+  return angleDegrees;
+}
 function createDynamicModelFaceAngleTexture() {
   const {
     canvas,
@@ -1607,41 +1627,13 @@ function createDynamicModelFaceAngleTexture() {
     triangles,
     trianglesXy
   } = prepareForDynamicTexture();
-  const center = new THREE.Vector3(0, 0, 0);
-
-  // calculate distance to center from each triangle
   const colors = [];
   for(let i = 0; i < triangles.length; i++) {
     const [vector1, vector2, vector3] = triangles[i];
-    const faceCenter = new THREE.Vector3()
-      .add(vector1)
-      .add(vector2)
-      .add(vector3)
-      .divideScalar(3);
-    let horizontalAngle = Math.atan2(
-      vector1.x - faceCenter.x,
-      vector1.z - faceCenter.z
-    );
-    horizontalAngle *= 180 / Math.PI;
-    if(vector1.y < faceCenter.y) {
-      horizontalAngle += 180;
-    }
-    if(horizontalAngle < 0) horizontalAngle += 360;
-    horizontalAngle = horizontalAngle % 360;
-
-    let verticalAngle = Math.atan2(
-      vector1.y - faceCenter.y,
-      vector1.z - faceCenter.z
-    );
-    verticalAngle *= 180 / Math.PI;
-    if(vector1.x < faceCenter.x) {
-      verticalAngle += 180;
-    }
-    if(verticalAngle < 0) verticalAngle += 360;
-    verticalAngle = verticalAngle % 360;
-
+    const horizontalAngle = calculateHorizontalAngle(vector1, vector2, vector3);
+    const verticalAngle = calculateVerticalAngle(vector1, vector2, vector3);
     const hue = Math.floor(horizontalAngle);
-    const luminance = Math.floor(100 * (verticalAngle / 360));
+    const luminance = Math.floor(100 * (verticalAngle / 180));
     colors.push(hslToRgbHex(hue, 100, luminance));
   };
 

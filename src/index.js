@@ -1521,7 +1521,7 @@ function drawTransparencyBackground(ctx, {width, height}) {
 }
 function createDynamicModelDensityTexture() {
   const canvas = document.createElement('canvas');
-  canvas.height = canvas.width = 1024 * 4;
+  canvas.height = canvas.width = 1024;
   const ctx = canvas.getContext('2d', {willReadFrequently: true});
 
   drawTransparencyBackground(ctx, canvas);

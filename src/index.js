@@ -2129,8 +2129,7 @@ function indexOfImageDataToImageXy(i, options) {
   return { x, y };
 }
 function getLastImageDataY(options) {
-  const yMod = Math.pow(2, options.vDown + 1);
-  return options.height - yMod;
+  return options.height - 1;
 }
 function imageXyToClosestIndexOfImageData(x, y, options) {
   x = Math.floor(x);

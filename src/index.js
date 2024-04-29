@@ -1514,14 +1514,15 @@ function createDynamicModelDensityTexture() {
   // ctx.fillStyle = 'black';
   // ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-  const options = getModelReadOptions(image2D)
+  const options = getModelReadOptions(image2D);
+  const targetOptions = getModelReadOptions(canvas);
   // UV density map
   // lighter colors for large areas
   // darker colors for small areas
   // heat map [high density/small] red-orange-yellow-green-blue [low density/large]
   const vectors = pixels.map(rgbAsVector);
   const trianglePositionIndexes = createSphericalControlTriangles(options);
-
+  const trianglePositionXy = getTextureMapCoordinatesForTriangles(targetOptions);
   // group triangle vectors and original x/y coordinates
   const triangles = [];
   const trianglesXy = [];
@@ -1566,11 +1567,14 @@ function createDynamicModelDensityTexture() {
       vector2,
       vector3
     ]);
-    trianglesXy.push([
-      scaleCoordinateWithOffsets(indexOfImageDataToImageXy(index1, options), options, canvas),
-      scaleCoordinateWithOffsets(indexOfImageDataToImageXy(index2, options), options, canvas),
-      scaleCoordinateWithOffsets(indexOfImageDataToImageXy(index3, options), options, canvas)
-    ]);
+    trianglesXy.push(
+      trianglePositionXy[i / 3]
+    )
+    // trianglesXy.push([
+    //   scaleCoordinateWithOffsets(indexOfImageDataToImageXy(index1, options), options, canvas),
+    //   scaleCoordinateWithOffsets(indexOfImageDataToImageXy(index2, options), options, canvas),
+    //   scaleCoordinateWithOffsets(indexOfImageDataToImageXy(index3, options), options, canvas)
+    // ]);
   }
 
   // calculate area of each triangle
@@ -2119,8 +2123,7 @@ function rgbAsVertexAndColor(rgb) {
     z: vector.z
   };
 }
-function indexOfImageDataToImageXy(i, options) {
-  const { row, column } = indexOfImageDataToRowAndColumn(i, options);
+function rowColumnToTextureMapXy(row, column, options) {
   const powX =  Math.pow(2, options.hDown + 1);
   const powY = Math.pow(2, options.vDown + 1);
   let x = column * powX;
@@ -2130,7 +2133,11 @@ function indexOfImageDataToImageXy(i, options) {
   } else if(row !== 0) {
     y += -1;
   }
-  return { x, y };
+  return { x, y };  
+}
+function indexOfImageDataToImageXy(i, options) {
+  const { row, column } = indexOfImageDataToRowAndColumn(i, options);
+  return rowColumnToTextureMapXy(row, column, options);
 }
 function getLastImageDataY(options) {
   return options.height - 1;
@@ -2500,9 +2507,17 @@ function createSphericalVertices(vertices, horizontalSegments, verticalSegments)
 }
 
 function createSphericalControlTriangles(options) {
+  const {
+    width,
+    height,
+    mapping: {
+      x: columnCount, // 32
+      y: rowCount // 33
+    }
+  } = options;
   var indexedTriangles = [];
-  for(let column = 0; column < options.columns; column++) {
-    for(let row = 0; row < options.rows; row++) {
+  for(let column = 0; column < columnCount+1; column++) {
+    for(let row = 0; row < rowCount; row++) {
       const centerIndex = rowColumnToIndexOfVertex(row, column, options);
       const bottomRightIndex = rowColumnToIndexOfVertex(row + 1, column + 1, options);
       const bottomIndex = rowColumnToIndexOfVertex(row + 1, column, options);
@@ -2522,6 +2537,66 @@ function createSphericalControlTriangles(options) {
     }
   }
   return indexedTriangles;
+}
+function getTextureMapCoordinatesForTriangles({
+  width,
+  height,
+  mapping: {
+    x: columnCount, // 32
+    y: rowCount // 33
+  }
+}) {
+  var xyTriangles = [];
+  const cellWidth = width / (columnCount-1);
+  const cellHeight = height / (rowCount-1);
+  for(let column = 0; column < columnCount+1; column++) {
+    for(let row = 0; row < rowCount; row++) {
+      const x = column * cellWidth;
+      const y = row * cellHeight;
+      const centerXy = {x, y};
+      const bottomRightXy = {
+        x: x + cellWidth,
+        y: y + cellHeight
+      };
+      const bottomXy = {
+        x,
+        y: y + cellHeight
+      };
+      const rightXy = {
+        x: x + cellWidth,
+        y
+      };
+      // Add triangles in counter-clockwise order
+      if(row === 0) {
+        // triangles at top pole
+        xyTriangles.push([
+          centerXy,
+          bottomXy,
+          bottomRightXy
+        ]);
+      } else if(row === rowCount - 1) {
+        // triangles at bottom pole
+        xyTriangles.push([
+          centerXy,
+          bottomRightXy,
+          rightXy
+        ]);
+      } else {
+        // quads in the middle of poles
+        xyTriangles.push([
+          centerXy,
+          bottomRightXy,
+          rightXy
+        ]);
+        xyTriangles.push([
+          centerXy,
+          bottomXy,
+          bottomRightXy
+        ]);
+      }
+    }
+  }
+  return xyTriangles;
 }
 function faceColor(face) {
   switch(face.toLowerCase()) {

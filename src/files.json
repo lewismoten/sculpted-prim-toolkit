@@ -1,5 +1,6 @@
 {
   "sculptedPrims": [
+    "128-5 tokoroten cube (from SL).png",
     "45 Adapter Arm Sculpty 1.2a.png",
     "45 Adapter Arm Sculpty 1.2ab.png",
     "45 Adapter Arm Sculpty.png",
@@ -111,6 +112,7 @@
     "rutabaga-skin5.png"
   ],
   "sculptedPrimNames": {
+    "128x128 Dotted Cube": "128-5 tokoroten cube (from SL).png",
     "128x128 tokoroten cube": "tokoroten cube.png",
     "16 steps": "[DMGS] 16 steps.png",
     "16 steps floating": "[DMGS] 16 steps floating.png",

@@ -9,14 +9,12 @@ import Stats from 'three/examples/jsm/libs/stats.module';
 import { STLExporter } from 'three/addons/exporters/STLExporter.js';
 
 const defaultCameraAngle = 'iso';
-const defaultModel = 'UFO Sculpty 1.0.png';
-const defaultSkin = 'dynamic-model-density';
+const defaultModel = '128-5 tokoroten cube (from SL).png';
+const defaultSkin = 'dynamic-model-face-angle';
 
 const MAX_VERTECES = 1024;
-const PIXEL_RED_INDEX = 0;
-const PIXEL_GREEN_INDEX = 1;
-const PIXEL_BLUE_INDEX = 2;
-const PIXEL_ALPHA_INDEX = 3;
+const HEX_BLACK = '#000000';
+const HEX_WHITE = '#ffffff';
 const WORLD_POSITION = new THREE.Vector3();
 const MAX_MODEL_SIZE = 1;
 const MAPPING_TYPE = {
@@ -1519,13 +1517,12 @@ function drawTransparencyBackground(ctx, {width, height}) {
     }
   }  
 }
-function createDynamicModelDistanceTexture() {
+function prepareForDynamicTexture() {
   const canvas = document.createElement('canvas');
-  canvas.height = canvas.width = 1024;
+  canvas.height = canvas.width = 256;
   const ctx = canvas.getContext('2d', {willReadFrequently: true});
 
   drawTransparencyBackground(ctx, canvas);
-  const center = new THREE.Vector3(0, 0, 0);
 
   const options = getModelReadOptions(image2D);
   const targetOptions = getModelReadOptions(canvas);
@@ -1566,6 +1563,113 @@ function createDynamicModelDistanceTexture() {
       trianglePositionXy[i / 3]
     )
   }
+  return {
+    canvas,
+    ctx,
+    triangles,
+    trianglesXy
+  }
+}
+function hslToRgbHex(hue, saturation, luminance) {
+  // normalize values
+  hue /= 360;
+  saturation /= 100;
+  luminance /= 100;
+  // edge of luminance is black & white
+  if(luminance === 0) return HEX_BLACK;
+  if(luminance === 1) return HEX_WHITE;
+  if(saturation === 0) {
+    const gray = Math.floor(luminance * 255);
+    return rgbAsHex(gray, gray, gray);
+  }
+  const upper = luminance < 0.5 ? 
+    luminance * (1 + saturation) : 
+    luminance + saturation - luminance * saturation;
+  const lower = 2 * luminance - upper;
+  function channelIntensity(min, max, hueOffset) {
+    hueOffset = Math.max(0, Math.min(1, hueOffset));
+    let value = min;
+    if (hueOffset < 1 / 6) value = min + (max - min) * 6 * hueOffset;
+    else if (hueOffset < 1 / 2) value = max;
+    else if (hueOffset < 2 / 3) value = min + (max - min) * (2 / 3 - hueOffset) * 6;
+    return Math.round(value * 255);
+  }
+  return rgbAsHex(
+    channelIntensity(lower, upper, hue + 1 / 3),
+    channelIntensity(lower, upper, hue),
+    channelIntensity(lower, upper, hue - 1 / 3)
+  );
+}
+function createDynamicModelFaceAngleTexture() {
+  const {
+    canvas,
+    ctx,
+    triangles,
+    trianglesXy
+  } = prepareForDynamicTexture();
+  const center = new THREE.Vector3(0, 0, 0);
+
+  // calculate distance to center from each triangle
+  const colors = [];
+  for(let i = 0; i < triangles.length; i++) {
+    const [vector1, vector2, vector3] = triangles[i];
+    const faceCenter = new THREE.Vector3()
+      .add(vector1)
+      .add(vector2)
+      .add(vector3)
+      .divideScalar(3);
+    let horizontalAngle = Math.atan2(
+      vector1.x - faceCenter.x,
+      vector1.z - faceCenter.z
+    );
+    horizontalAngle *= 180 / Math.PI;
+    if(vector1.y < faceCenter.y) {
+      horizontalAngle += 180;
+    }
+    if(horizontalAngle < 0) horizontalAngle += 360;
+    horizontalAngle = horizontalAngle % 360;
+
+    let verticalAngle = Math.atan2(
+      vector1.y - faceCenter.y,
+      vector1.z - faceCenter.z
+    );
+    verticalAngle *= 180 / Math.PI;
+    if(vector1.x < faceCenter.x) {
+      verticalAngle += 180;
+    }
+    if(verticalAngle < 0) verticalAngle += 360;
+    verticalAngle = verticalAngle % 360;
+
+    const hue = Math.floor(horizontalAngle);
+    const luminance = Math.floor(100 * (verticalAngle / 360));
+    colors.push(hslToRgbHex(hue, 100, luminance));
+  };
+
+  // draw triangles
+  ctx.strokeStyle = 'black';
+  ctx.lineWidth = canvas.width / 1024;
+  for(let i = 0; i < trianglesXy.length; i++) {
+    const [xy1, xy2, xy3] = trianglesXy[i];
+    ctx.beginPath();
+    ctx.moveTo(xy1.x, xy1.y);
+    ctx.lineTo(xy2.x, xy2.y);
+    ctx.lineTo(xy3.x, xy3.y);
+    ctx.lineTo(xy1.x, xy1.y);
+    ctx.closePath();
+    ctx.fillStyle = colors[i];
+    ctx.fill();
+    ctx.stroke();
+  }
+  return canvas.toDataURL();
+}
+function createDynamicModelDistanceTexture() {
+  const {
+    canvas,
+    ctx,
+    triangles,
+    trianglesXy
+  } = prepareForDynamicTexture();
+  const center = new THREE.Vector3(0, 0, 0);
 
   // calculate distance to center from each triangle
   const distances = [];
@@ -1615,55 +1719,12 @@ function createDynamicModelDistanceTexture() {
   return canvas.toDataURL();
 }
 function createDynamicModelDensityTexture() {
-  const canvas = document.createElement('canvas');
-  canvas.height = canvas.width = 1024;
-  const ctx = canvas.getContext('2d', {willReadFrequently: true});
-
-  drawTransparencyBackground(ctx, canvas);
-
-  const options = getModelReadOptions(image2D);
-  const targetOptions = getModelReadOptions(canvas);
-  // UV density map
-  // lighter colors for large areas
-  // darker colors for small areas
-  // heat map [high density/small] red-orange-yellow-green-blue [low density/large]
-  const vectors = pixels.map(rgbAsVector);
-  const trianglePositionIndexes = getIndexesOfTriangleVectorIndexes(options);
-  const trianglePositionXy = getTextureMapCoordinatesForTriangles(targetOptions);
-  // group triangle vectors and original x/y coordinates
-  const triangles = [];
-  const trianglesXy = [];
-  for(let i = 0; i < trianglePositionIndexes.length; i+= 3) {
-    const index1 = trianglePositionIndexes[i];
-    const index2 = trianglePositionIndexes[i + 1];
-    const index3 = trianglePositionIndexes[i + 2];
-
-    if(index1 === index2 || index1 === index3 || index2 === index3) {
-      // no area
-      continue;
-    }
-
-    const vector1 = vectors[index1];
-    const vector2 = vectors[index2];
-    const vector3 = vectors[index3];
-    if(
-      vectorsAreEqual(vector1, vector2) ||
-      vectorsAreEqual(vector1, vector3) ||
-      vectorsAreEqual(vector2, vector3)
-    ) {
-      // no area
-      continue;
-    }
-
-    triangles.push([
-      vector1,
-      vector2,
-      vector3
-    ]);
-    trianglesXy.push(
-      trianglePositionXy[i / 3]
-    )
-  }
+  const {
+    canvas,
+    ctx,
+    triangles,
+    trianglesXy
+  } = prepareForDynamicTexture();
 
   // calculate area of each triangle
   const areas = [];
@@ -1733,8 +1794,14 @@ function getWeightedIntColor(weight, colors) {
   const percent = delta / segmentSize;
   return intColorBetween(fromColor, toColor, percent);
 }
+function rgbAsHex(r, g, b) {
+  return "#" + ((1 << 24) + rgbAsLong(r, g, b)).toString(16).slice(1);
+}
 function intColorAsHex(color) {
   return '#' + Math.min(Math.max(color, 0x000000), 0xFFFFFF).toString(16).padStart(6, '0');
+}
+function rgbAsLong(r, g, b) {
+  return (r << 16) | (g << 8) | b;
 }
 function intColorBetween(color1, color2, percent) {
   const rgb1 = rgbIntToRgb(color1);
@@ -1742,7 +1809,7 @@ function intColorBetween(color1, color2, percent) {
   const r = intValueBetween(rgb1.r, rgb2.r, percent);
   const g = intValueBetween(rgb1.g, rgb2.g, percent);
   const b = intValueBetween(rgb1.b, rgb2.b, percent);
-  return (r << 16) | (g << 8) | b;
+  return rgbAsLong(r, g, b);
 }
 function intValueBetween(start, end, percent) {
   return Math.floor(start + (end - start) * percent);
@@ -1802,7 +1869,10 @@ function applyDynamicMap() {
     case 'distance':
       dataURL = createDynamicModelDistanceTexture();
       break;
-      default:
+    case 'face-angle':
+      dataURL = createDynamicModelFaceAngleTexture();
+      break;
+    default:
       dataURL = canvas2D.toDataURL();
   }
   textureImage.src = dataURL;
@@ -2180,7 +2250,7 @@ function mapControlVectorValueAsByte(position) {
   return clamp(value, 0, 255);
 }
 function rgbAsColor(rgb) {
-  return new THREE.Color((rgb.r << 16) | (rgb.g << 8) | rgb.b);
+  return new THREE.Color(rgbAsLong(rgb.r, rgb.g, rgb.b));
 }
 function bytePositionAsPixelRgb(x, y, z) {
   return { r: z, g: x, b: y };

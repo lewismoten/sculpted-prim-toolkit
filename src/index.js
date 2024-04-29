@@ -1506,13 +1506,25 @@ function createDynamicModelVertexTexture() {
   }
   return canvas.toDataURL();
 }
+function drawTransparencyBackground(ctx, {width, height}) {
+  const cellSize = Math.min(width, height) / 256;
+  const xCells = width / cellSize;
+  const yCells = height / cellSize;
+  const color1 = 'rgba(255, 255, 255, 1)';
+  const color2 = 'rgba(191, 191, 191, 1)';
+  for(let x = 0; x < xCells; x++) {
+    for(let y = 0; y < yCells; y++) {
+      ctx.fillStyle = ((x+y) % 2 === 0) ? color1 : color2
+      ctx.fillRect(x * cellSize, y * cellSize, cellSize, cellSize);
+    }
+  }  
+}
 function createDynamicModelDensityTexture() {
   const canvas = document.createElement('canvas');
   canvas.height = canvas.width = 1024 * 4;
   const ctx = canvas.getContext('2d', {willReadFrequently: true});
 
-  // ctx.fillStyle = 'black';
-  // ctx.fillRect(0, 0, canvas.width, canvas.height);
+  drawTransparencyBackground(ctx, canvas);
 
   const options = getModelReadOptions(image2D);
   const targetOptions = getModelReadOptions(canvas);

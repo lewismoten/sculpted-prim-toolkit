@@ -587,7 +587,7 @@ function overwriteUnusedPixelsWithContext(source, targetCtx, options) {
     for(let y = 0; y < height; y++) {
       const isUsed = imageXyIsImageData(x, y, options);
       if(isUsed) continue;
-      const [r, g, b] = source.getImageData(x, y, 1, 1).data;
+      const [r, g, b] = getPixelColorFromImageOfData(x, y, source);
       setPixelColorOnImageOfData(x, y, r, g, b, targetCtx);
     }
   }
@@ -666,7 +666,7 @@ function applyOriginalVectorsToModelDataImage() {
     for(let y = 0; y < image2D.height; y++) {
       const isUsed = imageXyIsImageData(x, y, getModelReadOptions(image2D));
       if(!isUsed) continue;
-      const [r, g, b] = source.getImageData(x, y, 1, 1).data;
+      const [r, g, b] = getPixelColorFromImageOfData(x, y, source);
       updateModelDataPixel(x, y, r, g, b);
     }
   }
@@ -1039,11 +1039,7 @@ function updateModelVertexPosition(options) {
   tempCtx.drawImage(image2D, 0, 0);
 
   // Update the pixel data
-  const imageData = tempCtx.getImageData(point.x, point.y, 1, 1);
-  imageData.data[0] = rgb.r;
-  imageData.data[1] = rgb.g;
-  imageData.data[2] = rgb.b;
-  tempCtx.putImageData(imageData, point.x, point.y);
+  setPixelColorOnImageOfData(point.x, point.y, rgb.r, rgb.g, rgb.b, tempCtx);
 
   image2D.src = tempCanvas.toDataURL();
 }
@@ -1294,6 +1290,17 @@ function highlightSelectedVertexOnImageOfData(options = getModelReadOptions(imag
       setPixelColorOnImageOfData(xx, yy, value, value, value);
     }
   }
+}
+function getAllPixelColorsFromImageOfData(ctx, width, height) {
+  return ctx.getImageData(0, 0, width, height).data;
+}
+function getPixelColorFromImageOfData(x, y, ctx = getModelCanvasContext()) {
+  const imageData = ctx.getImageData(x, y, 1, 1);
+  return [
+    imageData.data[0],
+    imageData.data[1],
+    imageData.data[2]
+  ];
 }
 function setPixelColorOnImageOfData(x, y, r, g, b, ctx = getModelCanvasContext()) {
   const imageData = ctx.getImageData(x, y, 1, 1);
@@ -2041,7 +2048,7 @@ function imageOfModelDataLoaded() {
   document.getElementById('rows-and-columns').innerText = `${options.mapping.y}x${options.mapping.x}`;
   document.getElementById('rows-and-columns-data').innerHTML = grid;
 
-  const imageData = ctx.getImageData(0, 0, image2D.width, image2D.height).data;
+  const imageData = getAllPixelColorsFromImageOfData(ctx, image2D.width, image2D.height);
   pixels = getPixelValuesFromModelData(imageData, options);
   nurbsControlVertices = pixels.map(rgbAsVertexAndColor);
 

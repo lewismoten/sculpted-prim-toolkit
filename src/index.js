@@ -1519,6 +1519,101 @@ function drawTransparencyBackground(ctx, {width, height}) {
     }
   }  
 }
+function createDynamicModelDistanceTexture() {
+  const canvas = document.createElement('canvas');
+  canvas.height = canvas.width = 1024;
+  const ctx = canvas.getContext('2d', {willReadFrequently: true});
+
+  drawTransparencyBackground(ctx, canvas);
+  const center = new THREE.Vector3(0, 0, 0);
+
+  const options = getModelReadOptions(image2D);
+  const targetOptions = getModelReadOptions(canvas);
+  const vectors = pixels.map(rgbAsVector);
+  const trianglePositionIndexes = getIndexesOfTriangleVectorIndexes(options);
+  const trianglePositionXy = getTextureMapCoordinatesForTriangles(targetOptions);
+  // group triangle vectors and original x/y coordinates
+  const triangles = [];
+  const trianglesXy = [];
+  for(let i = 0; i < trianglePositionIndexes.length; i+= 3) {
+    const index1 = trianglePositionIndexes[i];
+    const index2 = trianglePositionIndexes[i + 1];
+    const index3 = trianglePositionIndexes[i + 2];
+
+    if(index1 === index2 || index1 === index3 || index2 === index3) {
+      // no area
+      continue;
+    }
+
+    const vector1 = vectors[index1];
+    const vector2 = vectors[index2];
+    const vector3 = vectors[index3];
+    if(
+      vectorsAreEqual(vector1, vector2) ||
+      vectorsAreEqual(vector1, vector3) ||
+      vectorsAreEqual(vector2, vector3)
+    ) {
+      // no area
+      continue;
+    }
+
+    triangles.push([
+      vector1,
+      vector2,
+      vector3
+    ]);
+    trianglesXy.push(
+      trianglePositionXy[i / 3]
+    )
+  }
+
+  // calculate distance to center from each triangle
+  const distances = [];
+  for(let i = 0; i < triangles.length; i++) {
+    const [vector1, vector2, vector3] = triangles[i];
+    const distance = new THREE.Vector3(
+      (vector1.x + vector2.x + vector3.x) / 3,
+      (vector1.y + vector2.y + vector3.y) / 3,
+      (vector1.z + vector2.z + vector3.z) / 3,
+    ).distanceTo(center);
+    distances.push(distance);
+  };
+
+  // get min/max/median
+  const sorted = distances.slice().sort((a, b) => a-b);
+  let min = sorted[0];
+  if(min === 0) min = sorted[1];
+  const max = sorted[sorted.length -1];
+
+  const colors = dynamicColorScheme();
+  const medianCount = Math.max(1, colors.length - 1);
+  const medians = [];
+  const segmentSize = distances.length / (medianCount + 1);
+  for(let i = 0; i < medianCount; i++) {
+    const segmentIndex = Math.floor((i + 1) * segmentSize);
+    medians[i] = sorted[segmentIndex];
+  }
+
+  // draw triangles
+  ctx.strokeStyle = 'black';
+  ctx.lineWidth = canvas.width / 1024;
+  for(let i = 0; i < trianglesXy.length; i++) {
+    const [xy1, xy2, xy3] = trianglesXy[i];
+    const distance = distances[i];
+    const weight = getWeight(distance, {min, max, medians});
+    const color = intColorAsHex(getWeightedIntColor(weight, colors));
+    ctx.beginPath();
+    ctx.moveTo(xy1.x, xy1.y);
+    ctx.lineTo(xy2.x, xy2.y);
+    ctx.lineTo(xy3.x, xy3.y);
+    ctx.lineTo(xy1.x, xy1.y);
+    ctx.closePath();
+    ctx.fillStyle = color;
+    ctx.fill();
+    ctx.stroke();
+  }
+  return canvas.toDataURL();
+}
 function createDynamicModelDensityTexture() {
   const canvas = document.createElement('canvas');
   canvas.height = canvas.width = 1024;
@@ -1704,7 +1799,10 @@ function applyDynamicMap() {
     case 'density':
       dataURL = createDynamicModelDensityTexture();
       break;
-    default:
+    case 'distance':
+      dataURL = createDynamicModelDistanceTexture();
+      break;
+      default:
       dataURL = canvas2D.toDataURL();
   }
   textureImage.src = dataURL;

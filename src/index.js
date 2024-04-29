@@ -1562,7 +1562,6 @@ function createDynamicModelDensityTexture() {
   const areas = [];
   for(let i = 0; i < triangles.length; i++) {
     const [vector1, vector2, vector3] = triangles[i];
-    // console.log(vector1, vector2, vector3);
     const edge1 = new THREE.Vector3().copy(vector2).sub(vector1);
     const edge2 = new THREE.Vector3().copy(vector3).sub(vector1);
     const crossProduct = new THREE.Vector3().crossVectors(edge1, edge2);
@@ -1570,8 +1569,6 @@ function createDynamicModelDensityTexture() {
   };
 
   // get min/max/median
-  // const min = areas.reduce((min, area) => area === 0 ? min : Math.min(min, area), Infinity);
-  // const max = areas.reduce((max, area) => area === 0 ? max : Math.max(max, area), -Infinity);
   const sortedAreas = areas.slice().sort((a, b) => a-b);
   let min = sortedAreas[0];
   if(min === 0) min = sortedAreas[1];
@@ -1594,7 +1591,6 @@ function createDynamicModelDensityTexture() {
     const area = areas[i];
     const weight = getWeight(area, {min, max, medians});
     const color = intColorAsHex(getWeightedIntColor(weight, colors));
-    // const color = `hsl(0, 0%, ${Math.floor(weight * 100)}%)`
     ctx.beginPath();
     ctx.moveTo(xy1.x, xy1.y);
     ctx.lineTo(xy2.x, xy2.y);

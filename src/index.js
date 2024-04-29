@@ -1548,20 +1548,6 @@ function createDynamicModelDensityTexture() {
       continue;
     }
 
-    // skip wrapping triangles
-    const rc1 = indexOfImageDataToRowAndColumn(index1, options);
-    const rc2 = indexOfImageDataToRowAndColumn(index2, options);
-    const rc3 = indexOfImageDataToRowAndColumn(index3, options);
-    if(rc1.column === 0 || rc2.column === 0 || rc3.column === 0) {
-      // stitched
-      if(
-          rc1.column === options.columns - 1 || 
-          rc2.column === options.columns - 1 || 
-          rc3.column === options.columns - 1
-        )
-          continue;
-    }
-
     triangles.push([
       vector1,
       vector2,

@@ -2128,10 +2128,7 @@ function indexOfImageDataToImageXy(i, options) {
   if(row === options.rows) {
     y = getLastImageDataY(options);
   } else if(row !== 0) {
-    // Cube = 64x64 vDown = 0, powY = 2
-    // UFO = 128x128 vDown = 1, powY = 4
-    // Brick Wall = 256x256 vDown = 2, powY = 8
-    y -= powY - 1;
+    y += -1;
   }
   return { x, y };
 }
@@ -2160,6 +2157,7 @@ function imageXyIsImageData(x, y, options) {
   } else if(y > lastY) {
     return false;
   }
+  y+=2;
   if(y % yMod !== 1) return false;
   if(x % xMod !== 0) return false;
   return true;

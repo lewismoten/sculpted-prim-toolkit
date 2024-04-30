@@ -12,6 +12,10 @@ const defaultCameraAngle = 'iso';
 const defaultModel = '128-5 tokoroten cube (from SL).png';
 const defaultSkin = 'dynamic-model-face-angle';
 
+const HOME_POSITION = new THREE.Vector3(0, 0, 0);
+const HOME_SCALE = new THREE.Vector3(1, 1, 1);
+const HOME_ROTATION = new THREE.Vector3(0, 0, 0);
+
 const MAX_VERTECES = 1024;
 const HEX_BLACK = '#000000';
 const HEX_WHITE = '#ffffff';
@@ -512,14 +516,26 @@ function moveModelToCenter() {
   resetModelPositionRotationAndScale();
 }
 function resetModelPositionRotationAndScale() {
-  modelPosition.set(0, 0, 0);
-  modelScale.set(1, 1, 1);
-  modelRotation.set(0, 0, 0);
   applyToModels((object) => {
-    object.position.copy(modelPosition);
-    object.scale.copy(modelScale);
-    object.rotation.set(modelRotation.x, modelRotation.y, modelRotation.z);
+    if(!modelPosition.equals(HOME_POSITION)) object.position.copy(HOME_POSITION);
+    if(!modelScale.equals(HOME_SCALE)) object.scale.copy(HOME_SCALE);
+    if(!modelRotation.equals(HOME_ROTATION))
+      object.rotation.set(HOME_ROTATION.x, HOME_ROTATION.y, HOME_ROTATION.z);
   });
+  "xyz".split('').forEach(axis => {
+    // Scale
+    document.getElementById(`scale-${axis}-range`).value = HOME_SCALE.toFixed(2);
+    document.getElementById(`scale-${axis}-value`).value = HOME_SCALE.toFixed(2);
+    // Rotation
+    const rotation = HOME_ROTATION[axis];
+    let degrees = radiansToDegrees(rotation);
+    degrees = Math.round(degrees * 20) / 20;
+    document.getElementById(`rotation-${axis}-degrees`).value = degrees.toFixed(2);
+    document.getElementById(`rotation-${axis}`).value = rotation.toFixed(2);
+  });
+  modelPosition.copy(HOME_POSITION);
+  modelScale.copy(HOME_SCALE);
+  modelRotation.copy(HOME_ROTATION);
 }
 function applyToModels(callback) {
   [

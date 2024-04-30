@@ -515,6 +515,11 @@ function moveModelToCenter() {
   saveVerticesPositionsToModelData(options);
   resetModelPositionRotationAndScale();
 }
+function isHomed() {
+  return !modelPosition.equals(HOME_POSITION) &&
+    !modelScale.equals(HOME_SCALE) &&
+    !modelRotation.equals(HOME_ROTATION);
+}
 function resetModelPositionRotationAndScale() {
   applyToModels((object) => {
     if(!modelPosition.equals(HOME_POSITION)) object.position.copy(HOME_POSITION);

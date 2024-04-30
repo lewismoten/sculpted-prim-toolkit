@@ -823,45 +823,31 @@ function getTransformTarget() {
 }
 function synchronizeTransformControlsMode() {
   const tool = selectedTool();
-  let enabled = isToolSelectedForTransformControls();
+  const object = getTransformTarget();
+  let enabled = !!object;
   if(transformControls) {
-    if(!transformControls.object) {
-      enabled = false;
-    }
     transformControls.enabled = enabled;
     transformControls.visible = enabled;
+    if(transformControls.object !== object) transformControls.detach();
     switch(tool) {
       case 'rotate':
         transformControls.setMode('rotate');
-        attachTransformControls(getTransformTarget());
         break;
       case 'scale':
         transformControls.setMode('scale');
-        attachTransformControls(getTransformTarget());
         break;
       case 'move':
-        transformControls.setMode('translate');
-        attachTransformControls(getTransformTarget());
-        break;
       case 'move-point':
         transformControls.setMode('translate');
-        attachTransformControls(getTransformTarget());
         break;
       default:
         transformControls.enabled = false;
         transformControls.visible = false;
         break;
     }
-  }
-}
-function attachTransformControls(object) {
-  if(transformControls) {
-    if(transformControls.object === object) return;
-    if(transformControls.object) {
-      transformControls.detach();
-    }
-    if(object) transformControls.attach(object);
-    synchronizeTransformControlsMode();
+    if(object && transformControls.object !== object)
+      transformControls.attach(object);
+
   }
 }
 const SHIFT_KEY = 'Shift';
@@ -925,7 +911,6 @@ function setupTransformControls(camera) {
   window.addEventListener('keydown', handleTranslationKeyDown);
   window.addEventListener('keyup', handleTranslationKeyUp);
   scene.add(transformControls);
-  attachTransformControls(getTransformTarget());
   synchronizeTransformControlsMode();
 }
 
@@ -1240,7 +1225,8 @@ function handleSelectedIndexChanged() {
   document.getElementById('vertex-column-range').value = column;
   document.getElementById('vertex-row-value').value = row;
   document.getElementById('vertex-column-value').value = column;
-  displayNewlySelectedVertex(options)
+  displayNewlySelectedVertex(options);
+  synchronizeTransformControlsMode();
 }
 function translatePointerCoordinates({clientX, clientY}, canvas, image) {
   const border = 1;
@@ -2910,7 +2896,7 @@ function drawCube() {
 function addObjectToList(object) {
   if(!object) return;
   objectList.push(object);
-  attachTransformControls(getTransformTarget());
+  synchronizeTransformControlsMode();
 }
 function removeObjectFromList(object) {
   objectList = objectList.filter(obj => obj !== object);

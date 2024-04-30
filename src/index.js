@@ -1470,14 +1470,20 @@ function selectedTexture() {
 function dynamicColorScheme() {
   const scheme = document.getElementById('dynamic-colors').value;
   switch(scheme) {
-    case 'red-white-blue':
-        return [0xFF0000, 0xFFFFFF, 0xFFFFFF, 0xFFFFFF, 0x0000FF];
-    case 'rainbow':
-        return [0xFF0000, 0x00FF00, 0x00FF00, 0x00FF00, 0x0000FF]
     case 'grey-scale':
-        return [0x000000, 0x808080, 0x808080, 0x808080, 0xFFFFFF];
+      return [0x000000, 0x808080, 0x808080, 0x808080, 0xFFFFFF];
+    case 'heat':
+      return [0xFF0000, 0xFFA500, 0xFFA500, 0xFFFF00];
+    case 'magma':
+      return [0x000004, 0x140B4D, 0x3B0F70, 0x641A80, 0x8C2981, 0xB73779, 0xDE4968, 0xF7705C, 0xFE9F6D, 0xFECEA4, 0xFCFDBF];
+    case 'rainbow':
+      return [0xFF0000, 0x00FF00, 0xFFFF00, 0x00FF00, 0x00FFFF, 0x00FF00, 0x0000FF]
+    case 'red-white-blue':
+      return [0xFF0000, 0xFFFFFF, 0xFFFFFF, 0xFFFFFF, 0x0000FF];
+    case 'rgb':
+      return [0xFF0000, 0x00FF00, 0x00FF00, 0x00FF00, 0x0000FF]
     default:
-        return [0x000000, 0xFFFFFF];
+      return [0x000000, 0xFFFFFF];
   }
 }
 function dynamicTextureName() {

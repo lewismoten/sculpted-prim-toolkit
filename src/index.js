@@ -512,7 +512,7 @@ function moveModelToCenter() {
   applyToModels((object) => {
     object.position.copy(center);
   });
-  saveVerticesPositionsToModelData(options);
+  saveVerticesPositionsToModelData(options, true);
   resetModelPositionRotationAndScale();
 }
 function isHomed() {
@@ -553,7 +553,7 @@ function applyToModels(callback) {
 function scaleModelToBoundingVolume() {
   const options = getModelReadOptions(image2D);
   // need to 'rebake' verticies to get the bounding box to scale in the correct directions
-  saveVerticesPositionsToModelData(options);
+  saveVerticesPositionsToModelData(options, true);
   resetModelPositionRotationAndScale();
   const epsilon = vectorSnapSize() / 2;
   const maxLength = MAX_MODEL_SIZE - epsilon;
@@ -582,7 +582,7 @@ function scaleModelToBoundingVolume() {
       object.position.copy(center);
     });
   
-    saveVerticesPositionsToModelData(options);
+    saveVerticesPositionsToModelData(options, true);
     resetModelPositionRotationAndScale();
   }
 };
@@ -794,7 +794,7 @@ function updateVerticyPositions() {
   modelScale.set(1, 1, 1);
   modelRotation.set(0, 0, 0);
   modelPosition.set(0, 0, 0);
-  saveVerticesPositionsToModelData(options);
+  saveVerticesPositionsToModelData(options, false);
 }
 function mapClamp(min, max) {
   return (value) => Math.min(max, Math.max(min, value));
@@ -817,7 +817,7 @@ function getTransformTarget() {
     case 'move':
       return modelObject;
     case 'move-point':
-      return pointCloudObject?.children[getUiSelectedIndex()];
+      return selectedVerticesObject?.children[getUiSelectedIndex()];
     default:
       return;
   }
@@ -893,6 +893,17 @@ function cleanupTransformControls() {
     window.removeEventListener('keyup', handleTranslationKeyUp);
   }
 };
+function applyTransform() {
+  if(!transformControls.enabled) return;
+  const object = getTransformTarget();
+  if(object === modelObject) {
+    clampModelInBoundingBox(object);
+  } else if(object.name === 'Pixel') {
+    clampVertexWithinBoundingBox(object);
+  }
+  render();
+}
+
 function setupTransformControls(camera) {
   if(transformControls){ 
     cleanupTransformControls();
@@ -903,13 +914,6 @@ function setupTransformControls(camera) {
   transformControls.visible = enabled;
   transformControls.setSize(transformControls.size * 3);
 
-  const applyTransform = () => {
-    if(!transformControls.enabled) return;
-    if(getTransformTarget() === modelObject) {
-      clampDimensions(transformControls.object);
-    }
-    render();
-  }
   const handleChange = debounce(applyTransform, 100);
   const handleDragged = debounce((event) => {
     if(!transformControls.enabled) return;
@@ -925,7 +929,37 @@ function setupTransformControls(camera) {
   attachTransformControls(getTransformTarget());
   synchronizeTransformControlsMode();
 }
-function clampDimensions(source) {
+
+function areDeeplyEqual(a, b) {
+  if(a === b) return true;
+  if(!a && !b) return true;
+  if(!a || !b) return false;
+  if(typeof a !== typeof b) return false;
+  if(typeof a !== 'object') return false;
+  const keys1 = Object.keys(a);
+  const keys2 = Object.keys(b);
+  if(keys1.length !== keys2.length) return false;
+  keys1.sort();
+  keys2.sort();
+  if(!keys1.every((key, i) => keys2[i] === key)) return false;
+  return keys1.every(key => areDeeplyEqual(a[key], b[key]));
+}
+
+function clampVertexWithinBoundingBox(vertexObject) {
+  const pixel = pixels[vertexObject.userData.index];
+  'xyz'.split().forEach(axis => {
+    vertexObject.position[axis] = THREE.MathUtils.clamp(vertexObject[axis], -0.5, 0.5);
+  });
+  const changedPixel = bytePositionAsPixelRgb(vertexObject.position);
+  if(areDeeplyEqual(pixel, changedPixel)) {
+    return;
+  }
+  const options = getModelReadOptions(image2D);
+  saveVerticesPositionsToModelData(options, isHomed());
+  rebuildModels(options);
+  if(isDynamicTexture()) handleDynamicMapChange();
+}
+function clampModelInBoundingBox(source) {
   if(!source) return;
   const maxLength = 1; // 1x1x1 cube
 
@@ -970,87 +1004,87 @@ function clampDimensions(source) {
     modelRotation.copy(source.rotation);
   }
   if(changed) {
-    saveVerticesPositionsToModelData(source);
+    saveVerticesPositionsToModelData(getModelReadOptions(image2D), isHomed());
   }
 }
-function saveVerticesPositionsToModelData(options) {
-  if(!selectedVerticesObject) return;
-  if(!pointCloudObject) return;
-  let changed = false;
-  selectedVerticesObject.children.forEach((object) => {
-    const { index } = object.userData;
-    // grab world coordinates of vertex
-    const vertex = object.getWorldPosition(WORLD_POSITION);
-    // translate to byte values
-    const byteVertex = "xyz".split('').reduce((v, axis) => ({ ... v, 
-      [axis]: mapControlVectorValueAsByte(vertex[axis])
-    }), {});
-    const rgb = bytePositionAsPixelRgb(byteVertex.x, byteVertex.y, byteVertex.z);
-    const snappedVertex = rgbAsVertexAndColor(rgb);
+function vertexAsBytes(vertex) {
+  const bytes = "xyz".split('').reduce((v, axis) => ({ ... v, 
+    [axis]: mapControlVectorValueAsByte(vertex[axis])
+  }), {});
+  return bytes;
+}
+function vertexAsRgb(vertex) {
+  const bytes = vertexAsBytes(vertex);
+  return bytePositionAsPixelRgb(bytes.x, bytes.y, bytes.z);
+}
+function updateVertexData(selectedVertexObject, world) {
+  const options = getModelReadOptions(image2D);
+  const { index } = selectedVertexObject.userData;
+  const position = world ? selectedVertexObject.getWorldPosition(WORLD_POSITION) : selectedVertexObject.position;
+  // grab world coordinates of vertex
+  const rgb = vertexAsRgb(position);
 
-    if(rgb.r === pixels[index].r &&
-      rgb.g === pixels[index].g &&
-      rgb.b === pixels[index].b) {
-      // Nothing changed
-      return;
-    }
-    changed = true;
+  // update model data
+  pixels[index] = rgb;
+  const snappedVertex = rgbAsVertexAndColor(rgb);
 
-    // update model data
-    pixels[index] = rgb;
-
-    if(index === getSelectedIndex(options)) {
-      document.getElementById('selected-pos-vector').innerText = `<${
-        [snappedVertex.x, snappedVertex.y, snappedVertex.z].map(v => v.toFixed(3)).join(', ')
-      }>`;
-      document.getElementById('selected-pos-x-range').value = byteVertex.x;
-      document.getElementById('selected-pos-x-value').value = byteVertex.x;
-      document.getElementById('selected-pos-y-range').value = byteVertex.y;
-      document.getElementById('selected-pos-y-value').value = byteVertex.y;
-      document.getElementById('selected-pos-z-range').value = byteVertex.z;
-      document.getElementById('selected-pos-z-value').value = byteVertex.z;
-    }
-
-    // update vertex data
-    nurbsControlVertices[index] = snappedVertex;
-
-    // update model data image
-    const { x, y } = indexOfImageDataToImageXy(index, options);
-    updateModelDataPixel(x, y, rgb.r, rgb.g, rgb.b);
-
-    // update vertex models
-    updateVertexModelsPositionAndColor(index, snappedVertex, rgb);
-  
-    // update selected vertices model with updated vertex xyz (byte translation)
-  });
-  if(!changed) {
-    console.log('nothing changed');
-    return; // nothing to update
+  if(index === getSelectedIndex(options)) {
+    const byteVertex = vertexAsBytes(position);
+    document.getElementById('selected-pos-vector').innerText = `<${
+      [snappedVertex.x, snappedVertex.y, snappedVertex.z].map(v => v.toFixed(3)).join(', ')
+    }>`;
+    document.getElementById('selected-pos-x-range').value = byteVertex.x;
+    document.getElementById('selected-pos-x-value').value = byteVertex.x;
+    document.getElementById('selected-pos-y-range').value = byteVertex.y;
+    document.getElementById('selected-pos-y-value').value = byteVertex.y;
+    document.getElementById('selected-pos-z-range').value = byteVertex.z;
+    document.getElementById('selected-pos-z-value').value = byteVertex.z;
   }
 
-  // Reset scale/position/rotation
-  modelPosition.set(0, 0, 0);
-  modelScale.set(1, 1, 1);
-  modelRotation.set(0, 0, 0);
+  // update vertex data
+  nurbsControlVertices[index] = snappedVertex;
 
-  "xyz".split('').forEach(axis => {
-    // Scale
-    const scale = modelScale[axis];
-    document.getElementById(`scale-${axis}-range`).value = scale.toFixed(2);
-    document.getElementById(`scale-${axis}-value`).value = scale.toFixed(2);
-    // Rotation
-    const rotation = modelRotation[axis];
-    let degrees = radiansToDegrees(rotation);
-    degrees = Math.round(degrees * 20) / 20;
-    document.getElementById(`rotation-${axis}-degrees`).value = degrees.toFixed(2);
-    document.getElementById(`rotation-${axis}`).value = rotation.toFixed(2);
-  });
+  // update model data image
+  const { x, y } = indexOfImageDataToImageXy(index, options);
+  updateModelDataPixel(x, y, rgb.r, rgb.g, rgb.b);
+
+  // update vertex models
+  updateVertexModelsPositionAndColor(index, snappedVertex, rgb);
+
+  // update selected vertices model with updated vertex xyz (byte translation)
+}
+function rebuildModels(options) {
   // update model
   buildModel(nurbsControlVertices, options);
   // update wireframe
   buildWireframeObject(nurbsControlVertices, options);
   // update nurbs surface
   drawNurbsSurfaceMesh(nurbsControlVertices, options);
+}
+function saveVerticesPositionsToModelData(options, world = true) {
+  if(!selectedVerticesObject) return;
+  if(!pointCloudObject) return;
+  let changed = false;
+  selectedVerticesObject.children.forEach((object) => {
+    const { index } = object.userData;
+    // grab world coordinates of vertex
+    const position = world ? object.getWorldPosition(WORLD_POSITION) : object.position;
+    const rgb = vertexAsRgb(position);
+    if(areDeeplyEqual(rgb, pixels[index])) {
+      // Nothing changed
+      return;
+    }
+    changed = true;
+    updateVertexData(object, world);
+  });
+  if(!changed) {
+    console.log('nothing changed');
+    return; // nothing to update
+  }
+
+  resetModelPositionRotationAndScale();
+  rebuildModels(options);
+  if(isDynamicTexture()) handleDynamicMapChange();
 }
 function updateVertexModelsPositionAndColor(index, {x,y,z}, rgb) {
   [
@@ -2452,7 +2486,6 @@ function buildPointCloud(controlVertices) {
   scene.add( pointCloudObject );
 
   pointCloudObject.visible = document.getElementById('show-point-cloud').checked;
-  attachTransformControls(getTransformTarget());
   addObjectToList(pointCloudObject);
 }
 function drawSelectionVertices(options) {  
@@ -2634,7 +2667,6 @@ function buildModel(controlVertices, options) {
   setTranslationToObject(modelObject);
   scene.add(modelObject);
   modelObject.visible = document.getElementById('show-model-mesh').checked;
-  attachTransformControls(getTransformTarget());
   addObjectToList(modelObject);
 }
 function createBufferGeometry(vertices, options = getModelReadOptions(image2D)) {
@@ -2875,6 +2907,7 @@ function drawCube() {
 function addObjectToList(object) {
   if(!object) return;
   objectList.push(object);
+  attachTransformControls(getTransformTarget());
 }
 function removeObjectFromList(object) {
   objectList = objectList.filter(obj => obj !== object);

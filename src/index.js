@@ -529,8 +529,8 @@ function resetModelPositionRotationAndScale() {
   });
   "xyz".split('').forEach(axis => {
     // Scale
-    document.getElementById(`scale-${axis}-range`).value = HOME_SCALE.toFixed(2);
-    document.getElementById(`scale-${axis}-value`).value = HOME_SCALE.toFixed(2);
+    document.getElementById(`scale-${axis}-range`).value = HOME_SCALE[axis].toFixed(2);
+    document.getElementById(`scale-${axis}-value`).value = HOME_SCALE[axis].toFixed(2);
     // Rotation
     const rotation = HOME_ROTATION[axis];
     let degrees = radiansToDegrees(rotation);

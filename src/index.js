@@ -805,7 +805,7 @@ function updateStatsLocation() {
   stats.domElement.style.top = `${bounds.top}px`;
   stats.domElement.style.left = `${bounds.left}px`;
 }
-function areTransformControlsEnabled() {
+function isToolSelectedForTransformControls() {
   const tool = selectedTool();
   return ['rotate', 'scale', 'move', 'move-point'].includes(tool);
 }
@@ -824,7 +824,7 @@ function getTransformTarget() {
 }
 function synchronizeTransformControlsMode() {
   const tool = selectedTool();
-  let enabled = areTransformControlsEnabled();
+  let enabled = isToolSelectedForTransformControls();
   if(transformControls) {
     if(!transformControls.object) {
       enabled = false;
@@ -909,7 +909,7 @@ function setupTransformControls(camera) {
     cleanupTransformControls();
   }
   transformControls = new TransformControls(camera, renderer.domElement);
-  const enabled = areTransformControlsEnabled();
+  const enabled = isToolSelectedForTransformControls();
   transformControls.enabled = enabled;
   transformControls.visible = enabled;
   transformControls.setSize(transformControls.size * 3);

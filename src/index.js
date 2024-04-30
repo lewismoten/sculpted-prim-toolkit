@@ -1535,6 +1535,14 @@ function prepareForDynamicTexture() {
   const vectors = pixels.map(rgbAsVector);
   const trianglePositionIndexes = getIndexesOfTriangleVectorIndexes(options);
   const trianglePositionXy = getTextureMapCoordinatesForTriangles(targetOptions);
+
+  if(trianglePositionXy.length * 3 !== trianglePositionIndexes.length) {
+    console.warn('Array lengths trianglePositionIndexes: %s !== trianglePositionXy %s * 3 (%s)', 
+      trianglePositionIndexes.length,
+      trianglePositionXy.length,
+      trianglePositionXy.length * 3
+    );
+  }
   // group triangle vectors and original x/y coordinates
   const triangles = [];
   const trianglesXy = [];
@@ -1565,9 +1573,12 @@ function prepareForDynamicTexture() {
       vector2,
       vector3
     ]);
-    trianglesXy.push(
-      trianglePositionXy[i / 3]
-    )
+    const i2 = Math.floor(i / 3);
+    if(i2 < trianglePositionXy.length) {
+      trianglesXy.push(
+        trianglePositionXy[Math.floor(i / 3)]
+      )
+    }
   }
   return {
     canvas,
@@ -1647,6 +1658,7 @@ function createDynamicModelFaceAngleTexture() {
   ctx.strokeStyle = 'black';
   ctx.lineWidth = canvas.width / 1024;
   for(let i = 0; i < trianglesXy.length; i++) {
+    if(trianglesXy[i] === undefined) continue;
     const [xy1, xy2, xy3] = trianglesXy[i];
     ctx.beginPath();
     ctx.moveTo(xy1.x, xy1.y);
@@ -1700,6 +1712,7 @@ function createDynamicModelDistanceTexture() {
   ctx.strokeStyle = 'black';
   ctx.lineWidth = canvas.width / 1024;
   for(let i = 0; i < trianglesXy.length; i++) {
+    if(trianglesXy[i] === undefined) continue;
     const [xy1, xy2, xy3] = trianglesXy[i];
     const distance = distances[i];
     const weight = getWeight(distance, {min, max, medians});
@@ -1753,6 +1766,7 @@ function createDynamicModelDensityTexture() {
   ctx.strokeStyle = 'black';
   ctx.lineWidth = canvas.width / 1024;
   for(let i = 0; i < trianglesXy.length; i++) {
+    if(trianglesXy[i] === undefined) continue;
     const [xy1, xy2, xy3] = trianglesXy[i];
     const area = areas[i];
     const weight = getWeight(area, {min, max, medians});

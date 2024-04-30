@@ -1644,22 +1644,24 @@ function createDynamicModelFaceAngleTexture() {
     triangles,
     trianglesXy
   } = prepareForDynamicTexture();
-  const colors = [];
+  const faceColors = [];
   for(let i = 0; i < triangles.length; i++) {
     const [vector1, vector2, vector3] = triangles[i];
     const horizontalAngle = calculateHorizontalAngle(vector1, vector2, vector3);
     const verticalAngle = calculateVerticalAngle(vector1, vector2, vector3);
     const hue = Math.floor(horizontalAngle);
     const luminance = Math.floor(100 * (verticalAngle / 180));
-    colors.push(hslToRgbHex(hue, 100, luminance));
+    faceColors.push(hslToRgbHex(hue, 100, luminance));
   };
-
-  // draw triangles
+  drawFaces(ctx, canvas, trianglesXy, faceColors);
+  return canvas.toDataURL();
+}
+function drawFaces(ctx, {width}, coordinates, colors) {
   ctx.strokeStyle = 'black';
-  ctx.lineWidth = canvas.width / 1024;
-  for(let i = 0; i < trianglesXy.length; i++) {
-    if(trianglesXy[i] === undefined) continue;
-    const [xy1, xy2, xy3] = trianglesXy[i];
+  ctx.lineWidth = width / 1024;
+  for(let i = 0; i < coordinates.length; i++) {
+    if(coordinates[i] === undefined) continue;
+    const [xy1, xy2, xy3] = coordinates[i];
     ctx.beginPath();
     ctx.moveTo(xy1.x, xy1.y);
     ctx.lineTo(xy2.x, xy2.y);
@@ -1670,7 +1672,6 @@ function createDynamicModelFaceAngleTexture() {
     ctx.fill();
     ctx.stroke();
   }
-  return canvas.toDataURL();
 }
 function createDynamicModelDistanceTexture() {
   const {
@@ -1708,25 +1709,15 @@ function createDynamicModelDistanceTexture() {
     medians[i] = sorted[segmentIndex];
   }
 
-  // draw triangles
-  ctx.strokeStyle = 'black';
-  ctx.lineWidth = canvas.width / 1024;
-  for(let i = 0; i < trianglesXy.length; i++) {
-    if(trianglesXy[i] === undefined) continue;
-    const [xy1, xy2, xy3] = trianglesXy[i];
-    const distance = distances[i];
-    const weight = getWeight(distance, {min, max, medians});
-    const color = intColorAsHex(getWeightedIntColor(weight, colors));
-    ctx.beginPath();
-    ctx.moveTo(xy1.x, xy1.y);
-    ctx.lineTo(xy2.x, xy2.y);
-    ctx.lineTo(xy3.x, xy3.y);
-    ctx.lineTo(xy1.x, xy1.y);
-    ctx.closePath();
-    ctx.fillStyle = color;
-    ctx.fill();
-    ctx.stroke();
-  }
+  const faceColors = distances.map(distance => 
+    intColorAsHex(
+      getWeightedIntColor(
+        getWeight(distance, {min, max, medians}),
+        colors
+      )
+    )
+  );
+  drawFaces(ctx, canvas, trianglesXy, faceColors);
   return canvas.toDataURL();
 }
 function createDynamicModelDensityTexture() {
@@ -1761,26 +1752,13 @@ function createDynamicModelDensityTexture() {
     const areaIndex = Math.floor((i + 1) * areaSize);
     medians[i] = sortedAreas[areaIndex];
   }
-
-  // draw triangles
-  ctx.strokeStyle = 'black';
-  ctx.lineWidth = canvas.width / 1024;
-  for(let i = 0; i < trianglesXy.length; i++) {
-    if(trianglesXy[i] === undefined) continue;
-    const [xy1, xy2, xy3] = trianglesXy[i];
-    const area = areas[i];
-    const weight = getWeight(area, {min, max, medians});
-    const color = intColorAsHex(getWeightedIntColor(weight, colors));
-    ctx.beginPath();
-    ctx.moveTo(xy1.x, xy1.y);
-    ctx.lineTo(xy2.x, xy2.y);
-    ctx.lineTo(xy3.x, xy3.y);
-    ctx.lineTo(xy1.x, xy1.y);
-    ctx.closePath();
-    ctx.fillStyle = color;
-    ctx.fill();
-    ctx.stroke();
-  }
+  const faceColors = areas.map(area => intColorAsHex(
+    getWeightedIntColor(
+      getWeight(area, {min, max, medians}),
+      colors
+    )
+  ));
+  drawFaces(ctx, canvas, trianglesXy, faceColors);
   return canvas.toDataURL();
 }
 function vectorsAreEqual(vector1, vector2) {

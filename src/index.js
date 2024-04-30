@@ -237,7 +237,7 @@ function handleWindowLoad() {
   document.getElementsByName('tool').forEach(input => {
     input.addEventListener('change', () => {
       const tool = selectedTool();
-      enableCameraOrbit(tool === 'camera');
+      enableCameraOrbit();
       enableSelection(tool === 'select');
       synchronizeTransformControlsMode();
     });
@@ -574,17 +574,16 @@ function scaleModelToBoundingVolume() {
       });
     });
 
-  if(changed) {
-    // center - scaled object may have partially escaped the bounding box
-    const center = getPositionToCenterModel();
-    modelPosition.copy(center);
-    applyToModels((object) => {
-      object.position.copy(center);
-    });
-  
-    saveVerticesPositionsToModelData(options, true);
-    resetModelPositionRotationAndScale();
-  }
+  if(!changed) return;
+  // center - scaled object may have partially escaped the bounding box
+  const center = getPositionToCenterModel();
+  modelPosition.copy(center);
+  applyToModels((object) => {
+    object.position.copy(center);
+  });
+
+  saveVerticesPositionsToModelData(options, true);
+  resetModelPositionRotationAndScale();
 };
 function takeSnapshot() {
   const tempCanvas = document.createElement('canvas');
@@ -1077,12 +1076,8 @@ function saveVerticesPositionsToModelData(options, world = true) {
     changed = true;
     updateVertexData(object, world);
   });
-  if(!changed) {
-    console.log('nothing changed');
-    return; // nothing to update
-  }
-
-  resetModelPositionRotationAndScale();
+  if(!changed) return;
+  if(world) resetModelPositionRotationAndScale();
   rebuildModels(options);
   if(isDynamicTexture()) handleDynamicMapChange();
 }
@@ -1146,12 +1141,15 @@ function trackPointer(domElement, pointer) {
   domElement.addEventListener('mouseup', onUp);
   domElement.addEventListener('mousedown', onDown);
 }
-function enableCameraOrbit(enable) {
+function enableCameraOrbit() {
+  const enabled = [
+    'camera', 'move', 'rotate', 'scale', 'move-point'
+  ].includes(selectedTool())
   if(!cameraOrbitControls) {
     createCameraControls(camera, renderer.domElement)
   };
   if(cameraOrbitControls)
-  cameraOrbitControls.enabled = enable;
+    cameraOrbitControls.enabled = enabled;
 }
 function handleSelectDown() {
   selectToolDown = true;
@@ -1471,11 +1469,16 @@ function changeCameraAngle(angle, width, height) {
 }
 
 function createCameraControls(camera, domElement) {
-  if(cameraOrbitControls) cameraOrbitControls.dispose();
-  if(selectedTool() !== 'camera') return;
   // NOTE: Create controls after camera has been positioned and rotated
-  cameraOrbitControls = new OrbitControls( camera, domElement );
-  enableCameraOrbit(selectedTool() === 'camera');
+  if(cameraOrbitControls) {
+    if(camera !== cameraOrbitControls.camera) {
+      cameraOrbitControls.dispose();
+      cameraOrbitControls = new OrbitControls( camera, domElement );
+    }
+  } else {
+    cameraOrbitControls = new OrbitControls( camera, domElement );
+  }
+  enableCameraOrbit();
 }
 
 function createCamera(angle, size, canvasWidth, canvasHeight) {

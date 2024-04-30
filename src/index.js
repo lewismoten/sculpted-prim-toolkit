@@ -479,7 +479,7 @@ function changeSelectedVertexPosition(axis, value, options) {
   // update wireframe
   buildWireframeObject(nurbsControlVertices, options);
   // update nurbs surface
-  drawNurbsSurfaceMesh(nurbsControlVertices);
+  drawNurbsSurfaceMesh(nurbsControlVertices, options);
 
   // Dynamic texutres need to be updated
   if(isDynamicTexture()) {

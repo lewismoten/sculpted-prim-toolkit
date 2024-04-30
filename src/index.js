@@ -786,7 +786,20 @@ function updateStatsLocation() {
 }
 function areTransformControlsEnabled() {
   const tool = selectedTool();
-  return ['rotate', 'scale', 'move'].includes(tool);
+  return ['rotate', 'scale', 'move', 'move-point'].includes(tool);
+}
+function getTransformTarget() {
+  const tool = selectedTool();
+  switch(tool) {
+    case 'rotate':
+    case 'scale':
+    case 'move':
+      return modelObject;
+    case 'move-point':
+      return pointCloudObject?.children[getUiSelectedIndex()];
+    default:
+      return;
+  }
 }
 function synchronizeTransformControlsMode() {
   const tool = selectedTool();
@@ -800,24 +813,36 @@ function synchronizeTransformControlsMode() {
     switch(tool) {
       case 'rotate':
         transformControls.setMode('rotate');
+        attachTransformControls(getTransformTarget());
         break;
       case 'scale':
         transformControls.setMode('scale');
+        attachTransformControls(getTransformTarget());
         break;
       case 'move':
         transformControls.setMode('translate');
+        attachTransformControls(getTransformTarget());
+        break;
+      case 'move-point':
+        transformControls.setMode('translate');
+        attachTransformControls(getTransformTarget());
+        break;
+      default:
+        transformControls.enabled = false;
+        transformControls.visible = false;
         break;
     }
   }
 }
 function attachTransformControls(object) {
   if(transformControls) {
+    if(transformControls.object === object) return;
     if(transformControls.object) {
       transformControls.detach();
     }
+    if(!object) return;
     transformControls.attach(object);
   }
-  synchronizeTransformControlsMode();
 }
 const SHIFT_KEY = 'Shift';
 function handleTranslationKeyDown(event) {
@@ -848,9 +873,7 @@ function cleanupTransformControls() {
   }
 };
 function setupTransformControls(camera) {
-  let object;
   if(transformControls){ 
-    object = transformControls.object;
     cleanupTransformControls();
   }
   transformControls = new TransformControls(camera, renderer.domElement);
@@ -858,26 +881,27 @@ function setupTransformControls(camera) {
   transformControls.enabled = enabled;
   transformControls.visible = enabled;
   transformControls.setSize(transformControls.size * 3);
-  transformControls.addEventListener('change', (e) => {
+
+  const applyTransform = () => {
     if(!transformControls.enabled) return;
-    if(modelObject) {
+    if(getTransformTarget() === modelObject) {
       clampDimensions(transformControls.object);
     }
     render();
-  });
-  transformControls.addEventListener('dragging-changed', event => {
+  }
+  const handleChange = debounce(applyTransform, 100);
+  const handleDragged = debounce((event) => {
     if(!transformControls.enabled) return;
     if(cameraOrbitControls) cameraOrbitControls.enabled = !event.value;
-    if(!event.value) {
-      clampDimensions(transformControls.object);
-    }
-  });
-  attachTransformControls(modelObject);
+    if(!event.value) applyTransform();
+  }, 100);
+
+  transformControls.addEventListener('change', handleChange);
+  transformControls.addEventListener('dragging-changed', handleDragged);
   window.addEventListener('keydown', handleTranslationKeyDown);
   window.addEventListener('keyup', handleTranslationKeyUp);
   scene.add(transformControls);
-  if(object) attachTransformControls(object);
-  else attachTransformControls(modelObject);
+  attachTransformControls(getTransformTarget());
   synchronizeTransformControlsMode();
 }
 function clampDimensions(source) {
@@ -1068,6 +1092,10 @@ function trackPointer(domElement, pointer) {
   domElement.addEventListener('mousedown', onDown);
 }
 function enableCameraOrbit(enable) {
+  if(!cameraOrbitControls) {
+    createCameraControls(camera, renderer.domElement)
+  };
+  if(cameraOrbitControls)
   cameraOrbitControls.enabled = enable;
 }
 function handleSelectDown() {
@@ -1192,6 +1220,9 @@ function displayNewlySelectedVertex(options) {
 
   displayVertexPosition(options)
   drawModelCanvas();
+}
+function getUiSelectedIndex() {
+  return parseInt(document.getElementById('vertex-index-value').value);
 }
 function getSelectedIndex(options) {
   return rowColumnToIndexOfVertex(
@@ -1389,6 +1420,7 @@ function createCameraControls(camera, domElement) {
   if(selectedTool() !== 'camera') return;
   // NOTE: Create controls after camera has been positioned and rotated
   cameraOrbitControls = new OrbitControls( camera, domElement );
+  enableCameraOrbit(selectedTool() === 'camera');
 }
 
 function createCamera(angle, size, canvasWidth, canvasHeight) {
@@ -2399,6 +2431,7 @@ function buildPointCloud(controlVertices) {
   scene.add( pointCloudObject );
 
   pointCloudObject.visible = document.getElementById('show-point-cloud').checked;
+  attachTransformControls(getTransformTarget());
   addObjectToList(pointCloudObject);
 }
 function drawSelectionVertices(options) {  
@@ -2580,7 +2613,7 @@ function buildModel(controlVertices, options) {
   setTranslationToObject(modelObject);
   scene.add(modelObject);
   modelObject.visible = document.getElementById('show-model-mesh').checked;
-  attachTransformControls(modelObject);
+  attachTransformControls(getTransformTarget());
   addObjectToList(modelObject);
 }
 function createBufferGeometry(vertices, options = getModelReadOptions(image2D)) {

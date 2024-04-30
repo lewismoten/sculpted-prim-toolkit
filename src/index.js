@@ -1534,7 +1534,7 @@ function prepareForDynamicTexture() {
   const targetOptions = getModelReadOptions(canvas);
   const vectors = pixels.map(rgbAsVector);
   const trianglePositionIndexes = getIndexesOfTriangleVectorIndexes(options);
-  const trianglePositionXy = getTextureMapCoordinatesForTriangles(targetOptions);
+  const trianglePositionXy = getTextureMapCoordinatesForTriangles(options, targetOptions);
 
   if(trianglePositionXy.length * 3 !== trianglePositionIndexes.length) {
     console.warn('Array lengths trianglePositionIndexes: %s !== trianglePositionXy %s * 3 (%s)', 
@@ -2685,14 +2685,9 @@ function getIndexesOfTriangleVectorIndexes(options) {
   }
   return indexedTriangles;
 }
-function getTextureMapCoordinatesForTriangles({
-  width,
-  height,
-  mapping: {
-    x: columnCount, // 32
-    y: rowCount // 33
-  }
-}) {
+function getTextureMapCoordinatesForTriangles(source, target) {
+  const { x: columnCount, y: rowCount} = source.mapping;
+  const { width, height } = target;
   var xyTriangles = [];
   const cellWidth = width / columnCount;
   const cellHeight = height / (rowCount - 1);

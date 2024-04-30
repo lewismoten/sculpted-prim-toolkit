@@ -946,8 +946,8 @@ function areDeeplyEqual(a, b) {
 
 function clampVertexWithinBoundingBox(vertexObject) {
   const pixel = pixels[vertexObject.userData.index];
-  'xyz'.split().forEach(axis => {
-    vertexObject.position[axis] = THREE.MathUtils.clamp(vertexObject[axis], -0.5, 0.5);
+  'xyz'.split('').forEach(axis => {
+    vertexObject.position[axis] = THREE.MathUtils.clamp(vertexObject.position[axis], -0.5, 0.5);
   });
   const changedPixel = bytePositionAsPixelRgb(vertexObject.position);
   if(areDeeplyEqual(pixel, changedPixel)) {

@@ -861,8 +861,8 @@ function attachTransformControls(object) {
     if(transformControls.object) {
       transformControls.detach();
     }
-    if(!object) return;
-    transformControls.attach(object);
+    if(object) transformControls.attach(object);
+    synchronizeTransformControlsMode();
   }
 }
 const SHIFT_KEY = 'Shift';

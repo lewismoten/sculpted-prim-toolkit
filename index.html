@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>2D Image to 3D Model</title>
+  <link rel="stylesheet" type="text/css" href="src/style.css">
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.163.0/build/three.module.js",
+        "three/": "https://unpkg.com/three@0.163.0/"
+      }
+    }
+  </script>
+  <script type="module" src="src/index.js"></script>
+</head>
+
+<body>
+  <div class="flex">
+    <div class="group">
+      <div class="group-title">Scene</div>
+      <label><input type="checkbox" id="axis-helper">Axis</label><br>
+      <label><input type="checkbox" id="show-cube">Reference Cube</label><br>
+      <label><input type="checkbox" id="show-model-boundaries">Boundaries</label><br />
+      <label><input type="checkbox" id="show-stats">Stats</label><br>
+    </div>
+    <div class="group">
+      <div class="group-title">Camera: <span id="camera-angle-selected"></span></div>
+      <button id="camera-top">Top</button>
+      <button id="camera-left">Left</button>
+      <button id="camera-front">Front</button><br />
+      <button id="camera-right">Right</button>
+      <button id="camera-bottom">Bottom</button>
+      <button id="camera-back">Back</button><br />
+      <button id="camera-iso">Iso</button>
+      <button id="camera-perspective">Perspective</button><br />
+    </div>
+    <canvas id="image-3d" width="320" height="200"></canvas><br />
+    <div class="group">
+      <div class="group-title">Toolbox</div>
+      <label><input type="radio" name="tool" value="camera">Camera</label><br />
+      <label><input type="radio" name="tool" value="select">Selection</label><br />
+      <label><input type="radio" name="tool" value="move-point" checked>Move Point</label><br />
+      <label><input type="radio" name="tool" value="move">Move</label><br />
+      <label><input type="radio" name="tool" value="rotate">Rotate</label><br />
+      <label><input type="radio" name="tool" value="scale">Scale</label><br />
+    </div>
+      <div class="group">
+      <div class="group-title">Model</div>
+      <select id="image-selector"></select><br />
+      <label><input type="checkbox" id="show-model-mesh" checked>Visible</label><br />
+      <label><input type="checkbox" id="show-point-cloud">Point Cloud</label><br />
+      <label><input type="checkbox" id="show-control-mesh">Wireframe</label><br />
+    </div>
+    <div class="group" id="nurbs-container">
+      <div>
+      <div class="group-title">NURBS</div>
+      <label><input type="checkbox" id="show-nurbs-mesh">Visible</label><br />
+      <label><input type="number" id="nurbs-degrees" min="1" max="5" value="1">Degrees</label><br />
+      Knots: 
+      U: <span id="nurbs-knots-u"></span>
+      V: <span id="nurbs-knots-v"></span><br />
+      </div>
+    </div>
+  <div class="group">
+    <div class="group-title">
+      Model Data: 
+      <span class="code">0x<span class="axis-z" id="model-data-r">00</span><span class="axis-x" id="model-data-g">00</span><span class="axis-y" id="model-data-b">00</span></span>
+      <span class="last-item-right">
+        <span id="vertex-color"></span>
+      </span>
+    </div>
+    <div class="flex">
+      <canvas id="image-preview"></canvas>
+      <div>
+        <label>U: <input type="range" id="vertex-column-range" min="0" max="32" step="1" value="0"></label>
+        <input type="number" id="vertex-column-value" min="0" max="32" step="1" value="0" class="vertex-column-number">
+        <br />
+        <label>V: <input type="range" id="vertex-row-range" min="0" max="32" step="1" value="0"></label>
+        <input type="number" id="vertex-row-value" min="0" max="32" step="1" value="0" class="vertex-row-number">
+        <br />
+        <label>Idx: <input type="range" id="vertex-index-range" min="0" max="1024" step="1" value="0"></label>
+        <input type="number" id="vertex-index-value" min="0" max="1024" step="1" value="0" class="vertex-index-number">
+      </div>
+    </div>
+  </div>
+  <div class="group">
+    <div class="group-title">Actions</div>
+    <button id="center-model">Center</button>
+    <button id="scale-to-bounding-volume">Full Volume</button>
+  </div>
+
+  <div class="group">
+    <div class="group-title">Position: <span id="selected-pos-vector"></span></div>
+    <label class="axis-x">X: <input type="range" id="selected-pos-x-range" min="0" max="255" step="1" value="0"></label>
+    <input type="number" id="selected-pos-x-value" min="0" max="255" step="1" value="0" class="position-input">
+    <br />
+    <label class="axis-y">Y: <input type="range" id="selected-pos-y-range" min="0" max="255" step="1" value="0"></label>
+    <input type="number" id="selected-pos-y-value" min="0" max="255" step="1" value="0" class="position-input">
+    <br />
+    <label class="axis-z">Z: <input type="range" id="selected-pos-z-range" min="0" max="255" step="1" value="0"></label>
+    <input type="number" id="selected-pos-z-value" min="0" max="255" step="1" value="0" class="position-input">
+  </div>
+  <div class="group">
+    <div class="group-title">Rotation: <span id="rotation-values"></span></div>
+    <label class="axis-x">X: <input type="range" id="rotation-x" min="-3.14159" max="3.14159" step="0.01" value="1"></label>
+    <input type="number" id="rotation-x-degrees" min="0" max="359.95" step="0.05" value="0" class="angle-input">
+    <label><input type="checkbox" id="spin-x">Spin</label>
+    <br />
+    <label class="axis-y">Y: <input type="range" id="rotation-y" min="-3.14159" max="3.14159" step="0.01" value="1"></label>
+    <input type="number" id="rotation-y-degrees" min="0" max="359.95" step="0.05" value="0" class="angle-input">
+    <label><input type="checkbox" id="spin-y">Spin</label>
+    <br />
+    <label class="axis-z">Z: <input type="range" id="rotation-z" min="-3.14159" max="3.14159" step="0.01" value="1"></label>
+    <input type="number" id="rotation-z-degrees" min="0" max="359.95" step="0.05" value="0" class="angle-input">
+    <label><input type="checkbox" id="spin-z">Spin</label><br />
+    <button id="no-rotation">Reset</button>
+  </div>
+  <div class="group">
+    <div class="group-title">Scale: <span id="scale-values"></span></div>
+    <label class="axis-x">X: <input type="range" id="scale-x-range" min="0.01" max="1" step="0.01" value="1"></label>
+    <input type="number" id="scale-x-value" min="0" max="1" step="0.01" value="0" class="scale-input">
+    <br />
+    <label class="axis-y">Y: <input type="range" id="scale-y-range" min="0.01" max="1" step="0.01" value="1"></label>
+    <input type="number" id="scale-y-value" min="0" max="1" step="0.01" value="0" class="scale-input">
+    <br />
+    <label class="axis-z">Z: <input type="range" id="scale-z-range" min="0.01" max="1" step="0.01" value="1"></label>
+    <input type="number" id="scale-z-value" min="0" max="1" step="0.01" value="0" class="scale-input">
+
+  </div>
+  <div class="group">
+    <div class="group-title">Texture</div>
+    <div class="flex">
+      <div>
+        <canvas id="texture-preview"></canvas><br />
+        <label>
+          <input type="checkbox" id="show-texture-emissive">Emissive
+        </label><br />
+      </div>
+      <div>
+        Skin: <select id="texture-selector">
+          <option value="">None</option>
+          <option value="dynamic-model-vertex">Dynamic: Vertex Color Map</option>
+          <option value="dynamic-model-density">Dynamic: Density Map</option>
+          <option value="dynamic-model-distance">Dynamic: Distance Map</option>
+          <option value="dynamic-model-face-angle">Dynamic: Face Angle Map</option>
+          <option value="alignment-map-64">Alignment Map 64</option>
+          <option value="alignment-map-128">Alignment Map 128</option>
+          <option value="alignment-map-256">Alignment Map 256</option>
+          <option value="alignment-map-512">Alignment Map 512</option>
+          <option value="alignment-map-1024">Alignment Map 1024</option>
+          <option value="alignment-map-2048">Alignment Map 2048</option>
+          <option value="alignment-map-4096">Alignment Map 4096</option>
+        </select><br />
+        Dynamic Colors:
+        <select id="dynamic-colors">
+          <option value="grey-scale">Grey Scale</option>
+          <option value="heat">Heat</option>
+          <option value="magma">Magma</option>
+          <option value="rainbow">Rainbow</option>
+          <option value="red-white-blue" selected>Red, White, and Blue</option>
+          <option value="rgb">RGB</option>
+        </select><br />
+
+
+
+        Opacity: <input type="range" id="texture-opacity" min="0" max="1" step="0.01" value="1">
+        <input type="number" class="scale-input" id="texture-opacity-value" min="0" max="1" step="0.01" value="1">
+        
+        <br />
+      </div>
+    </div>
+  </div>
+  <div class="group">
+    <div class="group-title">Texture Orientation</div>
+    <label>Rotate: <input type="range" id="texture-rotation" min="-3.14" max="3.14" step="0.01"
+      value="0"></label>
+      <input type="number" class="scale-input" id="texture-rotation-value" min="0" max="359.95" step="0.05" value="0">
+      <br>
+      Flip:
+      <label>
+        <input type="checkbox" id="texture-flip-h">H
+      </label>
+      <label>
+        <input type="checkbox" id="texture-flip-v">V
+      </label>
+
+    <div class="group">
+      <div class="group-title">Offset</div>
+  <label>H: <input type="range" id="texture-horizontal-offset" min="-1" max="1" step="0.01"
+      value="0"></label>
+      <input type="number" class="scale-input" id="texture-horizontal-offset-value" min="-1" max="1" step="0.01" value="0">
+      <br />
+  <label>V: <input type="range" id="texture-vertical-offset" min="-1" max="1" step="0.01" value="0"></label>
+  <input type="number" class="scale-input" id="texture-vertical-offset-value" min="-1" max="1" step="0.01" value="0">
+  
+  <br />
+</div>
+<div class="group">
+  <div class="group-title">Repeat</div>
+  <label>H: <input type="range" id="texture-horizontal-repeat" min="0.01" max="10" step="0.01"
+      value="1"></label>
+      <input type="number" class="scale-input" id="texture-horizontal-repeat-value" min="0.01" max="10" step="0.01" value="1">
+
+      <br />
+  <label>V: <input type="range" id="texture-vertical-repeat" min="0.01" max="10" step="0.01"
+      value="1"></label>
+      <input type="number" class="scale-input" id="texture-vertical-repeat-value" min="0.01" max="10" step="0.01" value="1">
+  </div>
+  </div>
+  <div class="group">
+    <div class="group-title">Lighting</div>
+    <label>Ambient: <input type="range" id="ambientIntensity" min="0" max="5" step="0.01" value=".5"></label><br />
+    <label>Directional: <input type="range" id="directionalIntensity" min="0" max="10" step="0.01"
+        value="1"></label><br />
+    <label>- Angle: <input type="range" id="directional-light-angle" min="-3.14" max="3.14" step=".01"
+        value="0"></label><br />
+    <label>- Elevation: <input type="range" id="directional-light-elevation" min="-1" max="1" step=".01"
+        value="0"></label><br />
+  </div>
+  <div class="group">
+    <div class="group-title">Unused Pixels</div>
+    <label>
+      <input type="radio" name="unused-pixels" value="original">Original
+    </label><br>
+    <label>
+      <input type="radio" name="unused-pixels" value="blocks">Blocks
+    </label><br>
+    <label>
+      <input type="radio" name="unused-pixels" value="black" checked>Black
+    </label><br>
+    <label>
+      <input type="radio" name="unused-pixels" value="texture">Texture
+    </label><br>
+    <label>
+      <input type="radio" name="unused-pixels" value="camera">Live Camera
+    </label><br>
+    <input type="radio" name="unused-pixels" value="snapshot"><button id="take-snapshot">Snapshot</button>
+    <br>
+  </div>
+  <div class="group">
+    <div class="group-title">Save</div>
+    Size: <select id="save-image-width">
+      <option value="16">16</option>
+      <option value="32">32</option>
+      <option value="64">64</option>
+      <option value="128">128</option>
+      <option value="256">256</option>
+      <option value="512">512</option>
+      <option value="1024">1024</option>
+      </select>x
+      <select id="save-image-height">
+        <option value="16">16</option>
+        <option value="32">32</option>
+        <option value="64">64</option>
+        <option value="128">128</option>
+        <option value="256">256</option>
+        <option value="512">512</option>
+        <option value="1024">1024</option>
+        </select>
+      <br>
+      <button id="export-image">Save</button><br />
+    </div>
+    <div class="group">
+      <div class="group-title">File Name</div>
+      <label>
+        <input type="checkbox" id="export-date" checked>Date
+      </label><br />
+      <label>
+        <input type="checkbox" id="export-time" checked>Time
+      </label>
+      </div>
+    <div class="group">
+    <div class="group-title">Export</div>
+    <button id="export-gltf">GLTF</button>
+    <button id="export-glb">GLB</button><br />
+    <button id="export-obj">OBJ</button>
+    <button id="export-stl">STL</button><br />
+    <label>
+      <input type="checkbox" id="export-texture" checked>Texture
+    </label><br />
+  </div>
+  <div class="group">
+    <div class="group-title">Details</div>
+    Model Image Size: <span id="image-size"></span>
+      <span class="tooltip" id="image-data-coordinates" data-target="image-size"></span>
+    <br />
+    Model Data: <span id="model-data-count"></span><br />
+    Rows x Columns: <span id="rows-and-columns"></span>
+      <span class="tooltip" id="rows-and-columns-data" data-target="rows-and-columns"></span>
+      <br />
+    Model Vectors: <span id="model-data-vector-count"></span><br />
+    Vertices: <span id="control-mesh-vertices"></span><br />
+    Faces: <span id="control-mesh-faces"></span><br />
+    Positions: <span id="control-mesh-positions"></span><br />
+  
+</div>
+<div class="group">
+  <div class="group-title">Selected</div>
+  Pixel: <span id="selected-pixel-xy">-1x-1</span><br>
+  Color: <span id="selected-pixel-color">rgb(0,0,0)</span>
+</div>
+
+
+</body>
+</html>

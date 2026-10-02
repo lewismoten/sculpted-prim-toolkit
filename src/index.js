@@ -11,6 +11,7 @@ import { STLExporter } from 'three/addons/exporters/STLExporter.js';
 const defaultCameraAngle = 'iso';
 const defaultModel = '128-5 tokoroten cube (from SL).png';
 const defaultSkin = 'dynamic-model-face-angle';
+const assetUrl = (path) => new URL(`./${path}`, import.meta.url).href;
 
 const HOME_POSITION = new THREE.Vector3(0, 0, 0);
 const HOME_SCALE = new THREE.Vector3(1, 1, 1);
@@ -348,13 +349,13 @@ function handleWindowLoad() {
   document.getElementById('show-cube').addEventListener('change', handleShowCubeChange);
   document.getElementById('show-model-boundaries').addEventListener('change', handleShowGhostChange);
   requestAnimationFrame( animate );
-  fetch('files.json').then(response => response.json()).then(files => {
+  fetch(assetUrl('files.json')).then(response => response.json()).then(files => {
 
     const imageSelector = document.getElementById('image-selector');
     Object.keys(files.sculptedPrimNames).forEach(name => {
       const file = files.sculptedPrimNames[name];
       const option = document.createElement('option');
-      option.value = `images/sculpted-prims/${file}`;
+      option.value = assetUrl(`images/sculpted-prims/${file}`);
       option.innerText = name;
       if(file === defaultModel) {
         option.selected = true;
@@ -366,7 +367,7 @@ function handleWindowLoad() {
     Object.keys(files.textureNames).forEach(name => {
       const file = files.textureNames[name];
       const option = document.createElement('option');
-      option.value = `images/textures/${file}`;
+      option.value = assetUrl(`images/textures/${file}`);
       option.innerText = name;
       if(defaultSkin === file) {
         option.selected = true;
@@ -3213,5 +3214,4 @@ function downloadUrlAsFile(fileName, url) {
 }
 
 window.addEventListener('load', handleWindowLoad);
-
 

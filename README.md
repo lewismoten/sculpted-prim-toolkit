@@ -1,6 +1,6 @@
-# Sculpted Prim Reader
+# Sculpted Prim Toolkit
 
-![Sculpted Prim Reader](./misc/social-preview.jpg)
+![Sculpted Prim Toolkit](./misc/social-preview.jpg)
 
 An in-browser viewer and editor for Second Life-style sculpted prim maps. It reads the RGB position data stored in a 2D image, turns it into an interactive Three.js model, and can export the resulting geometry or updated sculpt map.
 

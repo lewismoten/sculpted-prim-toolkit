@@ -1,5 +1,5 @@
 {
-  "name": "sculpted-prim-reader",
+  "name": "sculpted-prim-toolkit",
   "version": "1.0.0",
   "description": "Convert 2D images into 3D Models",
   "main": "index.js",

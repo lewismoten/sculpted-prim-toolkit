@@ -4,6 +4,8 @@
 
 An in-browser viewer and editor for Second Life-style sculpted prim maps. It reads the RGB position data stored in a 2D image, turns it into an interactive Three.js model, and can export the resulting geometry or updated sculpt map.
 
+![Screenshot](./misc/screenshot.jpg)
+
 ## Features
 
 - Browse the included sculpt-map and texture libraries.
